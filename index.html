@@ -1527,7 +1527,7 @@ var SKILL_DEFS = {
   nullstrike: {
     getStats: function(pts, ab) { return { dmMult: 1 + (pts+(ab||0))*0.02 }; },
     rows: function(pts, ab) { var eff=pts+(ab||0); return [
-      { label:'Shield per hit', upgraded:pts>0, value:'+'+(2+pts*0.5).toFixed(1)+' spell shield' },
+      { label:'Shield per hit', upgraded:pts>0, value:'+'+(1+pts*0.5).toFixed(1)+' spell shield' },
       { label:'Dmg reduce',     upgraded:pts>0, value:'+'+(pts*0.5).toFixed(1)+'% per hit (temp)' },
       { label:'Shield break',   upgraded:true,  value:'Bursts for 10% weapon dmg when shield hits 0' },
       { label:'Dmg bonus',      upgraded:pts>0, value:'+'+(pts*2)+'%'+(ab?' → '+(eff*2)+'%':'') },
@@ -1648,7 +1648,7 @@ var PASSIVE_DEFS = {
   energyshield: {
     getStats: function(pts) { return { shield: pts * 2.5 }; },
     rows: function(pts) { return [
-      { label:'Base Shield', upgraded:pts>0, value:'+'+(pts*2.5).toFixed(1) },
+      { label:'Base Shield', upgraded:pts>0, value:'+'+(pts*3.5).toFixed(1) },
       { label:'Auto-refresh', upgraded:true, value:'Full regen every 10s in combat' },
     ]; },
   },
@@ -1981,7 +1981,7 @@ function getEnemiesPerZone() {
 var DIFFICULTY = {
   normal:    { label:'Normal',    enemyHpMult:1,   enemyDmgMult:1,   bossMult:1,   xpMult:1,   goldMult:1 },
   nightmare: { label:'Nightmare', enemyHpMult:2.8, enemyDmgMult:2.2, bossMult:3.0, xpMult:2.5, goldMult:2 },
-  hell:      { label:'Hell',      enemyHpMult:9.0, enemyDmgMult:4.0, bossMult:12,  xpMult:6.0, goldMult:5 },
+  hell:      { label:'Hell',      enemyHpMult:9.0, enemyDmgMult:4.0, bossMult:8,   xpMult:6.0, goldMult:5 },
 };
 var DIFFICULTY_ORDER = ['normal','nightmare','hell'];
 
@@ -2899,11 +2899,11 @@ function recalcStats() {
   var _passiveRegen = classKey==='sorceress' ? (hero.skillTree['warmth']||0)*0.5 : 0;
   // Warrior Last Stand regen: +0.2/pt at >=40 rage (dynamic — applied in _gameTick)
   hero._hpRegen         = bonusRegen + _passiveRegen;
-  hero._reducedDmg      = bonusReduce;
+  hero._reducedDmg      = Math.min(50, bonusReduce + (hero.level - 1));
   var _passiveBlock = classKey==='rogue' ? (hero.skillTree['evasion']||0)*1.5 : classKey==='warrior' ? 5 : classKey==='ranger' ? 3 : 0;
   hero._blockChanceRaw  = bonusBlock + _passiveBlock;
   hero._blockChance     = Math.min(hero._blockChanceRaw, 40);
-  var _passiveShield = classKey==='sorceress' ? (hero.skillTree['energyshield']||0)*2.5 : classKey==='rogue' ? (hero.skillTree['shadowveil']||0)*2.5 : 0;
+  var _passiveShield = classKey==='sorceress' ? (hero.skillTree['energyshield']||0)*3.5 : classKey==='rogue' ? (hero.skillTree['shadowveil']||0)*3.5 : 0;
   hero._spellShield     = bonusShield + _passiveShield;
   hero._passiveMf       = classKey==='sorceress' ? (hero.skillTree['fortune']||0) : (hero.skillTree['plunder']||0);
   // Execute global dmg bonus
@@ -4657,7 +4657,7 @@ function heroAttack(now) {
       addLog('Corrosive Compound: '+dmg+(_isCrit?' CRIT!':'')+' — stack '+enemy._corrosiveStacks+'/10 (+'+totalBonus+'% dmg)', _isCrit?'crit':'bleed');
       triggerStatusFlash('#aacc44');
     } else {
-      addLog('Corrosive Compound: '+dmg+(_isCrit?' CRIT!':'')+' (no bleed)', _isCrit?'crit':'light');
+      addLog('Corrosive Compound: '+dmg+(_isCrit?' CRIT!':''), _isCrit?'crit':'light');
     }
 
   } else if (skill.id === 'neurotoxin') {
@@ -4690,9 +4690,9 @@ function heroAttack(now) {
     if (Math.random() < rogueCrit) { _isCrit = true; dmg = Math.round(dmg * 2); }
     _lastDealtDmg = dmg;
     enemy.hp = Math.max(0, enemy.hp - dmg);
-    var shieldGain = Math.round(2 + nsPts * 0.5);
+    var shieldGain = Math.round(1 + nsPts * 0.5);
     var reduceGain = nsPts * 0.5;
-    hero._shieldCurrent = Math.min((hero._spellShield || 0) + shieldGain * 3, Math.max(hero._spellShield || 0, 20) * 3);
+    hero._shieldCurrent = Math.min((hero._spellShield || 0) + shieldGain * 2, Math.max(hero._spellShield || 0, 20) * 2);
     if (!hero._nullstrikeReduce) hero._nullstrikeReduce = 0;
     hero._nullstrikeReduce = Math.min(30, hero._nullstrikeReduce + reduceGain);
     addLog('Null Strike: '+dmg+(_isCrit?' CRIT!':'')+' ['+mhElem.label+'] → +'+shieldGain+' shield', _isCrit?'crit':'cold');
@@ -8594,7 +8594,7 @@ function renderSkillPicker() {
       else if (s.id === 'energyshield') pSummary = '+'+(pts*2.5).toFixed(1)+' spell shield';
       else if (s.id === 'fortune')      pSummary = '+'+pts+'% Magic Find';
       else if (s.id === 'evasion')      pSummary = '+'+(pts*1.5).toFixed(1)+'% dodge/block';
-      else if (s.id === 'shadowveil')   pSummary = '+'+(pts*2.5).toFixed(1)+' shadow shield';
+      else if (s.id === 'shadowveil')   pSummary = '+'+(pts*3.5).toFixed(1)+' shadow shield';
       else if (s.id === 'plunder')      pSummary = '+'+pts+'% Magic Find';
       else if (s.id === 'execute')      pSummary = (isActive?'ACTIVE — ':'')+'+'+(pts)+'% dmg, execute at '+(20+pts*0.75).toFixed(1)+'% HP (rage÷5 ×)';
       else if (s.id === 'laststand')    pSummary = (isActive?'ACTIVE — ':'')+(hero.rage>=40?'✦ ':'')+'survive w/ '+(50*pts*0.04).toFixed(0)+'% heal at full rage';
@@ -9466,6 +9466,131 @@ function debugRandomUnique() {
   addLog('[DBG] '+verb+': '+item.name + tierLabel, 'loot unique');
   if (_pScene) _pScene.uniqueDropFX(item.uniqueTier || 1);
   if (result !== 'discard') triggerItemDropAnim('unique');
+}
+
+function equipHellTestGear() {
+  var diffScale = 2.8;   // hell scaling
+  var actBonus  = 4;     // act index 4 (Act 5)
+  var hellRoll  = 1.15;  // mid-high hell roll
+
+  var slots = Object.keys(SLOT_STAT_POOLS);
+  var uniques = UNIQUE_ITEMS[classKey] || [];
+  var usedUniques = 0, usedRares = 0;
+
+  for (var si = 0; si < slots.length; si++) {
+    var slot = slots[si];
+    var pool = SLOT_STAT_POOLS[slot];
+
+    // Prefer T3, then T2, then T1
+    var slotT3 = uniques.filter(function(u) { return u.slot === slot && (u.uniqueTier||1) === 3; });
+    var slotT2 = uniques.filter(function(u) { return u.slot === slot && (u.uniqueTier||1) === 2; });
+    var slotT1 = uniques.filter(function(u) { return u.slot === slot && (u.uniqueTier||1) === 1; });
+    var slotPool = slotT3.length ? slotT3 : (slotT2.length ? slotT2 : slotT1);
+
+    if (slotPool.length) {
+      var uBase = slotPool[ri(0, slotPool.length - 1)];
+      var tierScale = (uBase.uniqueTier >= 2) ? diffScale : 1.0;
+      var tActBonus = (uBase.uniqueTier === 3) ? (1 + actBonus * 0.1) : 1.0;
+      var rawStats = {};
+      for (var k in uBase.stats) {
+        rawStats[k] = k === 'mf'
+          ? uBase.stats[k]
+          : Math.round((uBase.stats[k] || 0) * tierScale * tActBonus * hellRoll);
+      }
+      var item = { slot: slot, name: uBase.name, stats: rawStats, rarity: 'unique', uniqueTier: uBase.uniqueTier || 1 };
+      if (uBase.skillBonus) { item.skillBonus = uBase.skillBonus; item.skillId = uBase.skillId; item.skillName = uBase.skillName; }
+      if (uBase.allSkills)  { item.allSkills  = uBase.allSkills; }
+      item.score = Math.round(itemScore(item.stats, item.skillBonus, item.allSkills));
+      hero.equipped[slot] = item;
+      var tierLabel = uBase.uniqueTier === 3 ? ' [T3]' : uBase.uniqueTier === 2 ? ' [T2]' : ' [T1]';
+      addLog('[DBG] '+slot+': '+item.name+tierLabel, 'loot unique');
+      usedUniques++;
+    } else {
+      // No unique for this slot — max-rolled rare at Hell Act 5
+      var stats = {};
+      var statCount = Math.min(4, pool.length);
+      var chosen = pool.slice().sort(function() { return Math.random() - 0.5; }).slice(0, statCount);
+      for (var ci = 0; ci < chosen.length; ci++) {
+        var stat = chosen[ci];
+        var r = RARE_RANGES[stat];
+        if (!r) continue;
+        var actBonus2 = (ACT_STAT_BONUS[stat] || 0) * actBonus;
+        stats[stat] = Math.round((r.max + actBonus2) * diffScale);
+      }
+      var idata = ITEM_NAMES[classKey];
+      var namePool = idata && idata[slot] && idata[slot].length ? idata[slot] : null;
+      var rname = namePool ? namePool[ri(0, namePool.length - 1)] : ('Hell '+slot);
+      var item = { slot: slot, name: rname, stats: stats, rarity: 'rare' };
+      item.score = Math.round(itemScore(stats));
+      hero.equipped[slot] = item;
+      addLog('[DBG] '+slot+': '+rname+' [rare, max-rolled]', 'loot rare');
+      usedRares++;
+    }
+  }
+
+  recalcStats();
+  hero.hp = hero.maxHp;
+  gearDirty = true;
+  addLog('[DBG] Hell test gear equipped ('+usedUniques+' uniques, '+usedRares+' max rares). Score: '+totalGearScore(), 'level');
+}
+
+function equipHellRareGear() {
+  var diffScale = 2.8;
+  var actBonus  = 4;
+
+  var slots = Object.keys(SLOT_STAT_POOLS);
+  var uniques = UNIQUE_ITEMS[classKey] || [];
+  var usedUniques = 0, usedRares = 0;
+
+  // Pick one random T3 unique slot to fill — if any T3 exists
+  var allT3 = uniques.filter(function(u) { return (u.uniqueTier||1) === 3; });
+  var t3SlotUsed = null;
+  if (allT3.length) {
+    var t3Pick = allT3[ri(0, allT3.length - 1)];
+    t3SlotUsed = t3Pick.slot;
+    var t3Scale = diffScale * (1 + actBonus * 0.1) * 1.15;
+    var t3Stats = {};
+    for (var k in t3Pick.stats) {
+      t3Stats[k] = k === 'mf' ? t3Pick.stats[k] : Math.round((t3Pick.stats[k]||0) * t3Scale);
+    }
+    var t3Item = { slot: t3Pick.slot, name: t3Pick.name, stats: t3Stats, rarity: 'unique', uniqueTier: 3 };
+    if (t3Pick.skillBonus) { t3Item.skillBonus = t3Pick.skillBonus; t3Item.skillId = t3Pick.skillId; t3Item.skillName = t3Pick.skillName; }
+    if (t3Pick.allSkills)  { t3Item.allSkills  = t3Pick.allSkills; }
+    t3Item.score = Math.round(itemScore(t3Stats, t3Item.skillBonus, t3Item.allSkills));
+    hero.equipped[t3Pick.slot] = t3Item;
+    addLog('[DBG] '+t3Pick.slot+': '+t3Pick.name+' [T3 unique]', 'loot unique');
+    usedUniques++;
+  }
+
+  // Fill remaining slots with max-rolled rares
+  for (var si = 0; si < slots.length; si++) {
+    var slot = slots[si];
+    if (slot === t3SlotUsed) continue;
+    var pool = SLOT_STAT_POOLS[slot];
+    var stats = {};
+    var statCount = Math.min(4, pool.length);
+    var chosen = pool.slice().sort(function() { return Math.random() - 0.5; }).slice(0, statCount);
+    for (var ci = 0; ci < chosen.length; ci++) {
+      var stat = chosen[ci];
+      var r = RARE_RANGES[stat];
+      if (!r) continue;
+      var actBonus2 = (ACT_STAT_BONUS[stat] || 0) * actBonus;
+      stats[stat] = Math.round((r.max + actBonus2) * diffScale);
+    }
+    var idata = ITEM_NAMES[classKey];
+    var namePool = idata && idata[slot] && idata[slot].length ? idata[slot] : null;
+    var rname = namePool ? namePool[ri(0, namePool.length - 1)] : ('Hell '+slot);
+    var item = { slot: slot, name: rname, stats: stats, rarity: 'rare' };
+    item.score = Math.round(itemScore(stats));
+    hero.equipped[slot] = item;
+    addLog('[DBG] '+slot+': '+rname+' [rare]', 'loot rare');
+    usedRares++;
+  }
+
+  recalcStats();
+  hero.hp = hero.maxHp;
+  gearDirty = true;
+  addLog('[DBG] Hell rare gear ('+usedUniques+' T3 unique, '+usedRares+' max rares). Score: '+totalGearScore(), 'level');
 }
 
 function toggleGodMode() {
@@ -12171,6 +12296,8 @@ init();
   <button onclick="grantGold(100)"     style="padding:2px 8px;border:1px solid #2a3a2a;background:#060d06;color:#3a6a3a;font-size:10px;cursor:pointer;border-radius:2px;font-family:'Courier New',monospace;">+100g</button>
   <button onclick="grantGold(1000)"    style="padding:2px 8px;border:1px solid #2a3a2a;background:#060d06;color:#3a6a3a;font-size:10px;cursor:pointer;border-radius:2px;font-family:'Courier New',monospace;">+1000g</button>
   <button onclick="equipGodGear()"     style="padding:2px 8px;border:1px solid #5a4a1a;background:#0f0d06;color:#c8a84b;font-size:10px;cursor:pointer;border-radius:2px;font-family:'Courier New',monospace;">God Gear</button>
+  <button onclick="equipHellTestGear()" style="padding:2px 8px;border:1px solid #6a2a1a;background:#0f0806;color:#ff7a4a;font-size:10px;cursor:pointer;border-radius:2px;font-family:'Courier New',monospace;">Hell Gear</button>
+  <button onclick="equipHellRareGear()" style="padding:2px 8px;border:1px solid #2a4a6a;background:#060a0f;color:#4a9aff;font-size:10px;cursor:pointer;border-radius:2px;font-family:'Courier New',monospace;">Hell Rares</button>
   <button onclick="unequipGodGear()"   style="padding:2px 8px;border:1px solid #3a3a1a;background:#0a0a06;color:#7a7a3a;font-size:10px;cursor:pointer;border-radius:2px;font-family:'Courier New',monospace;">Ungod Gear</button>
   <button onclick="forceGemDrop()"     style="padding:2px 8px;border:1px solid #2a3a4a;background:#060a0f;color:#5a8aaa;font-size:10px;cursor:pointer;border-radius:2px;font-family:'Courier New',monospace;">Force Gem</button>
   <button onclick="exportStats()" style="padding:2px 8px;border:1px solid #2a4a3a;background:#060f0a;color:#5aaa7a;font-size:10px;cursor:pointer;border-radius:2px;font-family:'Courier New',monospace;">Export Stats</button>
