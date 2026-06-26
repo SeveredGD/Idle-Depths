@@ -807,8 +807,10 @@
       <div class="rage-text" id="rage-text">0 / 50</div>
       <div class="stat-row"><span class="stat-label">Dmg</span><span class="stat-val" id="stat-dmg">—</span></div>
       <div class="stat-row"><span class="stat-label">Atk spd</span><span class="stat-val" id="stat-spd">—</span></div>
+      <div id="quiver-display" style="display:none;"></div>
       <div id="hero-stats-expanded">
       <div class="stat-row"><span class="stat-label">MF</span><span class="stat-val" id="stat-mf">0%</span></div>
+      <div class="stat-row"><span class="stat-label">Crit Chance</span><span class="stat-val" id="stat-crit">0%</span></div>
       <div class="stat-row"><span class="stat-label">HP regen</span><span class="stat-val" id="stat-regen">0/s</span></div>
       <div class="stat-row"><span class="stat-label">Dmg reduce</span><span class="stat-val" id="stat-reduce">0</span></div>
       <div class="stat-row"><span class="stat-label">Block</span><span class="stat-val" id="stat-block">0%</span></div>
@@ -877,6 +879,9 @@
       <div id="phaser-container" style="width:100%;height:100%;position:absolute;top:0;left:0;"></div>
     </div>
 
+    <!-- Quiver / Trap Bag bar (ranger only) -->
+    <div id="quiver-bar" style="display:none;padding:4px 10px;background:#08080f;border-bottom:1px solid #1a1a2a;display:flex;align-items:center;justify-content:space-between;font-family:Georgia,serif;"></div>
+
     <div id="center-bottom">
     <div id="log-wrap"></div>
       <div id="center-vault">
@@ -925,7 +930,11 @@
 
     <!-- Crafting tab -->
     <div id="rpanel-crafting" style="display:none;">
-      <div class="panel-title">Gem Fragments</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+        <div class="panel-title" style="margin-bottom:0;">Gem Fragments</div>
+        <button onclick="toggleReforgeHelp()" style="padding:2px 8px;border:1px solid #2a3a4a;background:#050d14;color:#7ac8e8;font-family:Georgia,serif;font-size:10px;cursor:pointer;border-radius:2px;">? Affix Guide</button>
+      </div>
+      <div id="reforge-help" style="display:none;margin-bottom:8px;padding:8px;border:1px solid #1a2a3a;border-radius:3px;background:#050d14;font-size:9px;color:#7a9aaa;line-height:1.6;"></div>
       <div style="font-size:10px;color:#5a5a6a;margin-bottom:8px;font-style:italic;">Select a gem, then use ↻ on a vault item to reforge it. Costs 50g + 1 gem.</div>
       <div id="gem-panel"></div>
     </div>
@@ -2289,12 +2298,12 @@ var STAT_RANGES = {
 };
 
 var SCORE_WEIGHTS  = {
-  mainDmg:3.0, mainSpd:1.5, hp:0.5, mf:4.0, hpRegen:2.0, reducedDmg:2.5,
-  fireDmg:2.0, lightDmg:2.0, coldDmg:2.0, magicDmg:2.5,
-  critChance:3.5, aoeChance:2.5, coldDuration:2.0,
-  blockChance:3.0, spellShield:1.5,
-  xpGain:3.0, goldFind:2.0, castCooldown:0.8,
-  statusEffect:3.5,
+  mainDmg:3.0, mainSpd:2.5, hp:0.5, mf:4.0, hpRegen:3.0, reducedDmg:2.5,
+  fireDmg:1.5, lightDmg:1.5, coldDmg:1.5, magicDmg:2.5,
+  critChance:3.5, aoeChance:1.5,
+  blockChance:1.0, spellShield:1.5,
+  xpGain:1.0, goldFind:1.0, castCooldown:1.5,
+  statusEffect:2.0,
 };
 var SKILL_BONUS_SCORES = { 1:18, 2:40, 3:75 };
 var ALL_SKILLS_SCORES  = { 1:30, 2:65, 3:120 };
@@ -2306,10 +2315,10 @@ var DIFF_ITEM_SCALE = { normal:1.0, nightmare:1.6, hell:2.8 };
 var ACT_STAT_BONUS  = {
   mainDmg:2, mainSpd:1, hp:8, mf:1, hpRegen:1.5, reducedDmg:1.2,
   fireDmg:0.8, lightDmg:0.8, coldDmg:0.8, magicDmg:0.8,
-  critChance:0.4, aoeChance:0.4, coldDuration:0.6,
+  critChance:0.4, aoeChance:0.4,
   blockChance:0.4, spellShield:1.5,
   xpGain:0.6, goldFind:0.6, castCooldown:15,
-  statusEffect:0.3,
+  statusEffect:0.5,
 };
 
 var SLOTS = ['weapon','armor','ring','amulet','trinket'];
@@ -2663,27 +2672,27 @@ var GEMS = [
     desc: 'Favors MF & Gold Find',
     color: '#c8a84b',
     weights: { mf:8, goldFind:6, mainDmg:2, mainSpd:2, hp:2, hpRegen:2, reducedDmg:2, xpGain:2,
-               fireDmg:1, lightDmg:1, coldDmg:1, critChance:1, aoeChance:1, coldDuration:1, blockChance:1, spellShield:1, castCooldown:1 }
+               fireDmg:1, lightDmg:1, coldDmg:1, critChance:1, aoeChance:1, statusEffect:1, blockChance:1, spellShield:1, castCooldown:1 }
   },
   {
     id: 'ruin', name: 'Ruin Shard', icon: '◈',
     desc: 'Favors Dmg & XP Gain',
     color: '#c85a1a',
     weights: { mainDmg:8, xpGain:6, mainSpd:2, hp:2, hpRegen:2, reducedDmg:2,
-               fireDmg:2, lightDmg:2, coldDmg:2, critChance:2, mf:1, goldFind:1, aoeChance:1, coldDuration:1, blockChance:1, spellShield:1, castCooldown:1 }
+               fireDmg:2, lightDmg:2, coldDmg:2, critChance:2, mf:1, goldFind:1, aoeChance:1, statusEffect:1, blockChance:1, spellShield:1, castCooldown:1 }
   },
   {
     id: 'tempest', name: 'Tempest Shard', icon: '◈',
     desc: 'Favors Speed & Dmg',
     color: '#7ac8e8',
     weights: { mainSpd:8, mainDmg:6, castCooldown:5, hp:2, hpRegen:2, reducedDmg:2,
-               fireDmg:2, lightDmg:2, coldDmg:2, critChance:2, mf:1, goldFind:1, xpGain:1, aoeChance:1, coldDuration:1, blockChance:1, spellShield:1 }
+               fireDmg:2, lightDmg:2, coldDmg:2, critChance:2, mf:1, goldFind:1, xpGain:1, aoeChance:1, statusEffect:1, blockChance:1, spellShield:1 }
   },
   {
     id: 'ember', name: 'Ember Shard', icon: '◈',
     desc: 'Favors Elemental Dmg',
     color: '#c878f0',
-    weights: { fireDmg:7, lightDmg:7, coldDmg:7, magicDmg:7, critChance:5, aoeChance:4, coldDuration:4,
+    weights: { fireDmg:7, lightDmg:7, coldDmg:7, magicDmg:7, critChance:5, aoeChance:4, statusEffect:4,
                mainDmg:2, mainSpd:2, hp:1, hpRegen:1, reducedDmg:1, mf:1, goldFind:1, xpGain:1, blockChance:1, spellShield:1, castCooldown:1 }
   },
 ];
@@ -2720,7 +2729,7 @@ function recalcStats() {
   var bonusBlock = 0, bonusShield = 0, bonusCooldown = 0;
   var bonusXpGain = 0, bonusGoldFind = 0;
   var bonusFireDmg = 0, bonusLightDmg = 0, bonusColdDmg = 0, bonusMagicDmg = 0;
-  var bonusLightCrit = 0, bonusAoe = 0, bonusColdDuration = 0, bonusStatusEffect = 0;
+  var bonusLightCrit = 0, bonusAoe = 0, bonusStatusEffect = 0;
   for (var i = 0; i < SLOTS.length; i++) {
     var e = hero.equipped[SLOTS[i]];
     if (e) {
@@ -2739,9 +2748,8 @@ function recalcStats() {
       bonusColdDmg      += e.stats.coldDmg          || 0;
       bonusMagicDmg     += e.stats.magicDmg         || 0;
       bonusLightCrit    += e.stats.critChance  || 0;
-      bonusAoe      += e.stats.aoeChance    || 0;
-      bonusColdDuration += e.stats.coldDuration     || 0;
-      bonusStatusEffect += e.stats.statusEffect     || 0;
+      bonusAoe          += e.stats.aoeChance   || 0;
+      bonusStatusEffect += (e.stats.statusEffect || 0) + (e.stats.coldDuration || 0);
     }
   }
   hero.dmgMin = Math.round(cls.dmgMin + (hero.level - 1) * 1.5 + bonusDmg);
@@ -2776,8 +2784,7 @@ function recalcStats() {
   hero._magicDmg        = bonusMagicDmg;
   hero._critChance = bonusLightCrit;
   hero._aoeChance   = bonusAoe;
-  hero._coldDuration    = bonusColdDuration;
-  hero._statusEffect    = bonusStatusEffect;  // % bonus to status proc chance, duration, and burn dmg
+  hero._statusEffect    = bonusStatusEffect;  // % bonus to all status effects including freeze duration
 
   // Rogue spec passive bonuses — allSkills bonus from gear adds to invested pts
   if (classKey === 'rogue') {
@@ -2944,15 +2951,14 @@ function itemScore(stats, skillBonus, allSkills) {
          (stats.lightDmg        ||0)*SCORE_WEIGHTS.lightDmg +
          (stats.coldDmg         ||0)*SCORE_WEIGHTS.coldDmg +
          (stats.magicDmg        ||0)*SCORE_WEIGHTS.magicDmg +
-         (stats.critChance ||0)*SCORE_WEIGHTS.critChance +
-         (stats.aoeChance   ||0)*SCORE_WEIGHTS.aoeChance +
-         (stats.coldDuration    ||0)*SCORE_WEIGHTS.coldDuration +
+         (stats.critChance      ||0)*SCORE_WEIGHTS.critChance +
+         (stats.aoeChance       ||0)*SCORE_WEIGHTS.aoeChance +
          (stats.blockChance     ||0)*SCORE_WEIGHTS.blockChance +
          (stats.spellShield     ||0)*SCORE_WEIGHTS.spellShield +
          (stats.xpGain          ||0)*SCORE_WEIGHTS.xpGain +
          (stats.goldFind        ||0)*SCORE_WEIGHTS.goldFind +
          (stats.castCooldown    ||0)*SCORE_WEIGHTS.castCooldown +
-         (stats.statusEffect    ||0)*(SCORE_WEIGHTS.statusEffect||0) +
+         (stats.statusEffect    ||0)*SCORE_WEIGHTS.statusEffect +
          (skillBonus ? (SKILL_BONUS_SCORES[skillBonus]||0) : 0) +
          (allSkills  ? (ALL_SKILLS_SCORES[allSkills]  ||0) : 0);
 }
@@ -3750,7 +3756,7 @@ function heroAttack(now) {
     if (enemy.frozenUntil && now < enemy.frozenUntil) return false;
     // 5s cooldown between stuns — cannot chain stun/freeze
     if (enemy.stunCooldownUntil && now < enemy.stunCooldownUntil) return false;
-    var durationMult = (1 + (hero._coldDuration || 0) / 100) * (1 + ((hero._statusEffect || 0) + (hero._relicStatusBoost || 0)) / 100);
+    var durationMult = 1 + ((hero._statusEffect || 0) + (hero._relicStatusBoost || 0)) / 100;
     var freezeDur = Math.round(FREEZE_MS * durationMult);
     // Boss diminishing returns: each freeze is 33% shorter than the last, resets when it would be under 0.5s
     if (enemy.isBoss) {
@@ -4628,8 +4634,8 @@ function enemyAttack(now) {
   var dmg = enemy.isBoss ? ri(12, 22) : ri(3, 9);
   dmg = Math.round(dmg * diff.enemyDmgMult);
 
-  // Boss enrage: damage increases over time (+10% per 30s, uncapped)
-  if (enemy.isBoss && enemy.spawnTime) {
+  // Boss enrage: damage increases over time (+10% per 30s, Nightmare/Hell only)
+  if (enemy.isBoss && enemy.spawnTime && difficulty !== 'normal') {
     var _enrageSecs = Math.floor((Date.now() - enemy.spawnTime) / 30000);
     if (_enrageSecs > 0) {
       var _enrageMult = 1 + _enrageSecs * 0.10;
@@ -5273,9 +5279,10 @@ function toggleShopPause() {
   var btns = document.querySelectorAll('.shop-pause-btn');
   for (var i = 0; i < btns.length; i++) {
     btns[i].textContent  = shopPaused ? '▶ Resume' : '⏸ Pause';
-    btns[i].style.borderColor = shopPaused ? '#c8a84b66' : '#2a2a3a';
-    btns[i].style.color       = shopPaused ? '#c8a84b'   : '#8a7a6a';
-    btns[i].style.background  = shopPaused ? '#1a1510'   : '#0a0a14';
+    btns[i].style.borderColor  = shopPaused ? '#c8a84b'   : '#5a4a8a';
+    btns[i].style.color        = shopPaused ? '#c8a84b'   : '#c8a0ff';
+    btns[i].style.background   = shopPaused ? '#1a1510'   : '#0e0a1a';
+    btns[i].style.animation    = shopPaused ? 'none'      : 'pausePulse 2s ease-in-out infinite';
   }
 }
 
@@ -5418,7 +5425,7 @@ function renderShop() {
       })() : '')
     + '<div style="display:flex;align-items:center;justify-content:space-between;margin-top:10px;">'
     + '<div style="font-size:11px;color:#5a5a6a;">Auto-advancing in <span id="shop-countdown">'+secsLeft+'</span>s…</div>'
-    + '<button class="shop-pause-btn" onclick="toggleShopPause()" style="padding:2px 8px;border:1px solid #2a2a3a;background:#0a0a14;color:#8a7a6a;font-family:Georgia,serif;font-size:10px;cursor:pointer;border-radius:2px;">&#x23F8; Pause</button>'
+    + '<button class="shop-pause-btn" onclick="toggleShopPause()" style="padding:3px 12px;border:1px solid #5a4a8a;background:#0e0a1a;color:#c8a0ff;font-family:Georgia,serif;font-size:11px;cursor:pointer;border-radius:2px;animation:pausePulse 2s ease-in-out infinite;">&#x23F8; Pause</button>'
     + '</div>';
 
   box.innerHTML = html;
@@ -5683,7 +5690,7 @@ function renderMerchant() {
   html += '<button class="overlay-btn sec" onclick="closeMerchant()" style="margin-top:8px;">Send him away</button>';
   html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-top:8px;">'
     + '<div style="font-size:11px;color:#5a5a6a;">Leaves in <span id="merchant-countdown">'+secsLeft+'</span>s...</div>'
-    + '<button class="shop-pause-btn" onclick="toggleShopPause()" style="padding:2px 8px;border:1px solid #2a2a3a;background:#0a0a14;color:#8a7a6a;font-family:Georgia,serif;font-size:10px;cursor:pointer;border-radius:2px;">&#x23F8; Pause</button>'
+    + '<button class="shop-pause-btn" onclick="toggleShopPause()" style="padding:3px 12px;border:1px solid #5a4a8a;background:#0e0a1a;color:#c8a0ff;font-family:Georgia,serif;font-size:11px;cursor:pointer;border-radius:2px;animation:pausePulse 2s ease-in-out infinite;">&#x23F8; Pause</button>'
     + '</div>';
   box.innerHTML = html;
   document.getElementById('overlay').classList.add('active');
@@ -6473,7 +6480,7 @@ function statLine(stats) {
   if (stats.coldDmg)         parts.push('+'+stats.coldDmg+'% Cold Dmg');
   if (stats.critChance) parts.push('+'+stats.critChance+'% Crit Chance');
   if (stats.aoeChance)       parts.push('+'+stats.aoeChance+'% AoE Chance');
-  if (stats.coldDuration)    parts.push('+'+stats.coldDuration+'% Freeze Duration');
+  if (stats.coldDuration)    parts.push('+'+stats.coldDuration+'% Status Effect');
   if (stats.statusEffect)    parts.push('+'+stats.statusEffect+'% Status Effect');
   if (stats.blockChance)     parts.push('+'+stats.blockChance+'% Block');
   if (stats.spellShield)     parts.push('+'+stats.spellShield+' Spell Shield');
@@ -6507,6 +6514,41 @@ function renderUI(now) {
     var rbe = document.getElementById('rage-bar'); if (rbe) rbe.style.width = ragePct + '%';
     var rse = document.getElementById('stat-rage'); if (rse) rse.textContent = (hero.rage || 0);
     if (rt) rt.textContent = (hero.rage || 0) + ' / ' + RAGE_MAX;
+  }
+
+  // Quiver / Trap Bag bar (ranger only) — shown below combat scene
+  var quiverBar = document.getElementById('quiver-bar');
+  var quiverEl  = document.getElementById('quiver-display');
+  if (quiverBar) {
+    if (classKey === 'ranger') {
+      quiverBar.style.display = 'flex';
+      var _isTrapper  = hero.rangerDiscipline === 'trapper';
+      var _qLabel     = _isTrapper ? '🪤 Trap Bag' : '🏹 Quiver';
+      var _qIcon      = _isTrapper ? '🪤' : '🏹';
+      var _qEmpty     = '<span style="font-size:14px;color:#2a2a3a;">▢</span>';
+      var _qFilled    = hero.quiver || 0;
+      var _qPips      = '';
+      for (var _qi = 0; _qi < 5; _qi++) {
+        if (_qi < _qFilled) {
+          _qPips += '<span style="font-size:14px;">'+_qIcon+'</span>';
+        } else {
+          _qPips += _qEmpty;
+        }
+      }
+      var _modeAll  = hero.recoverAutoMode === 'all';
+      var _modeBoss = hero.recoverAutoMode === 'boss';
+      quiverBar.innerHTML = '<span style="font-size:11px;color:#7a7a5a;white-space:nowrap;">'+_qLabel+'</span>'
+        + '<span style="letter-spacing:2px;display:flex;align-items:center;gap:2px;">'+_qPips+'</span>'
+        + '<span style="font-size:10px;color:#4a5a4a;white-space:nowrap;">'+_qFilled+'/5 · 2× crit</span>'
+        + '<div style="display:flex;gap:3px;">'
+        + '<button onclick="setRecoverMode(\'all\')" style="padding:1px 7px;border:1px solid '+(_modeAll?'#7aaa5a':'#2a3a2a')+';background:'+(_modeAll?'#0a1a0a':'#080d08')+';color:'+(_modeAll?'#7aaa5a':'#3a5a3a')+';font-family:Georgia,serif;font-size:10px;cursor:pointer;border-radius:2px;">Auto</button>'
+        + '<button onclick="setRecoverMode(\'boss\')" style="padding:1px 7px;border:1px solid '+(_modeBoss?'#c8843a':'#2a3a2a')+';background:'+(_modeBoss?'#1a0800':'#080d08')+';color:'+(_modeBoss?'#c8843a':'#3a5a3a')+';font-family:Georgia,serif;font-size:10px;cursor:pointer;border-radius:2px;">Boss only</button>'
+        + '</div>';
+      if (quiverEl) quiverEl.style.display = 'none';
+    } else {
+      quiverBar.style.display = 'none';
+      if (quiverEl) quiverEl.style.display = 'none';
+    }
   }
 
   // Stats
@@ -6545,7 +6587,15 @@ function renderUI(now) {
   if (xpEl)     xpEl.textContent     = (hero._xpGain       || 0) + '%';
   if (gfEl)     gfEl.textContent     = (hero._goldFind      || 0) + '%';
   var seEl = document.getElementById('stat-statuseffect');
-  if (seEl)     seEl.textContent     = (hero._statusEffect  || 0) + '%';
+  if (seEl) seEl.textContent = (hero._statusEffect || 0) + '%';
+  // Crit chance — base crit + gear crit
+  var critEl = document.getElementById('stat-crit');
+  if (critEl) {
+    var _baseCrit = classKey === 'ranger' ? 1.5 : 0;
+    var _gearCrit = hero._critChance || 0;
+    var _totalCrit = (_baseCrit + _gearCrit).toFixed(1);
+    critEl.textContent = _totalCrit + '%' + (_baseCrit > 0 ? ' (base '+_baseCrit+'%)' : '');
+  }
   // Cast cooldown — cap 600ms
   if (cdEl) {
     var rawCd = hero._castCooldown || 0;
@@ -6802,6 +6852,36 @@ function updateTabBlinks() {
   var craftingBlink = hasGems       && !_tabSeenCrafting && rightPanelTab !== 'crafting';
   skillsBtn.classList.toggle('tab-blink',   skillsBlink);
   craftingBtn.classList.toggle('tab-blink', craftingBlink);
+}
+
+function toggleReforgeHelp() {
+  var el = document.getElementById('reforge-help');
+  if (!el) return;
+  if (el.style.display !== 'none') { el.style.display = 'none'; return; }
+  var SLOT_AFFIXES = {
+    'Weapon':  ['Dmg', 'Spd', 'HP', 'Block Chance', 'Cast Cooldown', 'Fire Dmg', 'Lightning Dmg', 'Cold Dmg', 'Magic Dmg', 'Crit Chance', 'AoE Chance', 'Status Effect'],
+    'Armor':   ['Dmg', 'HP', 'HP Regen', 'Dmg Reduce', 'Block Chance', 'Spell Shield'],
+    'Ring':    ['Dmg', 'Spd', 'HP', 'Magic Find', 'HP Regen', 'Cast Cooldown', 'XP Gain', 'Gold Find', 'Status Effect'],
+    'Amulet':  ['Dmg', 'Spd', 'HP', 'Magic Find', 'HP Regen', 'Dmg Reduce', 'XP Gain', 'Gold Find', 'Status Effect'],
+    'Trinket': ['Fire Dmg', 'Lightning Dmg', 'Cold Dmg', 'Magic Dmg', 'Crit Chance', 'AoE Chance', 'Block Chance', 'Spell Shield', 'XP Gain', 'Gold Find'],
+  };
+  var GEM_AFFINITY = {
+    'Fortune Shard':  'MF · Gold Find · general stats',
+    'Ruin Shard':     'Dmg · XP Gain · general stats',
+    'Tempest Shard':  'Speed · Cast Cooldown · Dmg',
+    'Ember Shard':    'Fire/Lightning/Cold/Magic Dmg · Crit · AoE · Status',
+  };
+  var html = '<div style="font-size:10px;color:#c8a84b;margin-bottom:5px;letter-spacing:1px;">SLOTS & AFFIXES</div>';
+  for (var slot in SLOT_AFFIXES) {
+    html += '<div style="margin-bottom:4px;"><span style="color:#9a8a6a;font-weight:bold;">'+slot+':</span> <span style="color:#6a7a8a;">'+SLOT_AFFIXES[slot].join(', ')+'</span></div>';
+  }
+  html += '<div style="border-top:1px solid #1a2a3a;margin-top:6px;padding-top:6px;font-size:10px;color:#c8a84b;letter-spacing:1px;">GEM AFFINITIES</div>';
+  for (var gem in GEM_AFFINITY) {
+    html += '<div style="margin-bottom:2px;"><span style="color:#9a8a6a;">'+gem+':</span> <span style="color:#6a7a8a;">'+GEM_AFFINITY[gem]+'</span></div>';
+  }
+  html += '<div style="margin-top:6px;color:#4a5a6a;font-style:italic;">Only Magic and Rare items can be reforged. Unique items cannot.</div>';
+  el.innerHTML = html;
+  el.style.display = 'block';
 }
 
 function renderGemPanel() {
@@ -7472,7 +7552,11 @@ function renderSkillPicker() {
       })
     : allTabSkills;
 
-  var tab2Label = classKey === 'rogue' ? 'Schemes' : classKey === 'ranger' ? 'Discipline' : 'Tier 2';
+  var _schemesLocked  = classKey === 'rogue' && hero.level < 5;
+  var _schemeNeedsPick = classKey === 'rogue' && !_schemesLocked && !hero.activeScheme;
+  var tab2Label = classKey === 'rogue'
+    ? (_schemesLocked ? 'Schemes 🔒' : _schemeNeedsPick ? 'Pick One' : 'Schemes')
+    : classKey === 'ranger' ? 'Discipline' : 'Tier 2';
   var tab3Label = classKey === 'warrior' ? 'Technique' : (classKey === 'rogue') ? 'Specializations' : classKey === 'ranger' ? 'Forestcraft' : 'Passives';
   var tab3Color = classKey === 'warrior' ? '#c8843a' : (classKey === 'ranger') ? '#5a9a5a' : '#7ac8e8';
   var tab3Bg    = classKey === 'warrior' ? '#150a00' : '#0a1520';
@@ -7480,7 +7564,8 @@ function renderSkillPicker() {
   var rogueNeedsSpec    = classKey === 'rogue'   && !hero.rogueSpec;
   var rangerNeedsDisc   = classKey === 'ranger'  && !hero.rangerDiscipline;
   var needsWarning      = rogueNeedsSpec || rangerNeedsDisc;
-  var tab2Style = 'flex:1;padding:3px;border:1px solid '+(tab===2?'#c8a84b':'#2a2a3a')+';background:'+(tab===2?'#1a1510':'#0a0a14')+';color:'+(tab===2?'#c8a84b':'#5a5a6a')+';font-family:Georgia,serif;font-size:10px;cursor:pointer;border-radius:2px;'+(rangerNeedsDisc?'animation:skillPtsBlink 0.4s ease-in-out infinite;':'');
+  var _tab2ShouldBlink  = rangerNeedsDisc || _schemeNeedsPick;
+  var tab2Style = 'flex:1;padding:3px;border:1px solid '+(tab===2?'#c8a84b':'#2a2a3a')+';background:'+(tab===2?'#1a1510':'#0a0a14')+';color:'+(tab===2?(_schemeNeedsPick?'#c8843a':'#c8a84b'):(_schemeNeedsPick?'#c8843a':'#5a5a6a'))+';font-family:Georgia,serif;font-size:10px;cursor:pointer;border-radius:2px;'+(_tab2ShouldBlink?'animation:skillPtsBlink 0.4s ease-in-out infinite;':'');
   var tab3Style = 'flex:1;padding:3px;border:1px solid '+(tab===3?tab3Color:tab3Border)+';background:'+(tab===3?tab3Bg:'#0a0a14')+';color:'+(tab===3?tab3Color:'#5a5a6a')+';font-family:Georgia,serif;font-size:10px;cursor:pointer;border-radius:2px;'+(rogueNeedsSpec?'animation:skillPtsBlink 0.4s ease-in-out infinite;':'');
   var tabHtml = '<div style="display:flex;gap:4px;margin-bottom:6px;">'
     + '<button onclick="setSkillTab(1)" style="flex:1;padding:3px;border:1px solid '+(tab===1?'#c8a84b':'#2a2a3a')+';background:'+(tab===1?'#1a1510':'#0a0a14')+';color:'+(tab===1?'#c8a84b':'#5a5a6a')+';font-family:Georgia,serif;font-size:10px;cursor:pointer;border-radius:2px;">Tier 1</button>'
@@ -7491,8 +7576,14 @@ function renderSkillPicker() {
   // Rogue Schemes tab (T2) — Use button only, no leveling (that's in Skill Tree)
   if (classKey === 'rogue' && tab === 2) {
     var schemes = cls.skills.filter(function(s) { return s.tier === 2; });
+    var schemesLocked = hero.level < 5;
+    var needsPick = !schemesLocked && !hero.activeScheme;
     var sh = tabHtml;
-    sh += '<div style="font-size:9px;color:#5a5a6a;margin-bottom:6px;font-style:italic;">Pick one active scheme. Level them in the Skill Tree.</div>';
+    if (schemesLocked) {
+      sh += '<div style="font-size:10px;color:#5a5a6a;margin-bottom:8px;text-align:center;padding:12px;border:1px solid #2a2a3a;border-radius:3px;background:#0a0a14;">🔒 Schemes unlock at <span style="color:#c8a84b;">Level 5</span>.<br><span style="font-size:9px;">Current level: '+hero.level+'</span></div>';
+    } else {
+      sh += '<div style="font-size:9px;color:'+(needsPick?'#c8843a':'#5a5a6a')+';margin-bottom:6px;font-style:italic;">'+(needsPick?'⚠ Choose an active scheme — it will persist until changed.':'Pick one active scheme. Level them in the Skill Tree.')+'</div>';
+    }
     for (var si = 0; si < schemes.length; si++) {
       var sc = schemes[si];
       var sPts = hero.skillTree[sc.id] || 0;
@@ -7500,7 +7591,8 @@ function renderSkillPicker() {
       var pdef = PASSIVE_DEFS[sc.id];
       var _ab = getAmuletBonusForSkill(sc);
       var rows = pdef ? pdef.rows(sPts, _ab) : [];
-      sh += '<div style="border:1px solid '+(isActive?'#c8843a':'#2a2a3a')+';border-radius:3px;padding:8px 10px;margin-bottom:6px;background:'+(isActive?'#100800':'#0a0a14')+'">';
+      var cardOpacity = schemesLocked ? 'opacity:0.4;pointer-events:none;' : '';
+      sh += '<div style="'+cardOpacity+'border:1px solid '+(isActive?'#c8843a':'#2a2a3a')+';border-radius:3px;padding:8px 10px;margin-bottom:6px;background:'+(isActive?'#100800':'#0a0a14')+'">';
       sh += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px;">';
       sh += '<span style="font-size:12px;color:'+(isActive?'#c8843a':'#c8a84b')+';">'+(isActive?'● ':'')+sc.name+' ('+sPts+'/'+SKILL_MAX+')</span>';
       sh += '<button onclick="setActiveScheme(' + "'" + sc.id + "'" + ')" style="padding:2px 8px;border:1px solid '+(isActive?'#c8843a':'#5a4a2a')+';background:'+(isActive?'#2a1500':'#1a1208')+';color:'+(isActive?'#c8843a':'#c8a84b')+';font-family:Georgia,serif;font-size:10px;cursor:pointer;border-radius:2px;">'+(isActive?'● Active':'Use')+'</button>';
@@ -7577,9 +7669,11 @@ function renderSkillPicker() {
     sh += '<div style="font-size:9px;color:#5a7a5a;margin-bottom:8px;font-style:italic;">All three are always active. Invest points to improve them.</div>';
 
     // Quiver display
+    var _fcIsTrapper = hero.rangerDiscipline === 'trapper';
+    var _fcQLabel = _fcIsTrapper ? '🪤 Trap Bag' : '🏹 Quiver';
     sh += '<div style="border:1px solid #3a3a1a;border-radius:3px;padding:6px 10px;margin-bottom:8px;background:#0a0a06;">';
     sh += '<div style="display:flex;justify-content:space-between;align-items:center;">';
-    sh += '<span style="font-size:11px;color:#c8a84b;">🏹 Quiver: '+hero.quiver+' / 5</span>';
+    sh += '<span style="font-size:11px;color:#c8a84b;">'+_fcQLabel+': '+hero.quiver+' / 5</span>';
     sh += '<div style="display:flex;gap:4px;">';
     sh += '<button onclick="setRecoverMode(\'all\')" style="padding:1px 6px;border:1px solid '+(hero.recoverAutoMode==='all'?'#c8a84b':'#2a2a3a')+';background:'+(hero.recoverAutoMode==='all'?'#1a1510':'#0a0a14')+';color:'+(hero.recoverAutoMode==='all'?'#c8a84b':'#5a5a6a')+';font-family:Georgia,serif;font-size:9px;cursor:pointer;border-radius:2px;">Auto</button>';
     sh += '<button onclick="setRecoverMode(\'boss\')" style="padding:1px 6px;border:1px solid '+(hero.recoverAutoMode==='boss'?'#c8a84b':'#2a2a3a')+';background:'+(hero.recoverAutoMode==='boss'?'#1a1510':'#0a0a14')+';color:'+(hero.recoverAutoMode==='boss'?'#c8a84b':'#5a5a6a')+';font-family:Georgia,serif;font-size:9px;cursor:pointer;border-radius:2px;">Boss only</button>';
@@ -7592,11 +7686,14 @@ function renderSkillPicker() {
       var fPts = hero.skillTree[fc.id] || 0;
       var fDef = PASSIVE_DEFS[fc.id];
       var fRows = fDef ? fDef.rows(fPts) : [];
+      var fCanAdd = hero.skillPts > 0 && fPts < SKILL_MAX;
       sh += '<div style="border:1px solid #2a3a2a;border-radius:3px;padding:8px 10px;margin-bottom:6px;background:#080d08;">';
       sh += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">';
       sh += '<span style="font-size:12px;color:'+fc.color+';">'+fc.icon+' '+fc.name+' <span style="font-size:9px;color:#5a7a5a;">('+fPts+'/'+SKILL_MAX+' pts)</span></span>';
+      sh += '<div style="display:flex;align-items:center;gap:6px;">';
       sh += '<span style="font-size:10px;color:#5a9a5a;font-style:italic;">always active</span>';
-      sh += '</div>';
+      sh += '<button onclick="addSkillPt(\''+fc.id+'\')" '+(fCanAdd?'':'disabled style="opacity:0.3;cursor:not-allowed"')+' style="padding:1px 8px;border:1px solid '+(fCanAdd?'#2a4a2a':'#1a2a1a')+';background:#0a140a;color:'+(fCanAdd?'#7aaa5a':'#3a5a3a')+';font-family:Georgia,serif;font-size:10px;cursor:'+(fCanAdd?'pointer':'not-allowed')+';border-radius:2px;">+ Add</button>';
+      sh += '</div></div>';
       for (var ri2 = 0; ri2 < fRows.length; ri2++) {
         var row = fRows[ri2];
         sh += '<div style="display:flex;justify-content:space-between;font-size:10px;padding:1px 0;">';
@@ -7750,8 +7847,16 @@ function selectRangerDiscipline(disc) {
   var prev = hero.rangerDiscipline;
   hero.rangerDiscipline = disc;
   if (prev !== disc) {
-    hero.activeSkillIdx = 0;
+    // Find the first T1 skill belonging to this discipline
+    var firstIdx = 0;
+    for (var _di = 0; _di < cls.skills.length; _di++) {
+      var _ds = cls.skills[_di];
+      if ((_ds.tier || 1) === 1 && !_ds.passive && _ds.spec === disc) { firstIdx = _di; break; }
+    }
+    hero.activeSkillIdx = firstIdx;
     hero.activeSkillTab = 1;
+    hero.farmSkillIdx   = null;
+    hero.bossSkillIdx   = null;
     var discNames = { trapper:'Trapper', arcanearcher:'Arcane Archer', hunter:'Hunter' };
     addLog('🏹 Discipline: '+(discNames[disc] || disc), 'level');
   }
@@ -7773,6 +7878,7 @@ function isRogueSkillAvailable(s) {
 function setRecoverMode(mode) {
   hero.recoverAutoMode = mode;
   renderSkillPicker();
+  renderUI(Date.now());
 }
 
 function renderSkillTree() {
@@ -8228,16 +8334,15 @@ function itemTooltipHtml(item, label) {
     { key:'lightDmg',        label:'Lightning Dmg'   },
     { key:'coldDmg',         label:'Cold Dmg'        },
     { key:'magicDmg',        label:'Magic Dmg'       },
-    { key:'critChance', label:'Crit Chance'     },
-    { key:'aoeChance',   label:'AoE Chance'      },
-    { key:'coldDuration',    label:'Freeze Duration' },
+    { key:'critChance',      label:'Crit Chance'     },
+    { key:'aoeChance',       label:'AoE Chance'      },
     { key:'blockChance',     label:'Block'           },
     { key:'spellShield',     label:'Spell Shield'    },
     { key:'xpGain',          label:'XP Gain'         },
     { key:'goldFind',        label:'Gold Find'       },
     { key:'castCooldown',    label:'Cooldown Recovery (-ms)' },
   ];
-  var pctStats = { mf:1, fireDmg:1, lightDmg:1, coldDmg:1, magicDmg:1, critChance:1, aoeChance:1, coldDuration:1, blockChance:1, xpGain:1, goldFind:1, statusEffect:1 };
+  var pctStats = { mf:1, fireDmg:1, lightDmg:1, coldDmg:1, magicDmg:1, critChance:1, aoeChance:1, blockChance:1, xpGain:1, goldFind:1, statusEffect:1 };
   for (var i = 0; i < statDefs.length; i++) {
     var sd = statDefs[i];
     var v = stats[sd.key];
@@ -10930,7 +11035,7 @@ function _gameTick() {
     }
     if (now >= heroNextAtk)           heroAttack(now);
     if (enemy && now >= enemyNextAtk) enemyAttack(now);
-    // Hell boss HP regen: 2% every 8 seconds
+    // Hell boss HP regen: 2% every 8 seconds (Hell only)
     if (difficulty === 'hell' && enemy && enemy.isBoss && enemy.hp > 0 && !dead) {
       if (now >= _bossRegenNext) {
         _bossRegenNext = now + Math.round(8000 / gameSpeed);
