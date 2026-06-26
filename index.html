@@ -2375,7 +2375,7 @@ var RELICS = {
     name: "The Penitent's Brand",
     desc: 'A brand burned into a defeated champion. Grants +35% status effectiveness for 15 seconds.',
     maxCharges: 10,
-    chargeCost: 4,
+    chargeCost: 6,
     duration: 15,
     effect: 'statusBoost',
     effectValue: 35,
@@ -2413,7 +2413,7 @@ var RELICS = {
     name: "Tidecaller's Shard",
     desc: 'Crackling with frozen ocean water. On activation, instantly maxes chill stacks on the current enemy and increases freeze duration by 50% for 10 seconds.',
     maxCharges: 10,
-    chargeCost: 6,
+    chargeCost: 8,
     duration: 10,
     effect: 'tidecaller',
     effectValue: 50,        // % bonus freeze duration
@@ -2486,7 +2486,7 @@ var RELICS = {
   wraithbone_coil: {
     id: 'wraithbone_coil',
     name: 'Wraithbone Coil',
-    desc: 'Carved from the spine of something between life and death. For 15 seconds, each kill restores 3% of max HP and attacks cannot be blocked by the enemy.',
+    desc: 'Carved from the spine of something between life and death. For 15 seconds, each kill restores 3% of max HP and prevents enemy health regen.',
     maxCharges: 10,
     chargeCost: 5,
     duration: 15,
@@ -2745,6 +2745,8 @@ var equippedRelic = null;         // { name, effect, maxCharges, chargeCost, dur
 var relicTriggerMode = 'full';    // 'full' | 'boss' | 'expiry'
 var relicActiveUntil = 0;         // timestamp when current relic effect expires
 var relicPending = null;          // relic waiting to replace current if player reviews
+// ── Relic effect runtime vars ──
+// (hero._relicStatusBoost, hero._relicHpRegen, etc. live on hero object — initialized via clearRelicEffect on load)
 var statsData = {
   bossKills:      {},   // key: "diff-actIdx" → { count, fastestMs, fastestSpeed, firstGearScore, firstLevel, lastGearScore, lastLevel }
   bossDeaths:     {},   // mirror of bossDeathCounts for stats display
@@ -2905,6 +2907,19 @@ function recalcStats() {
   hero._critChance      = bonusLightCrit;
   hero._aoeChance       = bonusAoe;
   hero._statusEffect    = bonusStatusEffect;
+
+  // ── Active relic stat bonuses (recalculated every recalcStats call) ──
+  if (equippedRelic && relicSystemUnlocked && relicActiveUntil > Date.now()) {
+    if (equippedRelic.effect === 'stormHeart') {
+      hero._critChance  += (equippedRelic.effectValue  || 0);
+      hero._lightDmg    += (equippedRelic.effectValue2 || 0);
+    }
+    if (equippedRelic.effect === 'tidecaller') {
+      hero._relicFreezeDurBonus = equippedRelic.effectValue || 0;
+    }
+  } else if (equippedRelic && equippedRelic.effect === 'tidecaller') {
+    hero._relicFreezeDurBonus = 0;
+  }
 
   // ── Companion passive bonuses (active companion only, all stances) ──
   if (classKey === 'ranger' && hero.activePet) {
@@ -3685,6 +3700,16 @@ function spawnNextEnemy(simNow) {
 
   var spawnTime = simNow || Date.now();
 
+  // Executioner's Toll: apply stored overkill damage to this spawn
+  if (hero._execTollPending && hero._execTollPending > 0 && enemy && enemy.hp > 0) {
+    var _tollDmg = hero._execTollPending;
+    hero._execTollPending = 0;
+    enemy.hp = Math.max(0, enemy.hp - _tollDmg);
+    addLog('💀 Executioner\'s Toll: '+_tollDmg+' overkill damage carries over!', 'death');
+    triggerStatusFlash('#ff3030');
+    if (enemy.hp <= 0) { gainKill(enemy.isBoss, false, spawnTime); return; }
+  }
+
   // Rogue Assassin: reset opener state and apply positioning delay
   if (classKey === 'rogue' && hero.rogueSpec === 'assassin' && !enemy.isBoss) {
     hero._rogueHasOpened = false;
@@ -3789,17 +3814,21 @@ function tryApplyBurn(dmg) {
   if (!enemy || enemy.hp <= 0) return;
   var seMult = 1 + ((hero._statusEffect || 0) + (hero._relicStatusBoost || 0)) / 100;
   var chance = (0.10 + (classKey === 'sorceress' ? 0.05 : 0)) * seMult;
-  if (Math.random() > chance) return;
-  var tickDmg = Math.max(1, Math.round(dmg * 0.10 / 10 * seMult));  // 10% of hit over 10 ticks, boosted by SE
-  var ticks = Math.round(10 * seMult);  // duration scales with SE
+  // Ashpyre Remnant: guaranteed burn procs
+  var ashpyreGuaranteed = (hero._ashpyreProcsLeft || 0) > 0 && relicActiveUntil > Date.now();
+  if (!ashpyreGuaranteed && Math.random() > chance) return;
+  if (ashpyreGuaranteed) hero._ashpyreProcsLeft--;
+  var burnMult = (ashpyreGuaranteed && hero._ashpyreBurnMult) ? hero._ashpyreBurnMult : 1;
+  var tickDmg = Math.max(1, Math.round(dmg * 0.10 / 10 * seMult * burnMult));  // 10% of hit over 10 ticks
+  var ticks = Math.round(10 * seMult);
   // Only overwrite if this hit burns harder than the current burn
   if (enemy._burn && tickDmg <= enemy._burn.tickDmg) {
-    enemy._burn.ticksLeft = ticks;  // refresh duration even on weaker hit
+    enemy._burn.ticksLeft = ticks;
     enemy._burn.nextTick = Date.now() + 1000;
     return;
   }
   enemy._burn = { tickDmg: tickDmg, ticksLeft: ticks, nextTick: Date.now() + 1000 };
-  addLog('🔥 Burn! ('+tickDmg+'/s for '+ticks+'s'+(seMult>1?' [SE+'+Math.round((seMult-1)*100)+'%]':'')+')' , 'burn');
+  addLog('🔥 Burn! ('+tickDmg+'/s for '+ticks+'s'+(burnMult>1?' [×'+burnMult+' Ashpyre]':'')+(seMult>1?' [SE+'+Math.round((seMult-1)*100)+'%]':'')+')' , 'burn');
   triggerStatusFlash('#ff6a1a');
 }
 
@@ -3846,6 +3875,10 @@ function tryApplyBleed(dmg) {
 function trackDps(dmg, now) {
   if (!dmg || dmg <= 0) return;
   _dpsWindow.push({ ts: now, dmg: dmg });
+  // Void Accumulator: track all damage dealt for discharge
+  if (equippedRelic && equippedRelic.effect === 'voidAccum' && relicSystemUnlocked) {
+    hero._voidAccumDmg = (hero._voidAccumDmg || 0) + dmg;
+  }
   // Prune entries older than 5 real seconds
   var cutoff = now - 5000;
   while (_dpsWindow.length > 0 && _dpsWindow[0].ts < cutoff) _dpsWindow.shift();
@@ -3916,7 +3949,7 @@ function heroAttack(now) {
     if (enemy.frozenUntil && now < enemy.frozenUntil) return false;
     // 5s cooldown between stuns — cannot chain stun/freeze
     if (enemy.stunCooldownUntil && now < enemy.stunCooldownUntil) return false;
-    var durationMult = 1 + ((hero._statusEffect || 0) + (hero._relicStatusBoost || 0)) / 100;
+    var durationMult = 1 + ((hero._statusEffect || 0) + (hero._relicStatusBoost || 0) + (hero._relicFreezeDurBonus || 0)) / 100;
     var freezeDur = Math.round(FREEZE_MS * durationMult);
     // Boss diminishing returns: each freeze is 33% shorter than the last, resets when it would be under 0.5s
     if (enemy.isBoss) {
@@ -4869,6 +4902,11 @@ function enemyAttack(now) {
   }
   dmg = Math.max(1, dmg - (hero._reducedDmg || 0) - (hero._lastStandReduce || 0) - (hero._nullstrikeReduce || 0) - _companionReduce);
 
+  // Red Covenant relic: % damage reduction while active
+  if (hero._relicDmgReduce && relicActiveUntil > now) {
+    dmg = Math.max(1, Math.round(dmg * (1 - hero._relicDmgReduce / 100)));
+  }
+
   // Block: 50% damage reduction on proc
   if (hero._blockChance && Math.random() < hero._blockChance / 100) {
     dmg = Math.ceil(dmg * 0.5);
@@ -4978,14 +5016,83 @@ function fireRelic(now) {
 function applyRelicEffect(r, now) {
   if (r.effect === 'statusBoost') {
     hero._relicStatusBoost = r.effectValue;
-    // This gets cleared in _gameTick when relicActiveUntil expires
+
+  } else if (r.effect === 'hpBurst') {
+    // Restore % max HP instantly, then boost HP regen for duration
+    var hpRestore = Math.round(hero.maxHp * r.effectValue / 100);
+    hero.hp = Math.min(hero.maxHp, hero.hp + hpRestore);
+    hero._relicHpRegen = r.effectValue2;  // bonus regen/s added in _gameTick
+    addLog('💚 +'+hpRestore+' HP restored! HP Regen +'+ r.effectValue2+'/s for '+r.duration+'s', 'level');
+
+  } else if (r.effect === 'ashpyre') {
+    // Guarantee next N burn procs, double burn damage
+    hero._ashpyreProcsLeft = r.effectValue;
+    hero._ashpyreBurnMult  = r.effectValue2;
+    addLog('🔥 Ashpyre: next '+r.effectValue+' fire hits guaranteed burn, ×'+r.effectValue2+' burn dmg!', 'fire');
+
+  } else if (r.effect === 'tidecaller') {
+    // Max chill stacks instantly, bonus freeze duration
+    if (enemy) {
+      enemy._chillStacks = 10;
+      enemy._chillExpiry = now + 15000;
+      addLog('❄ Tidecaller: chill maxed (10/10)!', 'chill');
+      triggerStatusFlash('#80c8e8');
+    }
+    hero._relicFreezeDurBonus = r.effectValue;  // % bonus freeze duration
+
+  } else if (r.effect === 'voidAccum') {
+    // Fire stored accumulated damage as a bonus hit
+    var bonus = Math.round((hero._voidAccumDmg || 0) * r.effectValue / 100);
+    hero._voidAccumDmg = 0;
+    if (bonus > 0 && enemy && enemy.hp > 0) {
+      enemy.hp = Math.max(0, enemy.hp - bonus);
+      addLog('🌀 Void discharge: '+bonus+' bonus damage!', 'death');
+      triggerStatusFlash('#8840ff');
+      if (enemy.hp <= 0) gainKill(enemy.isBoss, false, now);
+    } else {
+      addLog('🌀 Void Accumulator discharged (no stored energy yet).', 'info');
+    }
+
+  } else if (r.effect === 'stormHeart') {
+    hero._relicCritBonus  = r.effectValue;   // flat % crit chance bonus
+    hero._relicLightBonus = r.effectValue2;  // % bonus lightning damage
+    addLog('⚡ Stormcaller\'s Heart: +'+r.effectValue+'% crit, ×2 lightning dmg for '+r.duration+'s!', 'shock');
+
+  } else if (r.effect === 'redCovenant') {
+    // Spend % current HP, gain damage reduction
+    var hpCost = Math.round(hero.hp * r.effectValue2 / 100);
+    hero.hp = Math.max(1, hero.hp - hpCost);
+    hero._relicDmgReduce = r.effectValue;   // flat % incoming damage blocked
+    addLog('🩸 Red Covenant: -'+hpCost+' HP spent. '+r.effectValue+'% damage reduction for '+r.duration+'s!', 'death');
+
+  } else if (r.effect === 'execToll') {
+    hero._execTollMult   = r.effectValue;   // overkill multiplier
+    hero._execTollActive = true;
+    addLog('💀 Executioner\'s Toll: killing blows deal ×'+r.effectValue+' overkill to next spawn for '+r.duration+'s!', 'level');
+
+  } else if (r.effect === 'gildedHunger') {
+    hero._relicGoldBonus = r.effectValue;   // % bonus gold & MF
+    hero._relicDropBonus = r.effectValue2;  // % extra item drop chance per kill
+    addLog('💰 Gilded Hunger: gold & MF doubled, +'+r.effectValue2+'% item drop chance for '+r.duration+'s!', 'level');
+
+  } else if (r.effect === 'wraithCoil') {
+    hero._relicWraithActive = true;  // per-kill HP restore handled in gainKill
+    addLog('👻 Wraithbone Coil: kills restore '+r.effectValue+'% HP, enemy regen suppressed for '+r.duration+'s!', 'level');
   }
-  // Future effects added here
 }
 
 function clearRelicEffect(r) {
   if (!r) return;
-  if (r.effect === 'statusBoost') hero._relicStatusBoost = 0;
+  if (r.effect === 'statusBoost')  { hero._relicStatusBoost = 0; }
+  if (r.effect === 'hpBurst')      { hero._relicHpRegen = 0; }
+  if (r.effect === 'ashpyre')      { hero._ashpyreProcsLeft = 0; hero._ashpyreBurnMult = 1; }
+  if (r.effect === 'tidecaller')   { hero._relicFreezeDurBonus = 0; }
+  if (r.effect === 'voidAccum')    { /* accumulator keeps running between uses */ }
+  if (r.effect === 'stormHeart')   { hero._relicCritBonus = 0; hero._relicLightBonus = 0; }
+  if (r.effect === 'redCovenant')  { hero._relicDmgReduce = 0; }
+  if (r.effect === 'execToll')     { hero._execTollActive = false; hero._execTollMult = 1; }
+  if (r.effect === 'gildedHunger') { hero._relicGoldBonus = 0; hero._relicDropBonus = 0; }
+  if (r.effect === 'wraithCoil')   { hero._relicWraithActive = false; }
 }
 
 function equipRelic(relic) {
@@ -5141,13 +5248,24 @@ function gainKill(isBoss, isAoe, simNow) {
     var penalty = Math.min(0.60, (hero.level - 25) * 0.06);
     xpGain = Math.round(xpGain * (1 - penalty));
   }
-  var goldGain = Math.round(ri(2, 8) * diff.goldMult * (1 + (hero._goldFind || 0) / 100) + (isBoss ? 30 : 0));
+  var goldGain = Math.round(ri(2, 8) * diff.goldMult * (1 + ((hero._goldFind || 0) + (hero._relicGoldBonus || 0)) / 100) + (isBoss ? 30 : 0));
   // Goblin pack bonus
   if (farmLoop && farmLoop.packType === 'goblin') goldGain = Math.round(goldGain * 1.30);
   var isRarePackMob = enemy && enemy.isRarePack;
 
   hero.xp   += xpGain;
   hero.gold += goldGain;
+
+  // Wraithbone Coil: restore % max HP per kill while active
+  if (hero._relicWraithActive && relicActiveUntil > Date.now() && !dead && equippedRelic) {
+    var _wraithHp = Math.round(hero.maxHp * equippedRelic.effectValue / 100);
+    hero.hp = Math.min(hero.maxHp, hero.hp + _wraithHp);
+  }
+
+  // Gilded Hunger: extra item drop chance per kill
+  if (hero._relicDropBonus && relicActiveUntil > Date.now() && Math.random() < hero._relicDropBonus / 100) {
+    dropLoot(false, false);
+  }
   // Toxicologist passive: restore % max HP per kill
   if (classKey === 'rogue' && hero.rogueSpec === 'toxicologist' && (hero._toxHpPerKill || 0) > 0 && !dead) {
     var hpRestore = Math.round(hero.maxHp * hero._toxHpPerKill / 100);
@@ -5266,6 +5384,16 @@ function gainKill(isBoss, isAoe, simNow) {
           triggerGemDropAnim(bossGem.id);
           gearDirty = true;
         }
+        // Hell boss relic drop — ~4% chance, always goes to pending review
+        if (difficulty === 'hell' && relicSystemUnlocked && Math.random() < 0.04) {
+          var _relicIds2 = Object.keys(RELICS).filter(function(id) { return !equippedRelic || id !== equippedRelic.id; });
+          if (_relicIds2.length) {
+            var _relicId2 = _relicIds2[ri(0, _relicIds2.length - 1)];
+            relicPending = makeRelic(_relicId2);
+            addLog('⚗ '+relicPending.name+' found! [Relic — review in the shop]', 'level');
+            triggerItemDropAnim('unique');
+          }
+        }
         unlockedBosses[difficulty+'-'+actIdx] = true;
         // Defeating act N boss unlocks act N+1 farm zone
         if (actIdx + 1 < ACTS.length) {
@@ -5306,10 +5434,10 @@ function gainKill(isBoss, isAoe, simNow) {
             if (!statsData.diffUnlock[nextDiff]) statsData.diffUnlock[nextDiff] = Date.now();
             addLog('★ '+DIFFICULTY[nextDiff].label+' difficulty unlocked!', 'level');
             addLog('↑ Ascending to '+DIFFICULTY[nextDiff].label+' after the shop…', 'zone');
-            // Relic system unlock — disabled until feature is ready for launch
-            // if (nextDiff === 'hell' && !relicSystemUnlocked) {
-            //   setTimeout(function() { unlockRelicSystem(); }, 800);
-            // }
+            // Relic system unlock — triggers when Hell difficulty is first unlocked
+            if (nextDiff === 'hell' && !relicSystemUnlocked) {
+              setTimeout(function() { unlockRelicSystem(); }, 800);
+            }
             if (!respecDiffsGranted[nextDiff]) {
               respecDiffsGranted[nextDiff] = true;
               respecFreeCharges++;
@@ -5341,6 +5469,11 @@ function gainKill(isBoss, isAoe, simNow) {
         }
         triggerDeathAnim();
         addLog('Mob slain. +'+xpGain+' xp, +'+goldGain+' gold', 'info');
+        // Executioner's Toll: store overkill damage to apply to next spawn
+        if (hero._execTollActive && relicActiveUntil > Date.now() && equippedRelic) {
+          var _overkill = Math.abs(Math.min(0, enemy ? enemy.hp : 0));
+          if (_overkill > 0) hero._execTollPending = Math.round(_overkill * equippedRelic.effectValue);
+        }
         // Passive 1% AoE: silent bonus kill on any non-boss death
         if (Math.random() < 0.01) {
           var _aoeQuips = [
@@ -5568,6 +5701,48 @@ function openShop() {
   _maybeBountyAutoAccept();
 }
 
+function renderPendingRelic() {
+  if (!relicPending || !relicSystemUnlocked) return '';
+  var r = relicPending;
+  var def = RELICS[r.id] || {};
+  var html = '<div style="margin-top:10px;border:1px solid #5a3a8a;border-radius:3px;background:#080612;padding:0;">';
+  html += '<div style="padding:6px 10px;border-bottom:1px solid #3a1a6a;display:flex;align-items:center;gap:6px;">';
+  html += '<span style="font-size:11px;color:#e57bf5;letter-spacing:1px;text-transform:uppercase;">⚗ Relic Found</span>';
+  html += '</div>';
+  html += '<div style="padding:8px 10px;">';
+  html += '<div style="font-size:12px;color:#e57bf5;margin-bottom:2px;">'+r.name+'</div>';
+  html += '<div style="font-size:10px;color:#7a6a9a;margin-bottom:6px;">'+def.desc+'</div>';
+  html += '<div style="font-size:10px;color:#5a5a6a;margin-bottom:6px;">';
+  html += 'Charges: '+r.maxCharges+' · Cost: '+r.chargeCost+' · Duration: '+(r.duration>0?r.duration+'s':'Instant');
+  html += '</div>';
+  if (equippedRelic) {
+    html += '<div style="font-size:10px;color:#7a6a5a;margin-bottom:8px;">Currently equipped: <span style="color:#c8a0ff;">'+equippedRelic.name+'</span></div>';
+  }
+  html += '<div style="display:flex;gap:6px;">';
+  html += '<button class="overlay-btn" onclick="swapPendingRelic()" style="flex:1;border-color:#7a3aaa;color:#e57bf5;">'+(equippedRelic?'Swap Relic':'Equip Relic')+'</button>';
+  html += '<button class="overlay-btn sec" onclick="discardPendingRelic()" style="flex:1;">Discard</button>';
+  html += '</div>';
+  html += '</div></div>';
+  return html;
+}
+
+function swapPendingRelic() {
+  if (!relicPending) return;
+  var incoming = relicPending;
+  relicPending = null;
+  equipRelic(incoming);
+  renderShop();
+  saveGame();
+}
+
+function discardPendingRelic() {
+  if (!relicPending) return;
+  addLog('⚗ '+relicPending.name+' discarded.', 'info');
+  relicPending = null;
+  renderShop();
+  saveGame();
+}
+
 function renderShop() {
   var box = document.getElementById('overlay-box');
   var mfCost = 250;
@@ -5580,7 +5755,8 @@ function renderShop() {
 
   var html = '<div class="overlay-title">Act Shop</div>'
     + '<div class="overlay-sub">The boss is slain. Spend wisely, adventurer.</div>'
-    + renderBountyBoard();
+    + renderBountyBoard()
+    + renderPendingRelic();
 
   // Purchasable items
   var canSteal = classKey === 'rogue' && hero.activeScheme === 'pilfer' && !shopStolen;
@@ -6542,8 +6718,8 @@ function _bountyHuntComplete() {
   if (!currentBounty) { bountyActive = false; return; }
   var b = currentBounty;
 
-  // Check for pet encounter
-  if (b.petEncounter) {
+  // Check for pet encounter — Rangers only
+  if (b.petEncounter && classKey === 'ranger') {
     bountyPendingPet = b.petEncounter;
     _showBountyPetEncounter(b.petEncounter);
   } else {
@@ -7157,7 +7333,6 @@ function statLine(stats) {
   if (stats.lightDmg)        parts.push('+'+stats.lightDmg+'% Lightning Dmg');
   if (stats.coldDmg)         parts.push('+'+stats.coldDmg+'% Cold Dmg');
   if (stats.magicDmg)        parts.push('+'+stats.magicDmg+'% Magic Dmg');
-  if (stats.coldDmg)         parts.push('+'+stats.coldDmg+'% Cold Dmg');
   if (stats.critChance) parts.push('+'+stats.critChance+'% Crit Chance');
   if (stats.aoeChance)       parts.push('+'+stats.aoeChance+'% AoE Chance');
   if (stats.coldDuration)    parts.push('+'+stats.coldDuration+'% Status Effect');
@@ -11029,6 +11204,8 @@ function saveGame() {
       equippedRelic:       equippedRelic,
       relicTriggerMode:    relicTriggerMode,
       relicActiveUntil:    relicActiveUntil,
+      voidAccumDmg:        hero._voidAccumDmg || 0,
+      relicPending:        relicPending,
       // Bounty board
       currentBounty:     currentBounty,
       bountyAutoAccept:  bountyAutoAccept,
@@ -11128,10 +11305,14 @@ function loadGame() {
     equippedRelic       = state.equippedRelic       || null;
     relicTriggerMode    = state.relicTriggerMode    || 'full';
     relicActiveUntil    = state.relicActiveUntil    || 0;
-    // If relic was active when saved, clear its effect (can't resume mid-effect)
-    if (equippedRelic && relicActiveUntil < Date.now()) {
+    hero._voidAccumDmg  = state.voidAccumDmg        || 0;
+    relicPending        = state.relicPending         || null;
+    // Always clear all relic effects on load — reapply only if still active
+    if (equippedRelic) clearRelicEffect(equippedRelic);
+    if (equippedRelic && relicActiveUntil > Date.now()) {
+      applyRelicEffect(equippedRelic, Date.now());  // reapply if still active
+    } else {
       relicActiveUntil = 0;
-      clearRelicEffect(equippedRelic);
     }
     // Reinject relic frame if already unlocked
     if (relicSystemUnlocked) {
@@ -11747,7 +11928,7 @@ function _gameTick() {
     // HP regen — ticks once per second of real time, scaled by gameSpeed
     if (now - _lastRegenTick >= 1000) {
       _lastRegenTick = now;
-      var totalRegen = ((hero._hpRegen || 0) + (hero._lastStandRegen || 0)) * gameSpeed;
+      var totalRegen = ((hero._hpRegen || 0) + (hero._lastStandRegen || 0) + (hero._relicHpRegen || 0)) * gameSpeed;
       if (totalRegen > 0 && !dead) hero.hp = Math.min(hero.maxHp, hero.hp + totalRegen);
       // MF Blessing ticks down faster at higher game speed
       if (hero.mfBuff && hero.mfBuffEnd > now) {
@@ -11980,6 +12161,7 @@ init();
   <button onclick="debugRandomUnique()" style="padding:2px 8px;border:1px solid #4a2a5a;background:#0f060f;color:#c87af5;font-size:10px;cursor:pointer;border-radius:2px;font-family:'Courier New',monospace;">Rnd Unique</button>
   <button onclick="debugForceUniqueInShop=true;addLog('[DBG] Next shop will contain a unique.','info');" style="padding:2px 8px;border:1px solid #4a2a5a;background:#0f060f;color:#c87af5;font-size:10px;cursor:pointer;border-radius:2px;font-family:'Courier New',monospace;">Unique in Shop</button>
   <button onclick="debugUnlockCompanion()" style="padding:2px 8px;border:1px solid #2a4a3a;background:#060f0a;color:#5aaa8a;font-size:10px;cursor:pointer;border-radius:2px;font-family:'Courier New',monospace;">+ Companion</button>
+  <button onclick="respecFreeCharges++;addLog('[DBG] +1 free respec ('+respecFreeCharges+' total).','info');" style="padding:2px 8px;border:1px solid #2a3a4a;background:#060a0f;color:#5a8aaa;font-size:10px;cursor:pointer;border-radius:2px;font-family:'Courier New',monospace;">Free Respec</button>
   <button onclick="wipeSave()"         style="padding:2px 8px;border:1px solid #4a1a1a;background:#0f0606;color:#aa4a4a;font-size:10px;cursor:pointer;border-radius:2px;font-family:'Courier New',monospace;">Wipe Save</button>
   <button onclick="toggleGodMode()" id="dbg-god-btn" style="padding:2px 8px;border:1px solid #2a3a2a;background:#060d06;color:#3a6a3a;font-size:10px;cursor:pointer;border-radius:2px;font-family:'Courier New',monospace;">God Mode</button>
 </div>
