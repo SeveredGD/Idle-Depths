@@ -534,10 +534,10 @@
   .stree-tier-row { display:flex; justify-content:center; gap:8px; flex-wrap:wrap; padding:6px 0; }
   .stree-tier-label { font-size:9px; color:#4a4a6a; text-transform:uppercase; letter-spacing:1px; text-align:center; margin-bottom:2px; }
   .stree-tier-divider { border:none; border-top:1px solid #1e1e2a; margin:2px 0 6px; }
-  .stree-skill { border:1px solid #2a2a4a; border-radius:3px; padding:7px 9px; width:178px; flex-shrink:0; background:#0a0a14; }
+  .stree-skill { border:1px solid #2a2a4a; border-radius:3px; padding:9px 11px; width:210px; flex-shrink:0; background:#0a0a14; }
   .stree-skill.locked { opacity:0.4; }
-  .stree-skill.passive-skill { border-color:#1e3a4a; background:#050d14; width:160px; }
-  .stree-skill.technique-skill { border-color:#3a2a1a; background:#100800; width:160px; }
+  .stree-skill.passive-skill { border-color:#1e3a4a; background:#050d14; width:190px; }
+  .stree-skill.technique-skill { border-color:#3a2a1a; background:#100800; width:190px; }
   .stree-skill.active-technique { border-color:#c8843a; background:#0d0800; }
   .stree-name { font-size:11px; color:#c8a84b; margin-bottom:3px; font-weight:bold; }
   .stree-name.locked-name { color:#4a3a1a; }
@@ -553,11 +553,14 @@
   .stree-add:disabled { opacity:0.25; cursor:not-allowed; }
   .stree-pts-label { font-size:10px; color:#5a5a6a; }
   .stree-connector-row { display:flex; justify-content:center; gap:8px; height:14px; }
-  .stree-connector { width:178px; flex-shrink:0; display:flex; justify-content:center; }
+  .stree-connector { width:210px; flex-shrink:0; display:flex; justify-content:center; }
   .stree-connector::before { content:''; display:block; width:1px; height:14px; background:#2a2a4a; }
   .skill-pts-avail { font-size: 13px; font-weight: bold; color: #7aff7a; margin-bottom: 6px; letter-spacing: 0.5px; }
   .skill-pts-avail.has-pts { animation: skillPtsBlink 0.9s ease-in-out infinite; }
-  @keyframes skillPtsBlink {
+  @keyframes pausePulse {
+    0%, 100% { box-shadow: 0 0 0px #7a50c8; opacity: 1; }
+    50%       { box-shadow: 0 0 8px #c8a0ff; opacity: 0.8; }
+  }
     0%,100% { color: #7aff7a; text-shadow: 0 0 8px #7aff7a99; }
     50%      { color: #3acc3a; text-shadow: none; }
   }
@@ -848,7 +851,7 @@
           <span id="speed-btn" style="font-size:11px;color:#c8a84b;min-width:22px;text-align:center;">1x</span>
           <button id="speed-inc" onclick="setGameSpeed(gameSpeed+1)" style="padding:3px 7px;border:1px solid #2a2a3a;background:#0a0a14;color:#8a7a6a;font-family:Georgia,serif;font-size:11px;cursor:pointer;border-radius:2px;">+</button>
         </div>
-        <button id="pause-btn" onclick="togglePause()" style="padding:3px 10px;border:1px solid #2a2a3a;background:#0a0a14;color:#8a7a6a;font-family:Georgia,serif;font-size:11px;cursor:pointer;border-radius:2px;transition:all 0.15s;">⏸ Pause</button>
+        <button id="pause-btn" onclick="togglePause()" style="padding:4px 14px;border:1px solid #5a4a8a;background:#0e0a1a;color:#c8a0ff;font-family:Georgia,serif;font-size:12px;cursor:pointer;border-radius:2px;transition:all 0.15s;animation:pausePulse 2s ease-in-out infinite;">⏸ Pause</button>
       </div>
     </div>
 
@@ -1030,8 +1033,8 @@ var CLASSES = {
   sorceress: {
     name: 'Sorceress', baseHp: 80, dmgMin: 8, dmgMax: 14,
     dmgLabel: 'cast dmg', spdLabel: 'cast spd',
-    startWeapon: { name: 'Cracked Wand',      stats: { mainDmg: 2, mainSpd: 0, hp: 0, mf: 0 }, rarity: 'normal' },
-    startArmor:  { name: 'Tattered Vestment', stats: { mainDmg: 0, mainSpd: 0, hp: 5, mf: 0 }, rarity: 'normal' },
+    startWeapon: { name: 'Cracked Wand',      slot: 'weapon', stats: { mainDmg: 2, mainSpd: 0, hp: 0, mf: 0 }, rarity: 'normal' },
+    startArmor:  { name: 'Tattered Vestment', slot: 'armor',  stats: { mainDmg: 0, mainSpd: 0, hp: 5, mf: 0 }, rarity: 'normal' },
     skills: [
       { id: 'fire',       name: 'Fireball',        desc: 'AoE kills bonus mob.',                          spellMin: 14, spellMax: 22, spdMod: 1.15,  spdLabel: 'slow',      spdClass: 'slow', tier: 1, parent: null },
       { id: 'lightning',  name: 'Lightning',        desc: '20%+ chance for 3x crit.',                     spellMin: 6,  spellMax: 15, spdMod: 1.0,   spdLabel: 'normal',    spdClass: 'med',  tier: 1, parent: null },
@@ -1050,8 +1053,8 @@ var CLASSES = {
   warrior: {
     name: 'Warrior', baseHp: 130, dmgMin: 10, dmgMax: 18,
     dmgLabel: 'melee dmg', spdLabel: 'atk spd',
-    startWeapon: { name: 'Rusty Broadsword',   stats: { mainDmg: 3, mainSpd: 0, hp: 0, mf: 0 }, rarity: 'normal' },
-    startArmor:  { name: 'Battered Chainmail', stats: { mainDmg: 0, mainSpd: 0, hp: 8, mf: 0 }, rarity: 'normal' },
+    startWeapon: { name: 'Rusty Broadsword',   slot: 'weapon', stats: { mainDmg: 3, mainSpd: 0, hp: 0, mf: 0 }, rarity: 'normal' },
+    startArmor:  { name: 'Battered Chainmail', slot: 'armor',  stats: { mainDmg: 0, mainSpd: 0, hp: 8, mf: 0 }, rarity: 'normal' },
     skills: [
       { id: 'slash',      name: 'Whirlwind',     desc: '6% base AoE, 3% chance to cleave a second mob.',     spellMin: 14, spellMax: 22, spdMod: 1.15,  spdLabel: 'slow',      spdClass: 'slow', tier: 1, parent: null },
       { id: 'thrust',     name: 'Thrust',        desc: '20%+ chance to crit. -50ms recovery per skill pt.',  spellMin: 5,  spellMax: 11, spdMod: 1.0,   spdLabel: 'normal',    spdClass: 'med',  tier: 1, parent: null },
@@ -1068,8 +1071,8 @@ var CLASSES = {
   rogue: {
     name: 'Rogue', baseHp: 90, dmgMin: 7, dmgMax: 13,
     dmgLabel: 'attack dmg', spdLabel: 'atk spd',
-    startWeapon: { name: 'Chipped Dagger',  stats: { mainDmg: 2, mainSpd: 1, hp: 0, mf: 0 }, rarity: 'normal' },
-    startArmor:  { name: 'Worn Leathers',   stats: { mainDmg: 0, mainSpd: 0, hp: 5, mf: 0 }, rarity: 'normal' },
+    startWeapon: { name: 'Chipped Dagger',  slot: 'weapon', stats: { mainDmg: 2, mainSpd: 1, hp: 0, mf: 0 }, rarity: 'normal' },
+    startArmor:  { name: 'Worn Leathers',   slot: 'armor',  stats: { mainDmg: 0, mainSpd: 0, hp: 5, mf: 0 }, rarity: 'normal' },
     skills: [
       // ── T1: Assassin skills ──
       { id: 'backstab',   name: 'Backstab',          desc: 'Auto-fires as opener each spawn. Always crits. Positioning delay reduces with pts.',           spellMin: 18, spellMax: 28, spdMod: 1.0,  spdLabel: 'opener', spdClass: 'slow', tier: 1, parent: null, spec: 'assassin' },
@@ -1096,8 +1099,8 @@ var CLASSES = {
   ranger: {
     name: 'Ranger', baseHp: 100, dmgMin: 10, dmgMax: 17,
     dmgLabel: 'ranged dmg', spdLabel: 'atk spd',
-    startWeapon: { name: 'Battered Shortbow', stats: { mainDmg: 2, mainSpd: 1, hp: 0, mf: 0 }, rarity: 'normal' },
-    startArmor:  { name: 'Worn Hunting Jerkin', stats: { mainDmg: 0, mainSpd: 0, hp: 6, mf: 0 }, rarity: 'normal' },
+    startWeapon: { name: 'Battered Shortbow',    slot: 'weapon', stats: { mainDmg: 2, mainSpd: 1, hp: 0, mf: 0 }, rarity: 'normal' },
+    startArmor:  { name: 'Worn Hunting Jerkin',  slot: 'armor',  stats: { mainDmg: 0, mainSpd: 0, hp: 6, mf: 0 }, rarity: 'normal' },
     skills: [
       // ── T1: Hunter skills (spec: hunter) ──
       { id: 'long_shot',    name: 'Long Shot',    desc: '[Hunter] Extreme range shot — very slow but devastating. Delays mob\'s first attack by 2500ms. If not yet hit, can fire again. Once caught up, switches to Basic Shot.',  spellMin: 20, spellMax: 34, spdMod: 1.60, spdLabel: 'very slow', spdClass: 'slow', tier: 1, parent: null, spec: 'hunter' },
@@ -1875,7 +1878,7 @@ function isT2Locked(skill) {
 }
 
 var ACTS = [
-  { act:1, name:'The Ashwood Hollows',   enemies:['Rotling','Grave Gnasher','Shambling Dead','Thornback'],          bossName:'Koros the Foul',         bossHp:380,  flavor:'The forest floor writhes with hungry things.' },
+  { act:1, name:'The Ashwood Hollows',   enemies:['Rotling','Grave Gnasher','Shambling Dead','Thornback'],          bossName:'Koros the Foul',         bossHp:280,  flavor:'The forest floor writhes with hungry things.' },
   { act:2, name:'The Scorched Expanse',  enemies:['Dune Stalker','Dustfang','Carrion Crawler','Hive Soldier'],      bossName:'Skethrix, Dune Tyrant',    bossHp:680,  flavor:'The sands swallow all who wander too deep.' },
   { act:3, name:'The Brackwater Reach',  enemies:['Bog Wraith','Gloomsprite','Cult Zealot','Spore Tender'],         bossName:'Malachar the Festering',   bossHp:1050, flavor:'The rot here is older than memory.' },
   { act:4, name:'The Ashen Citadel',     enemies:['Void Stalker','Brimstone Fiend','Hex Knight','Pit Lurker'],      bossName:'Drakavos, Sovereign of Ruin', bossHp:1600, flavor:'The fortress bleeds shadow into the mortal realm.' },
@@ -2219,7 +2222,7 @@ var MAGIC_RANGES = {
   mainSpd:        { min:1,   max:10  },
   hp:             { min:5,   max:40  },
   mf:             { min:1,   max:8   },
-  hpRegen:        { min:1,   max:4   },
+  hpRegen:        { min:1,   max:3   },
   reducedDmg:     { min:1,   max:3   },
   fireDmg:        { min:1,   max:8   },
   lightDmg:       { min:1,   max:8   },
@@ -2301,7 +2304,7 @@ var MF_BOOST = { baseChance:0.02, chancePerMf:0.004, maxChance:0.35, rarityShift
 var DIFF_ITEM_SCALE = { normal:1.0, nightmare:1.6, hell:2.8 };
 // Per-act bonus added to max stat ranges (stacks on top of difficulty)
 var ACT_STAT_BONUS  = {
-  mainDmg:2, mainSpd:1, hp:8, mf:1, hpRegen:2.5, reducedDmg:1.2,
+  mainDmg:2, mainSpd:1, hp:8, mf:1, hpRegen:1.5, reducedDmg:1.2,
   fireDmg:0.8, lightDmg:0.8, coldDmg:0.8, magicDmg:0.8,
   critChance:0.4, aoeChance:0.4, coldDuration:0.6,
   blockChance:0.4, spellShield:1.5,
@@ -2528,6 +2531,7 @@ var RAGE_DECAY_MS = 5000;
 var _lastRageDecay = 0;
 var _companionNextAtk = 0;   // timestamp for next companion attack
 var _wolfActiveNext   = 0;   // timestamp for next wolf utility active
+var _bossRegenNext    = 0;   // timestamp for next hell boss regen tick
 function gainRage(amount) { hero.rage = Math.min(RAGE_MAX, (hero.rage || 0) + amount); }
 function companionDisplayName() {
   var pet = PETS.find(function(p) { return p.id === hero.activePet; });
@@ -3386,6 +3390,7 @@ function spawnNextEnemy(simNow) {
   // Companion timers reset each new fight
   _companionNextAtk = Date.now() + 2000;
   _wolfActiveNext   = Date.now() + 5000;
+  _bossRegenNext    = Date.now() + 8000;
 
   // Ranger Forestcraft — Forage: recover HP between fights
   if (classKey === 'ranger' && !dead) {
@@ -3431,7 +3436,7 @@ function spawnNextEnemy(simNow) {
       // spawn boss
       rarePack = false; rarePackRemaining = 0;
       var maxHp = Math.round(act.bossHp * diff.bossMult);
-      enemy = { name:act.bossName, hp:maxHp, maxHp:maxHp, isBoss:true, frozenUntil:0, stunCooldownUntil:0, _freezeDR:1.0, _freezeCount:0 };
+      enemy = { name:act.bossName, hp:maxHp, maxHp:maxHp, isBoss:true, frozenUntil:0, stunCooldownUntil:0, _freezeDR:1.0, _freezeCount:0, spawnTime:Date.now() };
       bossSpawned = true;
       hero._lastStandUsed = false;  // reset Last Stand once per boss
       // Auto top-off before boss if enabled and not bossLoop
@@ -4055,7 +4060,8 @@ function heroAttack(now) {
 
   if (skill.id === 'long_shot') {
     var lsPts = hero.skillTree['long_shot'] || 0;
-    var lsMult = 1 + lsPts * 0.025;
+    var hunterPts = hero.skillTree['hunter'] || 0;
+    var lsMult = 1 + lsPts * 0.025 + hunterPts * 0.02;
     var critChance = rangerBaseCrit + (hero._critChance || 0) / 100;
     if (hero._longShotMode) {
       // Full Long Shot — high damage
@@ -4136,7 +4142,8 @@ function heroAttack(now) {
 
   } else if (skill.id === 'chain_trap') {
     var trapPts = hero.skillTree['chain_trap'] || 0;
-    var trapMult = 1 + trapPts * 0.02;
+    var trapperPts = hero.skillTree['trapper'] || 0;
+    var trapMult = 1 + trapPts * 0.02 + trapperPts * 0.03;
     var critChance = rangerBaseCrit + (hero._critChance || 0) / 100;
     var dmg = Math.round(base * rangPhysMult * trapMult);
     if (_isCrit || Math.random() < critChance) {
@@ -4150,7 +4157,8 @@ function heroAttack(now) {
 
   } else if (skill.id === 'freezing_trap') {
     var trapPts = hero.skillTree['freezing_trap'] || 0;
-    var trapMult = 1 + trapPts * 0.02;
+    var trapperPts = hero.skillTree['trapper'] || 0;
+    var trapMult = 1 + trapPts * 0.02 + trapperPts * 0.03;
     var dmg = Math.round(base * rangPhysMult * trapMult);
     addLog('❄ Freezing Trap: '+dmg+' — deploying...', 'chill');
     enemy.hp = Math.max(0, enemy.hp - dmg);
@@ -4162,7 +4170,8 @@ function heroAttack(now) {
 
   } else if (skill.id === 'explosive_trap') {
     var trapPts = hero.skillTree['explosive_trap'] || 0;
-    var trapMult = 1 + trapPts * 0.02;
+    var trapperPts = hero.skillTree['trapper'] || 0;
+    var trapMult = 1 + trapPts * 0.02 + trapperPts * 0.03;
     var fireMlt = 1 + (hero._fireDmg || 0) / 100;
     var dmg = Math.round(base * rangPhysMult * trapMult * fireMlt * stunBonusMult);
     addLog('💥 Explosive Trap: '+dmg+' — BOOM!', 'fire');
@@ -4619,6 +4628,16 @@ function enemyAttack(now) {
   var dmg = enemy.isBoss ? ri(12, 22) : ri(3, 9);
   dmg = Math.round(dmg * diff.enemyDmgMult);
 
+  // Boss enrage: damage increases over time (+10% per 30s, uncapped)
+  if (enemy.isBoss && enemy.spawnTime) {
+    var _enrageSecs = Math.floor((Date.now() - enemy.spawnTime) / 30000);
+    if (_enrageSecs > 0) {
+      var _enrageMult = 1 + _enrageSecs * 0.10;
+      dmg = Math.round(dmg * _enrageMult);
+      if (_enrageSecs === 1) addLog('⚠ Boss enrages! (+10% dmg)', 'crit');
+    }
+  }
+
   // Mob crit: 5% chance to deal double damage (mobs only, not bosses)
   var _mobCrit = false;
   if (!enemy.isBoss && Math.random() < 0.05) {
@@ -5028,6 +5047,10 @@ function gainKill(isBoss, isAoe, simNow) {
           gearDirty = true;
         }
         unlockedBosses[difficulty+'-'+actIdx] = true;
+        // Defeating act N boss unlocks act N+1 farm zone
+        if (actIdx + 1 < ACTS.length) {
+          unlockedBosses[difficulty+'-'+(actIdx+1)] = true;
+        }
         // ── Stats tracking ──
         var _bk = difficulty+'-'+actIdx;
         var _killMs = _bossSpawnRealTime > 0 ? (Date.now() - _bossSpawnRealTime) : 0;
@@ -5259,7 +5282,7 @@ function toggleShopPause() {
 function openShop() {
   shopOpen = true;
   shopPaused = false;
-  shopAutoCloseAt = Date.now() + 10000;
+  shopAutoCloseAt = Date.now() + 15000;
   shopRerollCount = 0;
   shopStolen = false;
   // Generate 3 purchasable items for the act shop (same as merchant)
@@ -8321,9 +8344,10 @@ function togglePause() {
   var btn = document.getElementById('pause-btn');
   if (btn) {
     btn.textContent = gamePaused ? '▶ Resume' : '⏸ Pause';
-    btn.style.borderColor = gamePaused ? '#c8a84b66' : '#2a2a3a';
-    btn.style.color       = gamePaused ? '#c8a84b'   : '#8a7a6a';
-    btn.style.background  = gamePaused ? '#1a1510'   : '#0a0a14';
+    btn.style.borderColor  = gamePaused ? '#c8a84b'   : '#5a4a8a';
+    btn.style.color        = gamePaused ? '#c8a84b'   : '#c8a0ff';
+    btn.style.background   = gamePaused ? '#1a1510'   : '#0e0a1a';
+    btn.style.animation    = gamePaused ? 'none'      : 'pausePulse 2s ease-in-out infinite';
   }
 }
 
@@ -10906,6 +10930,17 @@ function _gameTick() {
     }
     if (now >= heroNextAtk)           heroAttack(now);
     if (enemy && now >= enemyNextAtk) enemyAttack(now);
+    // Hell boss HP regen: 2% every 8 seconds
+    if (difficulty === 'hell' && enemy && enemy.isBoss && enemy.hp > 0 && !dead) {
+      if (now >= _bossRegenNext) {
+        _bossRegenNext = now + Math.round(8000 / gameSpeed);
+        var _regenAmt = Math.round(enemy.maxHp * 0.02);
+        if (enemy.hp < enemy.maxHp) {
+          enemy.hp = Math.min(enemy.maxHp, enemy.hp + _regenAmt);
+          addLog('💀 '+enemy.name+' regenerates '+_regenAmt+' HP!', 'death');
+        }
+      }
+    }
     // Companion combat tick (ranger only)
     if (classKey === 'ranger' && hero.activePet && enemy && enemy.hp > 0 && !dead) {
       companionTick(now);
