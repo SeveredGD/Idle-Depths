@@ -477,7 +477,7 @@
     color:#5a8a5a; font-size:12px; cursor:pointer;
     border-radius:50%;
   }
-  .vault-reroll-btn:disabled { opacity:0.3; cursor:not-allowed; border-color:#1a2a1a; color:#3a5a3a; }
+  .vault-reroll-btn:disabled { opacity:0.5; cursor:not-allowed; border-color:#2a3a2a; color:#3a6a3a; }
   /* ── Skill picker ── */
   .skill-btn {
     width: 100%;
@@ -552,6 +552,7 @@
   .stree-add:hover { border-color:#5a8a5a; }
   .stree-add:disabled { opacity:0.25; cursor:not-allowed; }
   .stree-pts-label { font-size:10px; color:#5a5a6a; }
+  .stree-pts-label .pts-spent { color:#7ab8f5; font-weight:bold; }
   .stree-connector-row { display:flex; justify-content:center; gap:8px; height:14px; }
   .stree-connector { width:210px; flex-shrink:0; display:flex; justify-content:center; }
   .stree-connector::before { content:''; display:block; width:1px; height:14px; background:#2a2a4a; }
@@ -582,6 +583,45 @@
     font-family: Georgia, serif;
   }
   .resp-btn:hover { background: #2a1010; }
+
+  /* ── Bounty Complete float animation ── */
+  @keyframes bountyCompleteFade {
+    0%   { opacity: 0; transform: translateX(-50%) translateY(0px) scale(0.7); }
+    15%  { opacity: 1; transform: translateX(-50%) translateY(-10px) scale(1.05); }
+    40%  { opacity: 1; transform: translateX(-50%) translateY(-30px) scale(1); }
+    100% { opacity: 0; transform: translateX(-50%) translateY(-90px) scale(0.95); }
+  }
+  .bounty-complete-float {
+    position: absolute;
+    left: 50%; top: 40%;
+    transform: translateX(-50%);
+    pointer-events: none;
+    z-index: 80;
+    font-family: Georgia, serif;
+    font-size: 28px;
+    font-weight: bold;
+    color: #c8a0ff;
+    text-shadow: 0 0 20px #7a3aff, 0 0 40px #7a3aff88, 2px 2px 0 #0a0010;
+    white-space: nowrap;
+    letter-spacing: 2px;
+    animation: bountyCompleteFade 2.4s ease-out forwards;
+  }
+
+  /* ── Bounty footstep animation ── */
+  @keyframes footstepFade {
+    0%   { opacity: 0; transform: translateY(8px) rotate(var(--rot)); }
+    20%  { opacity: 0.85; transform: translateY(0px) rotate(var(--rot)); }
+    70%  { opacity: 0.6; transform: translateY(-4px) rotate(var(--rot)); }
+    100% { opacity: 0; transform: translateY(-12px) rotate(var(--rot)); }
+  }
+  .bounty-footstep {
+    position: absolute;
+    pointer-events: none;
+    z-index: 75;
+    font-size: 18px;
+    filter: drop-shadow(0 0 4px #7a5aaa88);
+    animation: footstepFade 1.2s ease-out forwards;
+  }
 
   /* ── Scrollbar ── */
   ::-webkit-scrollbar { width: 4px; }
@@ -868,11 +908,13 @@
       <div class="status-line" id="status-line"></div>
     </div>
 
+    <!-- respawn-bar commented out
     <div id="respawn-bar">
       <span class="resp-label">Respawning…</span>
       <div class="resp-progress"><div class="resp-fill" id="resp-fill" style="width:0%"></div></div>
       <button class="resp-btn" onclick="respawnNow()">Respawn now</button>
     </div>
+    -->
 
     <!-- Combat scene — Phaser canvas -->
     <div id="combat-scene" style="position:relative;height:480px;width:100%;background:transparent;border-bottom:2px solid #c8a84b44;box-shadow:0 4px 16px #00000088;overflow:hidden;flex-shrink:0;">
@@ -1567,9 +1609,11 @@ var SKILL_DEFS = {
   freezing_trap: {
     getStats: function(pts, ab) { return { dmMult: 1 + (pts+(ab||0))*0.02 }; },
     rows: function(pts, ab) { var eff=pts+(ab||0); return [
-      { label:'Dmg bonus',  upgraded:pts>0, value:'+'+(eff*2)+'%' },
-      { label:'Effect',     upgraded:true,  value:'Freeze + slow on entry' },
-      { label:'Re-trigger', upgraded:true,  value:(10+pts*0.5).toFixed(1)+'% on next spawn' },
+      { label:'Entry hit',      upgraded:true,  value:'100% freeze on spawn' },
+      { label:'Follow-up freeze',upgraded:true, value:(10+pts*0.5).toFixed(1)+'% chance' },
+      { label:'Shatter',        upgraded:true,  value:'+20% dmg if freeze fails/resisted' },
+      { label:'Cold scaling',   upgraded:true,  value:'Scales with Cold Dmg gear' },
+      { label:'Dmg bonus',      upgraded:pts>0, value:'+'+(eff*2)+'%' },
     ]; },
   },
   explosive_trap: {
@@ -1918,8 +1962,8 @@ var FARM_PACK_NOFLIP = {
 };
 var ENEMIES_PER_ZONE_BASE = 10;
 function getEnemiesPerZone() {
-  if (difficulty === 'hell')      return 15;
-  if (difficulty === 'nightmare') return 12;
+  if (difficulty === 'hell')      return 20;
+  if (difficulty === 'nightmare') return 15;
   return 10;  // normal
 }
 
@@ -2313,7 +2357,7 @@ var MF_BOOST = { baseChance:0.02, chancePerMf:0.004, maxChance:0.35, rarityShift
 var DIFF_ITEM_SCALE = { normal:1.0, nightmare:1.6, hell:2.8 };
 // Per-act bonus added to max stat ranges (stacks on top of difficulty)
 var ACT_STAT_BONUS  = {
-  mainDmg:2, mainSpd:1, hp:8, mf:1, hpRegen:1.5, reducedDmg:1.2,
+  mainDmg:2, mainSpd:1, hp:8, mf:1, hpRegen:0.6, reducedDmg:1.2,
   fireDmg:0.8, lightDmg:0.8, coldDmg:0.8, magicDmg:0.8,
   critChance:0.4, aoeChance:0.4,
   blockChance:0.4, spellShield:1.5,
@@ -2507,6 +2551,8 @@ var hero = {
   unlockedPets: ['wolf'],  // only wolf unlocked at start; others found via events
   companionName: '',       // custom name for active companion (empty = use default)
   companionStance: 'aggressive', // 'aggressive' | 'defensive' | 'utility'
+  petRolls: { wolf: 10 }, // passive magnitude per pet (0-30), wolf fixed at 10
+  petNames: {},            // custom names per pet id
   _overloadCharge: 0,      // Overload Shot charge counter (0-3)
   _longShotMode: true,     // true = Long Shot available, false = caught up (Basic Shot)
   _markPreyActive: false,  // true when Mark Prey is active skill and ranger is hunter
@@ -2539,13 +2585,64 @@ var RAGE_MAX = 50;
 var RAGE_DECAY_MS = 5000;
 var _lastRageDecay = 0;
 var _companionNextAtk = 0;   // timestamp for next companion attack
-var _wolfActiveNext   = 0;   // timestamp for next wolf utility active
+var _wolfActiveNext   = 0;   // wolf: off balance (5s)
+var _bearActiveNext   = 0;   // bear: provoke (8s)
+var _eagleActiveNext  = 0;   // eagle: dive bomb (6s)
+var _boarActiveNext   = 0;   // boar: gore charge (10s)
+var _lynxActiveNext   = 0;   // lynx: pounce (7s, <40% HP)
+var _serpentActiveNext= 0;   // serpent: venom flood (12s)
+var _ravenActiveNext  = 0;   // raven: murder call (15s)
+var _houndActiveNext  = 0;   // hound: bay (8s)
+var _pantherReady     = false; // panther: shadow merge ready flag
+var _pantherActiveNext= 0;   // panther: shadow merge (15s)
+var _wyvernActiveNext = 0;   // wyvern: firestorm (20s)
 var _bossRegenNext    = 0;   // timestamp for next hell boss regen tick
+var _lynxFirstStrikeDone = false; // lynx: first strike tracker per enemy
 function gainRage(amount) { hero.rage = Math.min(RAGE_MAX, (hero.rage || 0) + amount); }
-function companionDisplayName() {
-  var pet = PETS.find(function(p) { return p.id === hero.activePet; });
-  if (!pet) return 'Companion';
-  return (hero.companionName && hero.companionName.trim()) ? hero.companionName.trim() : pet.name;
+
+function getPetRoll(petId) {
+  if (!hero.petRolls) hero.petRolls = { wolf: 10 };
+  if (hero.petRolls[petId] === undefined) hero.petRolls[petId] = Math.floor(Math.random() * 31);
+  return hero.petRolls[petId];
+}
+
+function getPetAdjective(roll) {
+  if (roll >= 30) return 'Flawless';
+  if (roll >= 25) return 'Elite';
+  if (roll >= 20) return 'Strong';
+  if (roll >= 15) return 'Steady';
+  if (roll >= 10) return 'Modest';
+  if (roll >= 5)  return 'Frail';
+  return 'Feeble';
+}
+
+function getPetPassiveDesc(pet) {
+  var roll = getPetRoll(pet.id);
+  var adj  = getPetAdjective(roll);
+  var descs = {
+    wolf:    adj+' Pack Bond — companion attacks deal +'+roll+'% bonus damage.',
+    bear:    adj+' Thick Hide — reduces all damage hero takes by '+roll+'%.',
+    eagle:   adj+' Eagle Eye — increases hero crit chance by '+roll+'%.',
+    boar:    adj+' Bristle — enemies that attack hero take '+roll+'% damage back.',
+    lynx:    adj+' Shadowstep — companion\'s first strike each fight deals +'+roll+'% bonus damage.',
+    serpent: adj+' Toxic Bite — companion attacks have '+roll+'% chance to poison.',
+    raven:   adj+' Carrion Sense — +'+roll+'% Magic Find.',
+    hound:   adj+' On the Trail — +'+roll+'% XP gain.',
+    panther: adj+' Eclipse — companion deals +'+roll+'% damage when enemy is above 75% HP.',
+    wyvern:  adj+' Ember Breath — companion attacks have '+roll+'% chance to burn.',
+  };
+  return descs[pet.id] || 'Passive: '+roll+'%';
+}
+
+function companionDisplayName(petId) {
+  var pid = petId || hero.activePet;
+  if (!pid) return 'Companion';
+  var customName = (hero.petNames || {})[pid];
+  if (customName && customName.trim()) return customName.trim();
+  // Fall back to old single companionName for wolf backward compat
+  if (pid === hero.activePet && hero.companionName && hero.companionName.trim()) return hero.companionName.trim();
+  var pet = PETS.find(function(p) { return p.id === pid; });
+  return pet ? pet.name : 'Companion';
 }
 function ragePerSwing(skill) {
   var mod = skill ? skill.spdMod : 1.0;
@@ -2592,6 +2689,29 @@ var FARM_LOOP_MOB_COUNT = 20;
 var FARM_LOOP_COST = 25;
 var FARM_LOOP_RARE_CHANCE = 0.02;  // 2x the normal 1%
 var farmLoopMenuOpen = false;
+
+// ── Bounty Board ──────────────────────────────────────────────────────────────
+var currentBounty = null;     // { tier, label, rewardType, rewardData, difficulty, actIdx, powerPct, petEncounter }
+var bountyAutoAccept = false; // auto-accept all bounties regardless of reward
+var bountyActive = false;     // true during the 10s hunt sequence or bounty fight
+var bountySearchTimer = null; // setTimeout handle for the 10s search
+var bountyPendingPet = null;  // pet encounter data during hunt sequence { pet, rarity, roll }
+var _bountyPreBossLoop = null;// snapshot of bossLoop before bounty paused it
+// Bounty reward types: 'gold' | 'item' | 'unique'
+var BOUNTY_RARITY_WEIGHTS = [
+  { rarity: 'common',   weight: 50, powerRange: [0.10, 0.30] },
+  { rarity: 'uncommon', weight: 28, powerRange: [0.25, 0.50] },
+  { rarity: 'rare',     weight: 15, powerRange: [0.45, 0.65] },
+  { rarity: 'epic',     weight:  5, powerRange: [0.60, 0.75] },
+  { rarity: 'unique',   weight:  2, powerRange: [0.65, 0.75] },
+];
+var BOUNTY_PET_RARITY_WEIGHTS = [
+  { rarity: 'common',   weight: 50 },
+  { rarity: 'uncommon', weight: 28 },
+  { rarity: 'rare',     weight: 15 },
+  { rarity: 'epic',     weight:  7 },
+];
+// ─────────────────────────────────────────────────────────────────────────────
 
 var pendingDiffPromotion = false; // set true when shop should advance to next diff Act 1
 
@@ -2782,9 +2902,22 @@ function recalcStats() {
   hero._lightDmg        = bonusLightDmg;
   hero._coldDmg         = bonusColdDmg;
   hero._magicDmg        = bonusMagicDmg;
-  hero._critChance = bonusLightCrit;
-  hero._aoeChance   = bonusAoe;
-  hero._statusEffect    = bonusStatusEffect;  // % bonus to all status effects including freeze duration
+  hero._critChance      = bonusLightCrit;
+  hero._aoeChance       = bonusAoe;
+  hero._statusEffect    = bonusStatusEffect;
+
+  // ── Companion passive bonuses (active companion only, all stances) ──
+  if (classKey === 'ranger' && hero.activePet) {
+    var _cRoll = getPetRoll(hero.activePet);
+    var _cPct  = _cRoll / 100;
+    switch (hero.activePet) {
+      case 'bear':    hero._reducedDmg     += Math.round(_cPct * 100); break; // flat % dmg reduce
+      case 'eagle':   hero._critChance     += _cRoll; break; // flat % crit
+      case 'raven':   hero._passiveMf      += _cRoll; break; // flat MF
+      case 'hound':   hero._xpGain         += _cRoll; break; // flat % XP
+    }
+    // wolf, boar, lynx, serpent, panther, wyvern passives applied in combat (not recalcStats)
+  }
 
   // Rogue spec passive bonuses — allSkills bonus from gear adds to invested pts
   if (classKey === 'rogue') {
@@ -2930,8 +3063,23 @@ function spellDamageRange() {
     backBonus += schemePts * 0.02;
   }
   var dmMult = (stats.dmMult || 1) + backBonus;
-  var min = Math.round((s.spellMin + lvlBonus + bonusDmg) * dmMult * techMult);
-  var max = Math.round((s.spellMax + lvlBonus + bonusDmg) * dmMult * techMult);
+  // Add elemental multipliers based on skill type
+  var elemMult = 1.0;
+  var sid = s.id;
+  var fireSids   = ['fire','meteor','frostfire','manaburn','emberedarrow','explosive_trap'];
+  var lightSids  = ['lightning','chainlight','lightnova','stormvolley'];
+  var coldSids   = ['cold','blizzard','iceshard','frostfire','freezing_trap'];
+  var magicSids  = ['vuln_shot','overload_shot','execute_shot'];
+  var physSids   = ['slash','thrust','bash','infusedstrike','leapslam','consecutivestrike','mortalstrike',
+                    'backstab','bladedance','flurry','taintblood','corrosive','neurotoxin',
+                    'nullstrike','spellbreaker','long_shot','strafing_shot','chain_trap'];
+  if (fireSids.indexOf(sid) !== -1)  elemMult = 1 + (hero._fireDmg  || 0) / 100;
+  if (lightSids.indexOf(sid) !== -1) elemMult = 1 + (hero._lightDmg || 0) / 100;
+  if (coldSids.indexOf(sid) !== -1)  elemMult = 1 + (hero._coldDmg  || 0) / 100;
+  if (magicSids.indexOf(sid) !== -1) elemMult = 1 + (hero._magicDmg || 0) / 100;
+  if (physSids.indexOf(sid)  !== -1) elemMult = 1 + (hero._fireDmg  || 0) / 100; // ranger phys scales with fire
+  var min = Math.round((s.spellMin + lvlBonus + bonusDmg) * dmMult * techMult * elemMult);
+  var max = Math.round((s.spellMax + lvlBonus + bonusDmg) * dmMult * techMult * elemMult);
   return { min:min, max:max };
 }
 
@@ -3396,6 +3544,17 @@ function spawnNextEnemy(simNow) {
   // Companion timers reset each new fight
   _companionNextAtk = Date.now() + 2000;
   _wolfActiveNext   = Date.now() + 5000;
+  _bearActiveNext   = Date.now() + 8000;
+  _eagleActiveNext  = Date.now() + 6000;
+  _boarActiveNext   = Date.now() + 10000;
+  _lynxActiveNext   = Date.now() + 7000;
+  _serpentActiveNext= Date.now() + 12000;
+  _ravenActiveNext  = Date.now() + 15000;
+  _houndActiveNext  = Date.now() + 8000;
+  _pantherActiveNext= Date.now() + 15000;
+  _pantherReady     = false;
+  _wyvernActiveNext = Date.now() + 20000;
+  _lynxFirstStrikeDone = false;
   _bossRegenNext    = Date.now() + 8000;
 
   // Ranger Forestcraft — Forage: recover HP between fights
@@ -3470,7 +3629,7 @@ function spawnNextEnemy(simNow) {
         setTimeout(function() { announceEl.classList.remove('active'); }, 3000);
       }
     }
-  } else if (bossSpawned && enemy === null) {
+  } else if (bossSpawned && enemy === null && !bountyActive) {
     openShop();
     return;
   } else {
@@ -3552,7 +3711,8 @@ function spawnNextEnemy(simNow) {
   // Arcane Archer: reset overload charge on new mob
   if (classKey === 'ranger') {
     hero._overloadCharge = 0;
-    hero._longShotMode = true;  // Long Shot available again on new enemy
+    hero._longShotMode = true;
+    // _freezingTrapHit is on enemy object so resets automatically with new enemy
   }
   // Clear arcane vulnerability on new enemy (stacks don't carry between enemies)
   // (enemy object is new so _arcaneVuln starts at undefined — no explicit clear needed)
@@ -4164,14 +4324,32 @@ function heroAttack(now) {
   } else if (skill.id === 'freezing_trap') {
     var trapPts = hero.skillTree['freezing_trap'] || 0;
     var trapperPts = hero.skillTree['trapper'] || 0;
+    var coldMlt = 1 + (hero._coldDmg || 0) / 100;
     var trapMult = 1 + trapPts * 0.02 + trapperPts * 0.03;
-    var dmg = Math.round(base * rangPhysMult * trapMult);
-    addLog('❄ Freezing Trap: '+dmg+' — deploying...', 'chill');
-    enemy.hp = Math.max(0, enemy.hp - dmg);
-    var froze = tryFreeze();
-    if (froze) {
-      addLog('  ↳ Frozen! ('+froze+'s)', 'chill');
-      triggerStatusFlash('#55aaff');
+    var dmg = Math.round(base * rangPhysMult * trapMult * coldMlt);
+    var _ftFirstHit = !enemy._freezingTrapHit; // first hit this enemy
+    enemy._freezingTrapHit = true;
+    if (_ftFirstHit) {
+      // Entry hit — always freezes
+      addLog('❄ Freezing Trap: '+dmg+' — trap detonates!', 'chill');
+      enemy.hp = Math.max(0, enemy.hp - dmg);
+      var froze = tryFreeze();
+      if (froze) { addLog('  ↳ Frozen! ('+froze+'s)', 'chill'); triggerStatusFlash('#55aaff'); }
+    } else {
+      // Follow-up hit — 10% base + 0.5%/pt freeze chance; if can't freeze, shatter for +20% dmg
+      var freezeChance = (10 + trapPts * 0.5) / 100;
+      var canFreeze = !(enemy.frozenUntil && now < enemy.frozenUntil) && !(enemy.stunCooldownUntil && now < enemy.stunCooldownUntil);
+      if (canFreeze && Math.random() < freezeChance) {
+        addLog('❄ Freezing Trap: '+dmg+' — refreezes!', 'chill');
+        enemy.hp = Math.max(0, enemy.hp - dmg);
+        var froze = tryFreeze();
+        if (froze) { addLog('  ↳ Frozen! ('+froze+'s)', 'chill'); triggerStatusFlash('#55aaff'); }
+      } else {
+        // Shatter — +20% damage against frozen/resistant target
+        var shatterDmg = Math.round(dmg * 1.20);
+        addLog('❄ Shatter: '+shatterDmg+(enemy.frozenUntil && now < enemy.frozenUntil ? ' [frozen — shatters!]' : ' [on resistant target]'), 'chill');
+        enemy.hp = Math.max(0, enemy.hp - shatterDmg);
+      }
     }
 
   } else if (skill.id === 'explosive_trap') {
@@ -4600,13 +4778,20 @@ function heroAttack(now) {
 function enemyAttack(now) {
   if (!enemy) return;
 
-  // frozen check
+  // frozen check — mobs fully frozen, bosses attack at 50% speed
   if (enemy.frozenUntil && now < enemy.frozenUntil) {
     var secsLeft = ((enemy.frozenUntil - now) / 1000).toFixed(1);
-    addLog('Enemy frozen ('+secsLeft+'s remaining)', 'freeze');
-    var chillMult = 1 + (Math.min(enemy._chillStacks || 0, 10) * 0.05);
-    enemyNextAtk = now + Math.round((enemy.isBoss ? BOSS_MS : MOB_MS) * 2 * chillMult / gameSpeed);
-    return;
+    if (enemy.isBoss) {
+      // Boss: slowed to 50% speed (2x attack interval) instead of fully frozen
+      var chillMult = 1 + (Math.min(enemy._chillStacks || 0, 10) * 0.05);
+      enemyNextAtk = now + Math.round((BOSS_MS * 2) * chillMult / gameSpeed);
+      addLog('Boss slowed by frost ('+secsLeft+'s remaining)', 'chill');
+    } else {
+      addLog('Enemy frozen ('+secsLeft+'s remaining)', 'freeze');
+      var chillMult = 1 + (Math.min(enemy._chillStacks || 0, 10) * 0.05);
+      enemyNextAtk = now + Math.round((enemy.isBoss ? BOSS_MS : MOB_MS) * 2 * chillMult / gameSpeed);
+      return;
+    }
   }
 
   // chill slow
@@ -4663,6 +4848,15 @@ function enemyAttack(now) {
     enemyNextAtk = now + Math.round((enemy.isBoss ? BOSS_MS : MOB_MS) * _chillMult / gameSpeed);
     return;
   }
+  // Bear provoke: next enemy attack is absorbed (no damage to hero)
+  if (classKey === 'ranger' && hero.activePet === 'bear' && enemy._bearProvoked) {
+    enemy._bearProvoked = false;
+    var petName = companionDisplayName();
+    addLog('🐻 '+petName+' absorbs the hit!', 'info');
+    enemyNextAtk = now + Math.round((enemy.isBoss ? BOSS_MS : MOB_MS) * _chillMult / gameSpeed);
+    return;
+  }
+
   // Companion defensive stance: 5% + 1% per hero level flat damage reduction
   var _companionReduce = 0;
   if (classKey === 'ranger' && hero.activePet && hero.companionStance === 'defensive') {
@@ -4707,7 +4901,18 @@ function enemyAttack(now) {
 
   if (!debugGodMode) {
     hero.hp = Math.max(0, hero.hp - dmg);
-    if (dmg > 0) { triggerEnemyHitAnim(); if (classKey === 'warrior') gainRage(2); }
+    if (dmg > 0) {
+      triggerEnemyHitAnim();
+      if (classKey === 'warrior') gainRage(2);
+      // Boar passive: Bristle — reflects roll% of damage back
+      if (classKey === 'ranger' && hero.activePet === 'boar' && enemy && enemy.hp > 0) {
+        var _bristleRoll = getPetRoll('boar');
+        var _bristleDmg = Math.max(1, Math.round(dmg * _bristleRoll / 100));
+        enemy.hp = Math.max(0, enemy.hp - _bristleDmg);
+        if (_bristleDmg > 0) addLog('🐗 Bristle: '+_bristleDmg+' reflected!', 'info');
+        if (enemy.hp <= 0) gainKill(enemy.isBoss, false, Date.now());
+      }
+    }
   }
 
   if (hero.hp <= 0) {
@@ -5031,6 +5236,15 @@ function gainKill(isBoss, isAoe, simNow) {
       enemy = null;
       spawnNextEnemy(simNow);
     } else {
+      // ── Bounty target killed — handle before killCount or boss logic ──
+      if (enemy && enemy.isBounty) {
+        triggerDeathAnim();
+        dropLoot(false, false);
+        enemy = null;
+        completeBounty();
+        return;
+      }
+
       killCount++;
       // Ice Shard lucky loot: if enemy dies frozen, roll loot twice and keep the better item
       if (enemy && enemy._iceshardKill) {
@@ -5169,6 +5383,20 @@ function triggerDeath() {
   addLog('☠ You have died.', 'death');
   triggerHeroDeathAnim();
 
+  // Bounty cleanup on death — lose the bounty, restore boss loop if it was paused
+  if (bountyActive) {
+    bountyActive = false;
+    _stopBountyFootsteps();
+    if (bountySearchTimer) { clearTimeout(bountySearchTimer); bountySearchTimer = null; }
+    bountyPendingPet = null;
+    currentBounty = null; // lose the bounty on death
+    if (_bountyPreBossLoop) {
+      bossLoop = { difficulty: _bountyPreBossLoop.difficulty, actIdx: _bountyPreBossLoop.actIdx, loopsRemaining: _bountyPreBossLoop.loopsRemaining, loopsTotal: _bountyPreBossLoop.loopsTotal };
+      _bountyPreBossLoop = null;
+    }
+    addLog('📋 Bounty lost — target escaped.', 'info');
+  }
+
   // Track deaths to this specific boss
   if (bossSpawned) {
     var bossKey = difficulty + '-' + actIdx;
@@ -5212,7 +5440,7 @@ function triggerDeath() {
   hero.hp = 0;
   hero.rage = 0;
   respawnAt = Date.now() + Math.round(RESPAWN_MS / gameSpeed);
-  document.getElementById('respawn-bar').classList.add('active');
+  // document.getElementById('respawn-bar').classList.add('active'); // respawn bar removed
 }
 
 // Resume at furthest reached act/difficulty after a loop ends or is cancelled
@@ -5259,7 +5487,7 @@ function doRespawn() {
     actIdx     = farmLoop.actIdx;
     addLog('🌾 Restarting farm loop — '+ACTS[actIdx].name+'…', 'zone');
   }
-  document.getElementById('respawn-bar').classList.remove('active');
+  // document.getElementById('respawn-bar').classList.remove('active'); // respawn bar removed
   addLog('Returned to '+ACTS[actIdx].name+'.', 'zone');
   spawnNextEnemy();
 }
@@ -5337,6 +5565,7 @@ function openShop() {
     shopItems.push({ item: item, price: price, sold: false });
   }
   renderShop();
+  _maybeBountyAutoAccept();
 }
 
 function renderShop() {
@@ -5350,7 +5579,8 @@ function renderShop() {
   var rarityColors = { normal:'#7a7a8a', magic:'#6fa3ef', rare:'#ffd700', unique:'#e57bf5' };
 
   var html = '<div class="overlay-title">Act Shop</div>'
-    + '<div class="overlay-sub">The boss is slain. Spend wisely, adventurer.</div>';
+    + '<div class="overlay-sub">The boss is slain. Spend wisely, adventurer.</div>'
+    + renderBountyBoard();
 
   // Purchasable items
   var canSteal = classKey === 'rogue' && hero.activeScheme === 'pilfer' && !shopStolen;
@@ -5562,8 +5792,15 @@ function closeShop() {
   shopOpen = false;
   shopPaused = false;
   document.getElementById('overlay').classList.remove('active');
+  // If bounty hunt was in progress when shop closed, cancel it
+  if (bountySearchTimer) { clearTimeout(bountySearchTimer); bountySearchTimer = null; bountyActive = false; _stopBountyFootsteps(); }
 
   if (bossLoop) {
+    // Refill HP on boss kill during target boss loop
+    if (hero.hp < hero.maxHp) {
+      hero.hp = hero.maxHp;
+      addLog('💊 Victory — wounds healed.', 'level');
+    }
     bossLoop.loopsRemaining--;
     addLog('🔁 Boss loop done! ('+bossLoop.loopsRemaining+' remaining)', 'zone');
     if (bossLoop.loopsRemaining <= 0) {
@@ -6037,6 +6274,441 @@ function setFarmPackType(type) {
   renderFarmLoopMenu();
 }
 
+// ═══════════════════════════════════════════════════
+// BOUNTY BOARD
+// ═══════════════════════════════════════════════════
+
+// Returns the highest-power boss the player has defeated, as { diff, actIdx, bossHp }
+function getHighestDefeatedBoss() {
+  var best = null;
+  var diffOrder = ['normal','nightmare','hell'];
+  for (var di = diffOrder.length - 1; di >= 0; di--) {
+    var d = diffOrder[di];
+    for (var ai = ACTS.length - 1; ai >= 0; ai--) {
+      if (statsData.bossKills[d+'-'+ai] && statsData.bossKills[d+'-'+ai].count > 0) {
+        var bossHp = Math.round(ACTS[ai].bossHp * (DIFFICULTY[d].bossMult || 1));
+        if (!best || bossHp > best.bossHp) best = { diff: d, actIdx: ai, bossHp: bossHp };
+      }
+    }
+  }
+  return best;
+}
+
+// Weighted random pick from array of { weight } objects
+function _wRandPick(arr) {
+  var total = arr.reduce(function(s, o) { return s + o.weight; }, 0);
+  var roll = Math.random() * total;
+  for (var i = 0; i < arr.length; i++) {
+    roll -= arr[i].weight;
+    if (roll <= 0) return arr[i];
+  }
+  return arr[arr.length - 1];
+}
+
+// Generate a new bounty based on the highest defeated boss
+function generateBounty() {
+  var highest = getHighestDefeatedBoss();
+  if (!highest) return null; // no bosses killed yet
+
+  // Pick rarity tier
+  var tier = _wRandPick(BOUNTY_RARITY_WEIGHTS);
+  var powerRange = tier.powerRange;
+  var powerPct = powerRange[0] + Math.random() * (powerRange[1] - powerRange[0]);
+
+  // Build the bounty enemy stats from highest boss scaled to powerPct
+  var targetBossHp = Math.round(highest.bossHp * powerPct);
+  // Pick a zone/enemy name — pick from an unlocked act's enemy list
+  var unlockedActs = [];
+  for (var di = 0; di < DIFFICULTY_ORDER.length; di++) {
+    var d = DIFFICULTY_ORDER[di];
+    if (!unlockedDiffs[d]) continue;
+    for (var ai = 0; ai < ACTS.length; ai++) {
+      if (ai === 0 || unlockedBosses[d+'-'+ai]) unlockedActs.push({ diff: d, actIdx: ai });
+    }
+  }
+  var zone = unlockedActs[Math.floor(Math.random() * unlockedActs.length)];
+
+  // Bounty target name — flavored by rarity
+  var BOUNTY_PREFIXES = {
+    common:   ['Wandering','Rogue','Outcast','Feral'],
+    uncommon: ['Marked','Cursed','Hunted','Veteran'],
+    rare:     ['Elite','Renowned','Feared','Champion'],
+    epic:     ['Legendary','Dreaded','Notorious','Apex'],
+    unique:   ['Ancient','Mythic','World-Ender','Primordial'],
+  };
+  var prefixArr = BOUNTY_PREFIXES[tier.rarity] || BOUNTY_PREFIXES.common;
+  var prefix = prefixArr[Math.floor(Math.random() * prefixArr.length)];
+  var act = ACTS[zone.actIdx];
+  var enemyName = act.enemies[Math.floor(Math.random() * act.enemies.length)];
+  var label = prefix + ' ' + enemyName;
+
+  // Reward
+  var rewardType, rewardData;
+  var rewardRoll = Math.random();
+  if (tier.rarity === 'unique') {
+    rewardType = 'unique';
+    // Generate a unique item — temporarily set context to the bounty zone
+    var _savedDiff = difficulty, _savedAct = actIdx;
+    difficulty = zone.diff; actIdx = zone.actIdx;
+    var uItem = null;
+    var uniques = UNIQUE_ITEMS[classKey];
+    if (uniques && uniques.length) {
+      var upool = uniques.filter(function(u) { return (u.uniqueTier||1) === 1; });
+      if (upool.length) {
+        var uBase = upool[Math.floor(Math.random() * upool.length)];
+        var rawStats = {};
+        for (var k in uBase.stats) rawStats[k] = uBase.stats[k];
+        uItem = { slot: uBase.slot, name: uBase.name, stats: rawStats, rarity: 'unique', score: Math.round(itemScore(rawStats, uBase.skillBonus, uBase.allSkills)) };
+        if (uBase.skillBonus) { uItem.skillBonus = uBase.skillBonus; uItem.skillId = uBase.skillId; uItem.skillName = uBase.skillName; }
+        if (uBase.allSkills)  { uItem.allSkills = uBase.allSkills; }
+      }
+    }
+    difficulty = _savedDiff; actIdx = _savedAct;
+    rewardData = uItem;
+  } else if (rewardRoll < 0.5) {
+    rewardType = 'item';
+    // Generate an item at the bounty zone's power
+    var _savedDiff2 = difficulty, _savedAct2 = actIdx;
+    difficulty = zone.diff; actIdx = zone.actIdx;
+    var bItem = generateItem(tier.rarity === 'epic', null, tier.rarity === 'rare' ? 15 : (tier.rarity === 'epic' ? 30 : 0), true);
+    difficulty = _savedDiff2; actIdx = _savedAct2;
+    rewardData = bItem;
+  } else {
+    rewardType = 'gold';
+    // Gold scales with difficulty and tier
+    var diffMult = DIFFICULTY[zone.diff].goldMult || 1;
+    var tierMult = { common:1, uncommon:1.8, rare:3.0, epic:5.0, unique:8.0 }[tier.rarity] || 1;
+    var baseGold = Math.round(80 * diffMult * tierMult * (1 + zone.actIdx * 0.3));
+    rewardData = { gold: baseGold };
+  }
+
+  // 15% chance of companion encounter on this bounty (ranger only flavored, but the tame part is ranger-only)
+  var hasPetEncounter = Math.random() < 0.15;
+  var petEncounter = null;
+  if (hasPetEncounter) {
+    var lockedPets = PETS.filter(function(p) { return (hero.unlockedPets || ['wolf']).indexOf(p.id) < 0; });
+    if (lockedPets.length > 0) {
+      var petTier = _wRandPick(BOUNTY_PET_RARITY_WEIGHTS);
+      var matching = lockedPets.filter(function(p) { return p.rarity === petTier.rarity; });
+      if (!matching.length) matching = lockedPets; // fallback
+      var chosenPet = matching[Math.floor(Math.random() * matching.length)];
+      var roll = Math.floor(Math.random() * 31);
+      petEncounter = { petId: chosenPet.id, rarity: petTier.rarity, roll: roll };
+    }
+  }
+
+  return {
+    tier: tier.rarity,
+    label: label,
+    rewardType: rewardType,
+    rewardData: rewardData,
+    difficulty: zone.diff,
+    actIdx: zone.actIdx,
+    targetHp: targetBossHp,
+    powerPct: Math.round(powerPct * 100),
+    petEncounter: petEncounter,
+  };
+}
+
+var BOUNTY_TIER_COLORS = {
+  common:   '#9a9aaa',
+  uncommon: '#6fa3ef',
+  rare:     '#ffd700',
+  epic:     '#e57bf5',
+  unique:   '#ff9f50',
+};
+
+function getBountyRewardStr(bounty) {
+  if (!bounty) return '';
+  if (bounty.rewardType === 'gold') {
+    return '💰 ' + bounty.rewardData.gold + ' gold';
+  } else if (bounty.rewardType === 'item' || bounty.rewardType === 'unique') {
+    var it = bounty.rewardData;
+    if (!it) return '✦ Unique item';
+    var rc = { normal:'#9a9aaa', magic:'#6fa3ef', rare:'#ffd700', unique:'#e57bf5' };
+    var col = rc[it.rarity] || '#d4c9a8';
+    // Store item on window so inline handlers can reach it
+    window._bountyRewardItem = it;
+    return '<span style="color:'+col+';cursor:help;border-bottom:1px dashed '+col+'66;" '
+      + 'onmouseenter="scheduleTooltip(function(){showTooltip(itemTooltipHtml(window._bountyRewardItem));})" '
+      + 'onmouseleave="hideTooltip()">'
+      + it.name+'</span> <span style="color:#5a5a6a;font-size:10px;">['+it.slot+' · '+it.rarity+']</span>';
+  }
+  return '';
+}
+
+// Render the bounty board section inside the shop overlay
+function renderBountyBoard() {
+  var highest = getHighestDefeatedBoss();
+  if (!highest) return ''; // no kills yet, no board
+
+  // Auto-generate if none exists
+  if (!currentBounty) currentBounty = generateBounty();
+  var b = currentBounty;
+  if (!b) return '';
+
+  var tierColor = BOUNTY_TIER_COLORS[b.tier] || '#9a9aaa';
+  var rewardStr = getBountyRewardStr(b);
+  var canAccept = !bountyActive;
+  var isRanger  = classKey === 'ranger';
+
+  var html = '<div style="margin-top:14px;border:1px solid #3a2a5a;border-radius:3px;background:#080612;padding:0;">';
+  html += '<div style="padding:7px 10px 5px;border-bottom:1px solid #2a1a4a;display:flex;align-items:center;justify-content:space-between;">';
+  html += '<span style="font-size:12px;color:#c8a0ff;letter-spacing:1px;text-transform:uppercase;">📋 Bounty Board</span>';
+  html += '<span style="font-size:10px;color:#5a5a6a;">Power: '+b.powerPct+'% of highest kill</span>';
+  html += '</div>';
+
+  // If actively searching, show a different UI state
+  if (bountyActive && bountySearchTimer) {
+    html += '<div style="padding:12px 10px;text-align:center;">';
+    html += '<div style="font-size:13px;color:#c8a0ff;margin-bottom:4px;">🏹 Searching for target…</div>';
+    html += '<div style="font-size:11px;color:#5a5a6a;">'+b.label+'</div>';
+    html += '<div style="font-size:10px;color:#3a3a4a;margin-top:4px;">Engage in 10s</div>';
+    html += '</div></div>';
+    return html;
+  }
+
+  html += '<div style="padding:8px 10px;">';
+  // Target
+  html += '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px;">';
+  html += '<div>';
+  html += '<div style="font-size:12px;color:'+tierColor+';margin-bottom:2px;">'+b.label+'</div>';
+  html += '<div style="font-size:10px;color:#5a5a6a;">'+ACTS[b.actIdx].name+' · '+DIFFICULTY[b.difficulty].label+' · '+b.tier+'</div>';
+
+  html += '</div>';
+  html += '<div style="text-align:right;">';
+  html += '<div style="font-size:10px;color:#c8a84b;margin-bottom:4px;">Reward: '+rewardStr+'</div>';
+  html += '<button class="overlay-btn" onclick="acceptBounty()" style="padding:3px 10px;font-size:11px;border-color:#7a5aaa;color:#c8a0ff;"'+(canAccept?'':' disabled style="opacity:0.4;cursor:not-allowed"')+'>Hunt</button>';
+  if (isRanger) {
+    var canReroll = hero.gold >= 100 && !bountyActive;
+    html += '<button class="overlay-btn sec" onclick="rerollBounty()" style="margin-top:3px;padding:2px 8px;font-size:10px;border-color:#3a5a3a;color:#7aaa5a;"'+(canReroll?'':' disabled style="opacity:0.4;cursor:not-allowed;border-color:#3a5a3a;color:#7aaa5a;"')+'>Scout (100g)</button>';
+  }
+  html += '</div>';
+  html += '</div>';
+
+  // Auto-accept toggle
+  html += '<div style="display:flex;align-items:center;gap:8px;border-top:1px solid #2a1a4a;padding-top:6px;margin-top:2px;">';
+  html += '<button onclick="toggleBountyAuto()" style="padding:2px 8px;border:1px solid '+(bountyAutoAccept?'#7a5aaa':'#2a2a3a')+';background:'+(bountyAutoAccept?'#0e0a1a':'#060610')+';color:'+(bountyAutoAccept?'#c8a0ff':'#4a4a5a')+';font-family:Georgia,serif;font-size:10px;cursor:pointer;border-radius:2px;">'+(bountyAutoAccept?'● Auto-Accept ON':'○ Auto-Accept OFF')+'</button>';
+  html += '<span style="font-size:10px;color:#3a3a4a;">Auto-accepts bounties, pauses boss loop if active.</span>';
+  html += '</div>';
+
+  html += '</div></div>';
+  return html;
+}
+
+function toggleBountyAuto() {
+  bountyAutoAccept = !bountyAutoAccept;
+  renderShop();
+  saveGame();
+}
+
+function rerollBounty() {
+  if (classKey !== 'ranger') return;
+  if (hero.gold < 100) { addLog('Not enough gold to scout. (100g)', 'info'); return; }
+  if (bountyActive) return;
+  hero.gold -= 100;
+  currentBounty = generateBounty();
+  addLog('🏹 Scouted ahead — new bounty found.', 'zone');
+  renderShop();
+  saveGame();
+}
+
+function acceptBounty() {
+  if (!currentBounty || bountyActive) return;
+  bountyActive = true;
+  // Pause boss loop if running
+  if (bossLoop) {
+    _bountyPreBossLoop = { difficulty: bossLoop.difficulty, actIdx: bossLoop.actIdx, loopsRemaining: bossLoop.loopsRemaining, loopsTotal: bossLoop.loopsTotal };
+    bossLoop = null;
+    addLog('🔁 Boss loop paused — answering bounty.', 'zone');
+  }
+  // Close the shop immediately
+  shopOpen = false;
+  shopPaused = false;
+  document.getElementById('overlay').classList.remove('active');
+  addLog('🏹 Searching for target… (10s)', 'zone');
+  if (currentBounty.petEncounter && classKey === 'ranger') {
+    addLog('🐾 Something stirs in the wilds…', 'zone');
+  }
+  _startBountyFootsteps();
+  // Start 10-second hunt sequence
+  bountySearchTimer = setTimeout(function() {
+    _bountyHuntComplete();
+  }, 10000);
+}
+
+function _bountyHuntComplete() {
+  bountySearchTimer = null;
+  if (!currentBounty) { bountyActive = false; return; }
+  var b = currentBounty;
+
+  // Check for pet encounter
+  if (b.petEncounter) {
+    bountyPendingPet = b.petEncounter;
+    _showBountyPetEncounter(b.petEncounter);
+  } else {
+    _startBountyFight();
+  }
+}
+
+function _showBountyPetEncounter(enc) {
+  var pet = PETS.find(function(p) { return p.id === enc.petId; });
+  if (!pet) { _startBountyFight(); return; }
+  var isRanger = classKey === 'ranger';
+  var roll = enc.roll;
+  var adj = getPetAdjective(roll);
+  var col = PET_RARITY_COLORS[pet.rarity] || '#9a9aaa';
+
+  var box = document.getElementById('overlay-box');
+  var html = '<div class="overlay-title">🐾 Creature Encountered</div>';
+  html += '<div class="overlay-sub">While hunting, you cross paths with something wild.</div>';
+  html += '<div style="border:1px solid '+col+'44;border-radius:3px;padding:10px;margin:10px 0;background:#050810;">';
+  html += '<div style="font-size:28px;text-align:center;margin-bottom:6px;">'+pet.icon+'</div>';
+  html += '<div style="font-size:14px;color:'+col+';text-align:center;margin-bottom:4px;">'+pet.name+' <span style="font-size:10px;color:#5a5a6a;">('+pet.species+')</span></div>';
+  var passiveDesc = getPetPassiveDesc(pet);
+  var passiveName = passiveDesc.split('—')[0].trim(); // e.g. "Elite Pack Bond"
+  html += '<div style="font-size:10px;color:#5a5a6a;text-align:center;margin-bottom:6px;"><span style="color:'+col+'88;">'+passiveName+'</span> · '+pet.rarity+'</div>';
+  html += '<div style="font-size:11px;color:#a09080;margin-bottom:4px;">'+pet.desc+'</div>';
+  html += '<div style="font-size:10px;color:#7a8a9a;font-style:italic;">'+passiveDesc+'</div>';
+  html += '</div>';
+  if (isRanger) {
+    html += '<button class="overlay-btn" onclick="tameBountyPet()" style="border-color:'+col+';color:'+col+';">🤝 Tame &amp; Continue Hunt</button>';
+  }
+  html += '<button class="overlay-btn sec" onclick="shooBountyPet()" style="margin-top:4px;">'+(isRanger ? '🚫 Shoo Away — Continue' : 'Continue Hunt')+'</button>';
+  box.innerHTML = html;
+  document.getElementById('overlay').classList.add('active');
+}
+
+function tameBountyPet() {
+  if (!bountyPendingPet) { _startBountyFight(); return; }
+  var enc = bountyPendingPet;
+  bountyPendingPet = null;
+  if (!hero.unlockedPets) hero.unlockedPets = ['wolf'];
+  if (hero.unlockedPets.indexOf(enc.petId) < 0) {
+    hero.unlockedPets.push(enc.petId);
+    if (!hero.petRolls) hero.petRolls = {};
+    hero.petRolls[enc.petId] = enc.roll;
+    var pet = PETS.find(function(p) { return p.id === enc.petId; });
+    var adj = getPetAdjective(enc.roll);
+    addLog('🐾 '+pet.name+' tamed! ['+adj+' · '+pet.rarity+']', 'level');
+    saveGame();
+  }
+  _startBountyFight();
+}
+
+function shooBountyPet() {
+  bountyPendingPet = null;
+  _startBountyFight();
+}
+
+function _startBountyFight() {
+  var b = currentBounty;
+  if (!b) { bountyActive = false; return; }
+  // Build the enemy — same structure as spawnNextEnemy but custom
+  var act = ACTS[b.actIdx];
+  var diff = DIFFICULTY[b.difficulty];
+  var enemyHp = b.targetHp;
+  var enemyDmg = Math.round((8 + hero.level * 5 + b.actIdx * 12) * diff.enemyDmgMult * b.powerPct / 100);
+
+  enemy = {
+    name: b.label,
+    hp: enemyHp, maxHp: enemyHp,
+    dmg: Math.max(3, enemyDmg),
+    speed: 2200,
+    isBoss: false,  // bounty mobs never count as bosses — no shop reopen
+    isBounty: true,
+    spawnTime: Date.now(),
+    _bleedStacks: [], _bleedInterval: null,
+    _burnActive: false, _burnInterval: null,
+    _poisonStacks: 0, _poisonInterval: null,
+    _shockBonus: 0, _neurotoxinStacks: 0,
+    _frozen: false, _frozenUntil: 0,
+    _chillStacks: 0, _chillSlow: 0,
+    _stunUntil: 0, _arcaneVuln: 0,
+    _bearProvoked: false,
+    _freezingTrapHit: false,
+    _longShotMode: true,
+  };
+
+  // Properly close the shop overlay before starting combat
+  shopOpen = false;
+  shopPaused = false;
+  merchantOpen = false;
+  bossSpawned = false;  // bounty fight must not be treated as a boss kill sequence
+  _stopBountyFootsteps();
+  document.getElementById('overlay').classList.remove('active');
+  addLog('⚔ '+b.label+' appears! [Bounty · '+b.tier+']', 'death');
+  recalcStats();
+  scheduleHeroAttack();
+  scheduleEnemyAttack();
+  renderUI();
+  saveGame();
+}
+
+// Called when bounty target is killed (hooked into gainKill)
+function completeBounty() {
+  if (!currentBounty) return;
+  var b = currentBounty;
+  bountyActive = false;
+  _stopBountyFootsteps();
+  triggerBountyCompleteAnim();
+
+  // Award reward
+  if (b.rewardType === 'gold') {
+    var g = b.rewardData.gold;
+    hero.gold += g;
+    addLog('📋 Bounty complete! +'+g+'g', 'level');
+  } else if ((b.rewardType === 'item' || b.rewardType === 'unique') && b.rewardData) {
+    var result = processLoot(b.rewardData, false);
+    var bonusStr = '';
+    if (b.rewardData.skillBonus) bonusStr += ' [+'+b.rewardData.skillBonus+' '+b.rewardData.skillName+']';
+    if (b.rewardData.allSkills)  bonusStr += ' [+'+b.rewardData.allSkills+' All Skills]';
+    addLog('📋 Bounty complete! → '+b.rewardData.name+bonusStr+' ('+result+')', 'loot '+(b.rewardData.rarity||'magic'));
+  }
+
+  currentBounty = null;
+
+  // Resume boss loop if it was paused
+  if (_bountyPreBossLoop) {
+    var bl = _bountyPreBossLoop;
+    _bountyPreBossLoop = null;
+    bossLoop = { difficulty: bl.difficulty, actIdx: bl.actIdx, loopsRemaining: bl.loopsRemaining, loopsTotal: bl.loopsTotal };
+    difficulty = bl.difficulty;
+    actIdx = bl.actIdx;
+    addLog('🔁 Boss loop resumed.', 'zone');
+    killCount = 0; bossSpawned = false; rarePack = false; rarePackRemaining = 0;
+    enemy = null;
+    hero.shopUsedThisAct = false; hero.topOffUsed = false;
+    saveGame();
+    spawnNextEnemy();
+    return;
+  }
+
+  // Generate next bounty and continue
+  saveGame();
+  // After a bounty fight the player returns to where they were — just re-enter combat
+  enemy = null;
+  killCount = 0; bossSpawned = false; rarePack = false; rarePackRemaining = 0;
+  hero.shopUsedThisAct = false; hero.topOffUsed = false;
+  addLog('Returning to ' + ACTS[actIdx].name + '...', 'zone');
+  spawnNextEnemy();
+}
+
+// Auto-accept bounty hook — called when a new shop opens and auto-accept is on
+function _maybeBountyAutoAccept() {
+  if (!bountyAutoAccept || bountyActive) return;
+  if (!currentBounty) currentBounty = generateBounty();
+  if (!currentBounty) return;
+  // Give a short delay so the shop renders first
+  setTimeout(function() {
+    if (!shopOpen) return; // shop closed before delay fired — abort
+    acceptBounty();
+    renderShop();
+  }, 800);
+}
+
+// ═══════════════════════════════════════════════════
+
 var TOP_OFF_COST = 25;
 
 function doTopOff(silent) {
@@ -6067,7 +6739,7 @@ function selectDifficulty(diff) {
   hero.hp = hero.maxHp;
   hero.rage = 0;
   hero.shopUsedThisAct = false; hero.topOffUsed = false;
-  document.getElementById('respawn-bar').classList.remove('active');
+  // document.getElementById('respawn-bar').classList.remove('active'); // respawn bar removed
   addLog('Entering '+DIFFICULTY[diff].label+'…', 'zone');
   spawnNextEnemy();
 }
@@ -6165,7 +6837,7 @@ var PETS = [
     desc: 'A scarred grey wolf from the northern wilds. Loyal to a fault, ruthless in the hunt.',
     flavour: '"He was already dying when I found him. Now neither of us are."',
     passive: 'Pack Bond — companion damage scales with hunter bond level.',
-    active: 'Off Balance — every 5s, throws the enemy off balance, causing their next attack to take twice as long to land.',
+    active: 'Utility: Off Balance — every 5s, throws the enemy off balance, causing their next attack to take twice as long to land.',
     rarity: 'common',
   },
   {
@@ -6175,8 +6847,8 @@ var PETS = [
     icon: '🐻',
     desc: 'A massive brown bear, slow to anger but devastating once roused. Draws enemy attention.',
     flavour: '"He ate three of my arrows once. Now he just walks in front of them."',
-    passive: 'Thick Hide — (placeholder) companion absorbs a portion of damage taken by hero.',
-    active: 'Maul — (placeholder) massive single target strike, reduces enemy attack speed.',
+    passive: 'Thick Hide — reduces all damage hero takes by the roll %.',
+    active: 'Utility: Provoke — roars every 8s, drawing the next enemy attack onto herself, absorbing it entirely.',
     rarity: 'uncommon',
   },
   {
@@ -6186,8 +6858,8 @@ var PETS = [
     icon: '🦅',
     desc: 'A keen-eyed eagle that scouts ahead and spots weaknesses in enemy defences.',
     flavour: '"She sees things I cannot. Enemies she marks never escape."',
-    passive: 'Eagle Eye — (placeholder) marks are applied instantly, mark bonus damage increased.',
-    active: 'Talon Strike — (placeholder) dive attack that applies a debuff reducing enemy armour.',
+    passive: 'Eagle Eye — increases hero crit chance by the roll %.',
+    active: 'Utility: Dive Bomb — plunges from the sky every 6s for 150% hero damage.',
     rarity: 'uncommon',
   },
   {
@@ -6197,8 +6869,8 @@ var PETS = [
     icon: '🐗',
     desc: 'A foul-tempered boar with tusks like shortswords. Charges without hesitation.',
     flavour: '"He bit me the first time we met. We get along fine now."',
-    passive: 'Bristle — (placeholder) melee attackers take minor damage when striking companion.',
-    active: 'Gore Charge — (placeholder) charges through the enemy, briefly stunning and dealing AoE.',
+    passive: 'Bristle — reflects roll % of all incoming damage back at the enemy.',
+    active: 'Utility: Gore Charge — charges through every 10s for 120% damage and a 2s stun.',
     rarity: 'common',
   },
   {
@@ -6208,8 +6880,8 @@ var PETS = [
     icon: '🐱',
     desc: 'A sleek spotted lynx that moves without sound. Specialises in ambushing isolated targets.',
     flavour: '"You will not see her until it is far too late."',
-    passive: 'Shadowstep — (placeholder) companion\'s first strike each fight is a guaranteed crit.',
-    active: 'Pounce — (placeholder) ambushes trapped or marked enemies for massive damage.',
+    passive: 'Shadowstep — first strike each fight deals +roll% bonus damage.',
+    active: 'Utility: Pounce — strikes for 200% hero damage every 7s, but only fires when enemy is below 40% HP.',
     rarity: 'rare',
   },
   {
@@ -6219,8 +6891,8 @@ var PETS = [
     icon: '🐍',
     desc: 'A sleek black asp whose bite carries a slow-acting paralytic venom. Coils around the archer\'s shoulders.',
     flavour: '"Most people back away. That tells me everything I need to know about them."',
-    passive: 'Toxic Bite — (placeholder) companion attacks apply stacking poison DoT.',
-    active: 'Venom Flood — (placeholder) injects full venom stack, causing a burst of poison damage.',
+    passive: 'Toxic Bite — roll% chance to apply poison on each companion attack.',
+    active: 'Utility: Venom Flood — injects 3 poison stacks simultaneously every 12s.',
     rarity: 'rare',
   },
   {
@@ -6230,8 +6902,8 @@ var PETS = [
     icon: '🐦‍⬛',
     desc: 'An unnervingly intelligent raven that has followed the ranger since childhood. Delivers trinkets and secrets.',
     flavour: '"He once brought me a human finger. I did not ask whose."',
-    passive: 'Scavenge — (placeholder) on killing blow, chance to find bonus gold or items.',
-    active: 'Murder Call — (placeholder) summons a brief flock dealing AoE damage.',
+    passive: 'Carrion Sense — increases Magic Find by the roll %.',
+    active: 'Utility: Murder Call — calls a flock every 15s, dealing 3 hits of 40% damage and slaying a bonus mob.',
     rarity: 'uncommon',
   },
   {
@@ -6241,8 +6913,8 @@ var PETS = [
     icon: '🐕',
     desc: 'A deep-chested hunting hound bred for tracking. Never loses a scent, never gives up a trail.',
     flavour: '"He tracked a wounded stag for three days through a blizzard. He came back with the antlers."',
-    passive: 'Tracker — (placeholder) enemy stats revealed on spawn, bonus XP on kills.',
-    active: 'Bay — (placeholder) howls to disorient the enemy, reducing their accuracy briefly.',
+    passive: 'On the Trail — increases XP gain by the roll %.',
+    active: 'Utility: Bay — howls every 8s, causing 30% miss chance on the enemy for 3s.',
     rarity: 'common',
   },
   {
@@ -6252,8 +6924,8 @@ var PETS = [
     icon: '🐆',
     desc: 'A rare black panther with faintly luminous eyes. Moves between shadows like smoke.',
     flavour: '"She does not obey. She chooses to agree. There is a difference."',
-    passive: 'Eclipse — (placeholder) companion attacks from stealth deal 2× damage.',
-    active: 'Shadow Merge — (placeholder) companion vanishes for one attack cycle, next strike is a guaranteed 3× crit.',
+    passive: 'Eclipse — deals +roll% damage when enemy is above 75% HP.',
+    active: 'Utility: Shadow Merge — vanishes every 15s, then reappears to strike for 3× hero damage.',
     rarity: 'epic',
   },
   {
@@ -6263,8 +6935,8 @@ var PETS = [
     icon: '🐉',
     desc: 'A juvenile wyvern, barely the size of a large dog. Breathes embers rather than true flame. Deeply imprinted on the ranger.',
     flavour: '"I raised her from an egg I found in a ruin. She has never left my side. Neither of us know why."',
-    passive: 'Ember Breath — (placeholder) companion attacks have a chance to apply fire DoT.',
-    active: 'Firestorm — (placeholder) takes to the air and breathes a cone of fire dealing heavy AoE.',
+    passive: 'Ember Breath — roll% chance to apply burn on each companion attack.',
+    active: 'Utility: Firestorm — breathes fire every 20s for 180% damage scaled with fire gear, applies burn, slays a bonus mob.',
     rarity: 'epic',
   },
 ];
@@ -6300,12 +6972,12 @@ function renderPetPanel() {
       var dispName = companionDisplayName();
       html += '<div style="border:1px solid '+PET_RARITY_COLORS[ap.rarity]+';border-radius:3px;padding:10px 14px;margin-bottom:12px;background:#0d1a0a;">';
       html += '<div style="font-size:13px;color:'+PET_RARITY_COLORS[ap.rarity]+';">'+ap.icon+' '+dispName+' <span style="font-size:10px;color:#5a5a6a;">('+ap.species+')</span></div>';
-      html += '<div style="font-size:10px;color:#5a7a5a;margin-top:4px;">'+ap.passive+'</div>';
+      html += '<div style="font-size:10px;color:#5a7a5a;margin-top:4px;">'+getPetPassiveDesc(ap)+'</div>';
       html += '<div style="font-size:10px;color:#5a7a5a;margin-top:2px;">'+ap.active+'</div>';
-      // Name input
+      // Name input — per-pet
       html += '<div style="margin-top:8px;display:flex;gap:6px;align-items:center;">';
-      html += '<input id="pet-name-input" type="text" maxlength="20" placeholder="'+ap.name+'" value="'+(hero.companionName||'')+'" style="flex:1;padding:3px 6px;background:#0a0a14;border:1px solid #2a3a2a;border-radius:2px;color:#d4c9a8;font-family:Georgia,serif;font-size:11px;" />';
-      html += '<button onclick="savePetName()" style="padding:3px 10px;border:1px solid #2a4a2a;background:#0a140a;color:#7aaa5a;font-family:Georgia,serif;font-size:10px;cursor:pointer;border-radius:2px;">Save</button>';
+      html += '<input id="pet-name-input" type="text" maxlength="20" placeholder="'+ap.name+'" value="'+((hero.petNames||{})[ap.id]||'')+'" style="flex:1;padding:3px 6px;background:#0a0a14;border:1px solid #2a3a2a;border-radius:2px;color:#d4c9a8;font-family:Georgia,serif;font-size:11px;" />';
+      html += '<button onclick="savePetName(\''+ap.id+'\')" style="padding:3px 10px;border:1px solid #2a4a2a;background:#0a140a;color:#7aaa5a;font-family:Georgia,serif;font-size:10px;cursor:pointer;border-radius:2px;">Save</button>';
       html += '</div>';
       html += '</div>';
     }
@@ -6315,7 +6987,7 @@ function renderPetPanel() {
 
   // ── Stance buttons ──
   var stances = [
-    { id:'aggressive', label:'⚔ Aggressive', desc:'Attacks every 2s for 10% dmg. Rarely uses active.' },
+    { id:'aggressive', label:'⚔ Aggressive', desc:'Attacks every 2s for 20% dmg. Rarely uses active.' },
     { id:'defensive',  label:'🛡 Defensive',  desc:'Intercepts attacks — '+(5 + hero.level)+'% dmg reduction at level '+hero.level+'.' },
     { id:'utility',    label:'✦ Utility',     desc:'Focuses on active ability.' },
   ];
@@ -6340,13 +7012,16 @@ function renderPetPanel() {
     if (unlocked.indexOf(pet.id) < 0) return; // hidden if not unlocked
     var isActive = activePet === pet.id;
     var col = PET_RARITY_COLORS[pet.rarity] || '#9a9aaa';
+    var _petRoll = getPetRoll(pet.id);
+    var _petAdj  = getPetAdjective(_petRoll);
     html += '<div onclick="selectPet(\''+pet.id+'\')" style="cursor:pointer;border:1px solid '+(isActive?col:'#2a3a2a')+';border-radius:3px;padding:8px 10px;background:'+(isActive?'#0d1a0a':'#080d08')+';transition:border-color 0.15s;" '
       + 'onmouseover="this.style.borderColor=\''+col+'\'" onmouseout="this.style.borderColor=\''+(isActive?col:'#2a3a2a')+'\'">'
       + '<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">'
       + '<span style="font-size:20px;">'+pet.icon+'</span>'
-      + '<div><div style="font-size:12px;color:'+col+';">'+(isActive?companionDisplayName():pet.name)+(isActive?' ✓':'')+'</div>'
+      + '<div><div style="font-size:12px;color:'+col+';">'+(isActive?companionDisplayName(pet.id):pet.name)+(isActive?' ✓':'')+'</div>'
       + '<div style="font-size:9px;color:#4a6a4a;">'+pet.species+'</div></div>'
       + '</div>'
+      + '<div style="font-size:9px;color:'+col+';margin-bottom:2px;font-style:italic;">'+_petAdj+' · '+_petRoll+'%</div>'
       + '<div style="font-size:10px;color:#6a8a6a;line-height:1.4;">'+pet.desc+'</div>'
       + '</div>';
   });
@@ -6355,13 +7030,18 @@ function renderPetPanel() {
   panel.innerHTML = html;
 }
 
-function savePetName() {
+function savePetName(petId) {
   var inp = document.getElementById('pet-name-input');
   if (!inp) return;
-  hero.companionName = inp.value.trim();
+  var pid = petId || hero.activePet;
+  if (!hero.petNames) hero.petNames = {};
+  hero.petNames[pid] = inp.value.trim();
+  // Backward compat: keep companionName for wolf
+  if (pid === 'wolf') hero.companionName = hero.petNames[pid];
   saveGame();
   renderPetPanel();
-  if (hero.companionName) addLog('🐾 '+hero.companionName+' — noted.', 'info');
+  var name = companionDisplayName(pid);
+  if (name) addLog('🐾 '+name+' — noted.', 'info');
 }
 
 function setCompanionStance(stance) {
@@ -6697,6 +7377,7 @@ function renderUI(now) {
     document.getElementById('enemy-name').textContent = '—';
     document.getElementById('enemy-hp-bar').style.width = '0%';
     document.getElementById('enemy-hp-text').textContent = '';
+    document.getElementById('status-line').innerHTML = '';
   }
 
   // Boss loop button highlight
@@ -6746,13 +7427,8 @@ function renderUI(now) {
     diffMsg.textContent = '';
   }
 
-  // Respawn bar
-  if (dead && !shopOpen) {
-    var elapsed = now - (respawnAt - RESPAWN_MS);
-    var pct = Math.min(100, Math.round(elapsed / RESPAWN_MS * 100));
-    document.getElementById('resp-fill').style.width = pct + '%';
-    if (now >= respawnAt) doRespawn();
-  }
+  // Respawn bar removed — auto-respawn only, no UI
+  if (dead && !shopOpen && now >= respawnAt) doRespawn();
 
   // Skill pts
   var _skillPtsEl = document.getElementById('skill-pts-label');
@@ -7243,6 +7919,7 @@ function renderStats() {
   var sessionAge = statsData.gameStartTs ? Math.floor((Date.now() - statsData.gameStartTs) / 1000) : 0;
   var sessionMins = Math.floor(sessionAge / 60), sessionSecs = sessionAge % 60;
   html += _statRow('Session time', sessionMins+'m '+sessionSecs+'s');
+  html += _statRow('Class', cls.name);
   html += _statRow('Current level', 'Lv '+hero.level);
   html += _statRow('Current gear score', totalGearScore());
   html += _statRow('Current speed', gameSpeed+'x');
@@ -7594,7 +8271,7 @@ function renderSkillPicker() {
       var cardOpacity = schemesLocked ? 'opacity:0.4;pointer-events:none;' : '';
       sh += '<div style="'+cardOpacity+'border:1px solid '+(isActive?'#c8843a':'#2a2a3a')+';border-radius:3px;padding:8px 10px;margin-bottom:6px;background:'+(isActive?'#100800':'#0a0a14')+'">';
       sh += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px;">';
-      sh += '<span style="font-size:12px;color:'+(isActive?'#c8843a':'#c8a84b')+';">'+(isActive?'● ':'')+sc.name+' ('+sPts+'/'+SKILL_MAX+')</span>';
+      sh += '<span style="font-size:12px;color:'+(isActive?'#c8843a':'#c8a84b')+';">' + (isActive?'● ':'')+sc.name+' (<span style="color:'+(sPts>0?'#7ab8f5':'#5a5a6a')+';">'+sPts+'</span>/'+SKILL_MAX+')</span>';
       sh += '<button onclick="setActiveScheme(' + "'" + sc.id + "'" + ')" style="padding:2px 8px;border:1px solid '+(isActive?'#c8843a':'#5a4a2a')+';background:'+(isActive?'#2a1500':'#1a1208')+';color:'+(isActive?'#c8843a':'#c8a84b')+';font-family:Georgia,serif;font-size:10px;cursor:pointer;border-radius:2px;">'+(isActive?'● Active':'Use')+'</button>';
       sh += '</div>';
       sh += '<div style="font-size:9px;color:#5a5a6a;">'+sc.desc+'</div>';
@@ -7621,7 +8298,7 @@ function renderSkillPicker() {
       var rows = pdef ? pdef.rows(sPts, _ab) : [];
       sh += '<div style="border:1px solid '+(isActive?col+'88':col+'22')+';border-radius:3px;padding:8px 10px;margin-bottom:6px;background:'+(isActive?'#0a0a00':'#0a0a14')+'">';
       sh += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px;">';
-      sh += '<span style="font-size:12px;color:'+col+';">'+(isActive?'● ':'')+sp.name+' ('+sPts+'/'+SKILL_MAX+')</span>';
+      sh += '<span style="font-size:12px;color:'+col+';">' + (isActive?'● ':'')+sp.name+' (<span style="color:'+(sPts>0?'#7ab8f5':'#5a5a6a')+';">'+sPts+'</span>/'+SKILL_MAX+')</span>';
       sh += '<button onclick="selectRogueSpec(' + "'" + sp.id + "'" + ')" style="padding:2px 8px;border:1px solid '+col+';background:'+(isActive?'#1a1a00':'#1a1510')+';color:'+col+';font-family:Georgia,serif;font-size:10px;cursor:pointer;border-radius:2px;">'+(isActive?'● Active':'Select')+'</button>';
       sh += '</div>';
       sh += '<div style="font-size:9px;color:#5a5a6a;">'+sp.desc+'</div>';
@@ -7689,7 +8366,7 @@ function renderSkillPicker() {
       var fCanAdd = hero.skillPts > 0 && fPts < SKILL_MAX;
       sh += '<div style="border:1px solid #2a3a2a;border-radius:3px;padding:8px 10px;margin-bottom:6px;background:#080d08;">';
       sh += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">';
-      sh += '<span style="font-size:12px;color:'+fc.color+';">'+fc.icon+' '+fc.name+' <span style="font-size:9px;color:#5a7a5a;">('+fPts+'/'+SKILL_MAX+' pts)</span></span>';
+      sh += '<span style="font-size:12px;color:'+fc.color+';">'+fc.icon+' '+fc.name+' <span style="font-size:9px;color:#5a7a5a;">(<span style="color:'+(fPts>0?'#7ab8f5':'#5a5a6a')+';">'+fPts+'</span>/'+SKILL_MAX+' pts)</span></span>';
       sh += '<div style="display:flex;align-items:center;gap:6px;">';
       sh += '<span style="font-size:10px;color:#5a9a5a;font-style:italic;">always active</span>';
       sh += '<button onclick="addSkillPt(\''+fc.id+'\')" '+(fCanAdd?'':'disabled style="opacity:0.3;cursor:not-allowed"')+' style="padding:1px 8px;border:1px solid '+(fCanAdd?'#2a4a2a':'#1a2a1a')+';background:#0a140a;color:'+(fCanAdd?'#7aaa5a':'#3a5a3a')+';font-family:Georgia,serif;font-size:10px;cursor:'+(fCanAdd?'pointer':'not-allowed')+';border-radius:2px;">+ Add</button>';
@@ -7994,17 +8671,17 @@ function renderSkillTree() {
       if (isAct) html += '<span style="font-size:10px;color:#c8843a;margin-right:4px;">● Active</span>';
       html += '<button class="stree-add" onclick="addSkillPt(' + "'" + s.id + "'" + ')" '
         + (!canAdd ? 'disabled' : '')+'>+ Add</button>'
-        + '<span class="stree-pts-label">'+pts+' / '+maxPts+'</span>';
+        + '<span class="stree-pts-label"><span style="color:'+(pts>0?'#7ab8f5':'#5a5a6a')+';font-weight:'+(pts>0?'bold':'normal')+';">'+pts+'</span> / '+maxPts+'</span>';
     } else if (isScheme) {
       // Scheme: show active indicator, always show + Add for leveling
       if (isAct) html += '<span style="font-size:10px;color:#c8843a;margin-right:4px;">● Active</span>';
       html += '<button class="stree-add" onclick="addSkillPt(' + "'" + s.id + "'" + ')" '
         + (!canAdd ? 'disabled' : '')+'>+ Add</button>'
-        + '<span class="stree-pts-label">'+pts+' / '+maxPts+'</span>';
+        + '<span class="stree-pts-label"><span style="color:'+(pts>0?'#7ab8f5':'#5a5a6a')+';font-weight:'+(pts>0?'bold':'normal')+';">'+pts+'</span> / '+maxPts+'</span>';
     } else {
       html += '<button class="stree-add" onclick="addSkillPt(' + "'" + s.id + "'" + ')" '
         + (!canAdd ? 'disabled' : '')+'>+ Add</button>'
-        + '<span class="stree-pts-label">'+pts+' / '+maxPts+'</span>';
+        + '<span class="stree-pts-label"><span style="color:'+(pts>0?'#7ab8f5':'#5a5a6a')+';font-weight:'+(pts>0?'bold':'normal')+';">'+pts+'</span> / '+maxPts+'</span>';
     }
     html += '</div>';
     html += '</div>';
@@ -8454,6 +9131,23 @@ function togglePause() {
     btn.style.background   = gamePaused ? '#1a1510'   : '#0e0a1a';
     btn.style.animation    = gamePaused ? 'none'      : 'pausePulse 2s ease-in-out infinite';
   }
+}
+
+function debugUnlockCompanion() {
+  if (classKey !== 'ranger') { addLog('[DBG] Switch to Ranger to unlock companions.', 'info'); return; }
+  var allIds = PETS.map(function(p) { return p.id; });
+  var locked = allIds.filter(function(id) { return (hero.unlockedPets || []).indexOf(id) < 0; });
+  if (!locked.length) { addLog('[DBG] All companions already unlocked!', 'level'); return; }
+  var newId = locked[Math.floor(Math.random() * locked.length)];
+  var roll  = Math.floor(Math.random() * 31); // 0-30
+  if (!hero.petRolls) hero.petRolls = {};
+  hero.petRolls[newId] = roll;
+  hero.unlockedPets = (hero.unlockedPets || ['wolf']).concat([newId]);
+  var pet = PETS.find(function(p) { return p.id === newId; });
+  var adj = getPetAdjective(roll);
+  addLog('[DBG] '+pet.icon+' '+pet.name+' found! ('+adj+' · '+roll+'%)', 'level');
+  saveGame();
+  renderPetPanel();
 }
 
 function forceGemDrop() {
@@ -10188,6 +10882,57 @@ function triggerHeroDeathAnim() {
 
 function triggerGemDropAnim() { /* handled by Phaser burst */ }
 
+// ── Bounty Complete float ──
+function triggerBountyCompleteAnim() {
+  var scene = document.getElementById('combat-scene');
+  if (!scene) return;
+  var el = document.createElement('div');
+  el.className = 'bounty-complete-float';
+  el.textContent = '📋 Bounty Complete!';
+  scene.appendChild(el);
+  setTimeout(function() { if (el.parentNode) el.parentNode.removeChild(el); }, 2500);
+}
+
+// ── Bounty hunt footsteps ──
+var _bountyFootstepInterval = null;
+var _footstepIcons = ['👣','🐾','👣','🐾','·͜·','👣'];
+function _startBountyFootsteps() {
+  _stopBountyFootsteps();
+  var scene = document.getElementById('combat-scene');
+  if (!scene) return;
+  var sceneW = scene.offsetWidth || 800;
+  var sceneH = scene.offsetHeight || 480;
+  // Stagger pairs of footsteps across the 10s
+  var step = 0;
+  _bountyFootstepInterval = setInterval(function() {
+    if (!scene.parentNode) { _stopBountyFootsteps(); return; }
+    // Drop 1-2 prints per interval
+    var count = Math.random() < 0.4 ? 2 : 1;
+    for (var i = 0; i < count; i++) {
+      (function(offset) {
+        setTimeout(function() {
+          var fp = document.createElement('div');
+          fp.className = 'bounty-footstep';
+          var x = 8 + Math.random() * (sceneW - 40);
+          var y = sceneH * 0.45 + Math.random() * (sceneH * 0.45);
+          var rot = (Math.random() * 40 - 20) + 'deg';
+          fp.style.left = x + 'px';
+          fp.style.top  = y + 'px';
+          fp.style.setProperty('--rot', rot);
+          fp.style.animationDuration = (0.9 + Math.random() * 0.6) + 's';
+          fp.textContent = _footstepIcons[Math.floor(Math.random() * _footstepIcons.length)];
+          scene.appendChild(fp);
+          setTimeout(function() { if (fp.parentNode) fp.parentNode.removeChild(fp); }, 1600);
+        }, offset);
+      })(i * 180);
+    }
+    step++;
+  }, 700);
+}
+function _stopBountyFootsteps() {
+  if (_bountyFootstepInterval) { clearInterval(_bountyFootstepInterval); _bountyFootstepInterval = null; }
+}
+
 function swapHeroFigure() {
   if (_pScene) _pScene.refreshHero();
 }
@@ -10251,6 +10996,8 @@ function saveGame() {
         unlockedPets:    hero.unlockedPets || ['wolf'],
         companionName:   hero.companionName || '',
         companionStance: hero.companionStance || 'aggressive',
+        petRolls:        hero.petRolls || { wolf: 10 },
+        petNames:        hero.petNames || {},
         _actSkillPtsGranted:  hero._actSkillPtsGranted  || {},
         _diffSkillPtsGranted: hero._diffSkillPtsGranted || {},
       },
@@ -10282,6 +11029,9 @@ function saveGame() {
       equippedRelic:       equippedRelic,
       relicTriggerMode:    relicTriggerMode,
       relicActiveUntil:    relicActiveUntil,
+      // Bounty board
+      currentBounty:     currentBounty,
+      bountyAutoAccept:  bountyAutoAccept,
     };
     localStorage.setItem(SAVE_KEY, JSON.stringify(state));
   } catch(e) {
@@ -10336,6 +11086,8 @@ function loadGame() {
     hero.unlockedPets   = h.unlockedPets   || ['wolf'];
     hero.companionName  = h.companionName  || '';
     hero.companionStance = h.companionStance || 'aggressive';
+    hero.petRolls       = h.petRolls       || { wolf: 10 };
+    hero.petNames       = h.petNames       || {};
     hero._actSkillPtsGranted  = h._actSkillPtsGranted  || {};
     hero._diffSkillPtsGranted = h._diffSkillPtsGranted || {};
 
@@ -10385,6 +11137,10 @@ function loadGame() {
     if (relicSystemUnlocked) {
       setTimeout(function() { injectRelicFrame(); }, 100);
     }
+    // Bounty board
+    currentBounty    = state.currentBounty    || null;
+    bountyAutoAccept = state.bountyAutoAccept  || false;
+    bountyActive     = false; // never resume mid-hunt on load
 
     // Close any open overlays — shops etc don't persist
     shopOpen     = false;
@@ -10800,10 +11556,13 @@ var _lastDpsUpdate = 0;    // last time DPS display was updated
 
 function companionTick(now) {
   if (!hero.activePet || !enemy || enemy.hp <= 0 || dead) return;
-  var stance = hero.companionStance || 'aggressive';
+  var stance  = hero.companionStance || 'aggressive';
+  var petId   = hero.activePet;
   var petName = companionDisplayName();
+  var roll    = getPetRoll(petId);
+  var rollPct = roll / 100;
 
-  // Mark Prey mode: companion fights at 100% damage, all stances, scaled attack speed
+  // Mark Prey mode: companion fights at 100% dmg, all stances
   var _activeSk = cls.skills[hero.activeSkillIdx];
   var _markPrey = classKey === 'ranger' && hero.rangerDiscipline === 'hunter'
     && _activeSk && _activeSk.id === 'mark_prey';
@@ -10813,60 +11572,173 @@ function companionTick(now) {
     var mpInterval = Math.max(500, Math.round(2000 - mpPts * 50));
     if (now >= _companionNextAtk) {
       _companionNextAtk = now + Math.round(mpInterval / gameSpeed);
-      // Use hero's raw damage range (not spellDamageRange which returns 0 for passive skills)
       var dmg = Math.round(ri(hero.dmgMin || 1, hero.dmgMax || 1));
-      dmg = Math.max(1, dmg);
-      // Apply arcane vuln if present
+      if (petId === 'wolf') dmg = Math.round(dmg * (1 + rollPct));
       if (enemy._arcaneVuln) dmg = Math.round(dmg * arcaneVulnMult());
       enemy.hp = Math.max(0, enemy.hp - dmg);
-      addLog('🎯 '+petName+' hunts for '+dmg+'.', 'crit');
+      addLog('\u{1F3AF} '+petName+' hunts for '+dmg+'.', 'crit');
       if (enemy.hp <= 0) { gainKill(enemy.isBoss, false, now); return; }
-      // All stances active simultaneously
-      // Defensive: handled in enemyAttack
-      // Utility: wolf active fires on its own timer
-      if (hero.activePet === 'wolf' && now >= _wolfActiveNext) {
-        _wolfActiveNext = now + Math.round(5000 / gameSpeed);
-        enemy._offBalance = true;
-        addLog('🐺 '+petName+' throws '+enemy.name+' off balance!', 'stun');
-      }
     }
+    _fireCompanionActive(petId, petName, roll, rollPct, now);
     return;
   }
 
-  // ── Normal stance combat ──
-
-  // ── Aggressive / Utility: companion attacks every 2s ──
+  // Aggressive / Utility
   if (stance === 'aggressive' || stance === 'utility') {
     if (now >= _companionNextAtk) {
       _companionNextAtk = now + Math.round(2000 / gameSpeed);
-      // 10% of base ranger damage
-      var dmg = Math.max(1, Math.round(ri(hero.dmgMin || 1, hero.dmgMax || 1) * 0.10));
-      enemy.hp = Math.max(0, enemy.hp - dmg);
-      addLog('🐾 '+petName+' attacks for '+dmg+'.', 'stun');
-      if (enemy.hp <= 0) { gainKill(enemy.isBoss, false, now); return; }
-
-      // Utility: Wolf active — throw off balance every 5s
-      if (stance === 'utility' && hero.activePet === 'wolf') {
-        if (now >= _wolfActiveNext) {
-          _wolfActiveNext = now + Math.round(5000 / gameSpeed);
-          // Double enemy next attack interval for one swing
-          enemy._offBalance = true;
-          addLog('🐺 '+petName+' throws '+enemy.name+' off balance!', 'stun');
-        }
+      var dmg = Math.max(1, Math.round(ri(hero.dmgMin || 1, hero.dmgMax || 1) * 0.20));
+      if (petId === 'wolf') dmg = Math.round(dmg * (1 + rollPct));
+      if (petId === 'lynx' && !_lynxFirstStrikeDone) {
+        dmg = Math.round(dmg * (1 + rollPct));
+        _lynxFirstStrikeDone = true;
+        addLog('\uD83D\uDC31 '+petName+' strikes from shadow! '+dmg+' [+'+roll+'% opener]', 'crit');
+      } else if (petId === 'panther' && enemy.maxHp > 0 && (enemy.hp / enemy.maxHp) > 0.75) {
+        dmg = Math.round(dmg * (1 + rollPct));
+        addLog('\uD83D\uDC06 '+petName+' attacks for '+dmg+'.', 'stun');
+      } else {
+        addLog('\uD83D\uDC3E '+petName+' attacks for '+dmg+'.', 'stun');
       }
+      if (petId === 'serpent' && Math.random() * 100 < roll) {
+        _applyCompanionPoison(dmg);
+        addLog('\uD83D\uDC0D '+petName+' injects venom!', 'info');
+      }
+      if (petId === 'wyvern' && Math.random() * 100 < roll) {
+        tryApplyBurn(dmg);
+        addLog('\uD83D\uDC09 '+petName+' breathes embers!', 'fire');
+      }
+      enemy.hp = Math.max(0, enemy.hp - dmg);
+      if (enemy.hp <= 0) { gainKill(enemy.isBoss, false, now); return; }
+      if (stance === 'utility') _fireCompanionActive(petId, petName, roll, rollPct, now);
     }
   }
 
-  // ── Defensive: no attacks, just damage reduction (applied in enemyAttack via hero._companionDefense) ──
-  // Defensive stance also gives occasional weak attack (half rate)
   if (stance === 'defensive' && now >= _companionNextAtk) {
     _companionNextAtk = now + Math.round(4000 / gameSpeed);
     var defDmg = Math.max(1, Math.round(ri(hero.dmgMin || 1, hero.dmgMax || 1) * 0.05));
     enemy.hp = Math.max(0, enemy.hp - defDmg);
-    addLog('🐾 '+petName+' intercepts — '+defDmg+' dmg.', 'info');
+    addLog('\uD83D\uDC3E '+petName+' intercepts \u2014 '+defDmg+' dmg.', 'info');
     if (enemy.hp <= 0) { gainKill(enemy.isBoss, false, now); return; }
   }
 }
+
+function _applyCompanionPoison(dmg) {
+  if (!enemy) return;
+  if (!enemy._poisonStacks) enemy._poisonStacks = [];
+  var tickDmg = Math.max(1, Math.round(dmg * 0.08));
+  enemy._poisonStacks.push({ tickDmg: tickDmg, ticksLeft: 5, nextTick: Date.now() + 1000 });
+}
+
+function _fireCompanionActive(petId, petName, roll, rollPct, now) {
+  if (!enemy || enemy.hp <= 0) return;
+  var heroBaseDmg = Math.round((hero.dmgMin + hero.dmgMax) / 2);
+
+  switch (petId) {
+    case 'wolf':
+      if (now >= _wolfActiveNext) {
+        _wolfActiveNext = now + Math.round(5000 / gameSpeed);
+        enemy._offBalance = true;
+        addLog('\uD83D\uDC3A '+petName+' throws '+enemy.name+' off balance!', 'stun');
+      }
+      break;
+    case 'bear':
+      if (now >= _bearActiveNext) {
+        _bearActiveNext = now + Math.round(8000 / gameSpeed);
+        enemy._bearProvoked = true;
+        addLog('\uD83D\uDC3B '+petName+' roars \u2014 draws enemy attack!', 'stun');
+      }
+      break;
+    case 'eagle':
+      if (now >= _eagleActiveNext) {
+        _eagleActiveNext = now + Math.round(6000 / gameSpeed);
+        var eDmg = Math.round(heroBaseDmg * 1.5);
+        enemy.hp = Math.max(0, enemy.hp - eDmg);
+        addLog('\uD83E\uDD85 '+petName+' dive bombs for '+eDmg+'!', 'crit');
+        if (enemy.hp <= 0) { gainKill(enemy.isBoss, false, now); return; }
+      }
+      break;
+    case 'boar':
+      if (now >= _boarActiveNext) {
+        _boarActiveNext = now + Math.round(10000 / gameSpeed);
+        var bDmg = Math.round(heroBaseDmg * 1.2);
+        enemy.hp = Math.max(0, enemy.hp - bDmg);
+        addLog('\uD83D\uDC17 '+petName+' gores for '+bDmg+'! [stun]', 'stun');
+        if (enemy.hp <= 0) { gainKill(enemy.isBoss, false, now); return; }
+        enemy.frozenUntil = now + 2000;
+        enemy.stunCooldownUntil = now + 7000;
+        triggerStatusFlash('#c8a84b');
+      }
+      break;
+    case 'lynx':
+      if (now >= _lynxActiveNext && enemy.maxHp > 0 && (enemy.hp / enemy.maxHp) < 0.4) {
+        _lynxActiveNext = now + Math.round(7000 / gameSpeed);
+        var lDmg = Math.round(heroBaseDmg * 2.0);
+        enemy.hp = Math.max(0, enemy.hp - lDmg);
+        addLog('\uD83D\uDC31 '+petName+' pounces for '+lDmg+'! [execute]', 'crit');
+        if (enemy.hp <= 0) { gainKill(enemy.isBoss, false, now); return; }
+      }
+      break;
+    case 'serpent':
+      if (now >= _serpentActiveNext) {
+        _serpentActiveNext = now + Math.round(12000 / gameSpeed);
+        for (var _vi = 0; _vi < 3; _vi++) _applyCompanionPoison(heroBaseDmg);
+        addLog('\uD83D\uDC0D '+petName+' floods with venom! (3 stacks)', 'info');
+        triggerStatusFlash('#88cc44');
+      }
+      break;
+    case 'raven':
+      if (now >= _ravenActiveNext) {
+        _ravenActiveNext = now + Math.round(15000 / gameSpeed);
+        var rTotal = 0;
+        for (var _ri2 = 0; _ri2 < 3; _ri2++) {
+          var rHit = Math.round(heroBaseDmg * 0.4);
+          enemy.hp = Math.max(0, enemy.hp - rHit);
+          rTotal += rHit;
+          if (enemy.hp <= 0) break;
+        }
+        addLog('\uD83D\uDC26\u200D\u2B1B '+petName+' calls the murder! '+rTotal+' (3 hits)', 'crit');
+        if (enemy.hp <= 0) { gainKill(enemy.isBoss, false, now); return; }
+        if (!enemy.isBoss) gainKill(false, true, now);
+      }
+      break;
+    case 'hound':
+      if (now >= _houndActiveNext) {
+        _houndActiveNext = now + Math.round(8000 / gameSpeed);
+        if (!enemy._neurotoxinStacks) enemy._neurotoxinStacks = 0;
+        enemy._neurotoxinStacks = Math.min(5, enemy._neurotoxinStacks + 3);
+        addLog('\uD83D\uDC15 '+petName+' bays \u2014 enemy disoriented! (30% miss)', 'stun');
+        triggerStatusFlash('#c8a84b');
+      }
+      break;
+    case 'panther':
+      if (!_pantherReady && now >= _pantherActiveNext) {
+        _pantherActiveNext = now + Math.round(15000 / gameSpeed);
+        _pantherReady = true;
+        addLog('\uD83D\uDC06 '+petName+' vanishes into shadow...', 'info');
+      }
+      if (_pantherReady) {
+        _pantherReady = false;
+        var pDmg = Math.round(heroBaseDmg * 3.0);
+        enemy.hp = Math.max(0, enemy.hp - pDmg);
+        addLog('\uD83D\uDC06 '+petName+' strikes from shadow for '+pDmg+'! [3\u00D7 crit]', 'crit');
+        if (enemy.hp <= 0) { gainKill(enemy.isBoss, false, now); return; }
+      }
+      break;
+    case 'wyvern':
+      if (now >= _wyvernActiveNext) {
+        _wyvernActiveNext = now + Math.round(20000 / gameSpeed);
+        var fireMlt = 1 + (hero._fireDmg || 0) / 100;
+        var wDmg = Math.round(heroBaseDmg * 1.8 * fireMlt);
+        enemy.hp = Math.max(0, enemy.hp - wDmg);
+        tryApplyBurn(wDmg);
+        addLog('\uD83D\uDC09 '+petName+' unleashes Firestorm for '+wDmg+'! \uD83D\uDD25', 'fire');
+        if (enemy.hp <= 0) { gainKill(enemy.isBoss, false, now); return; }
+        if (!enemy.isBoss) gainKill(false, true, now);
+      }
+      break;
+  }
+}
+
 
 function _gameTick() {
     _tickCounter++;
@@ -10950,10 +11822,10 @@ function _gameTick() {
 
     // Shop auto-close
     if (shopOpen) {
-      if (shopPaused) shopAutoCloseAt += Math.round(TICK_BASE / gameSpeed);
+      if (shopPaused || bountyActive) shopAutoCloseAt += Math.round(TICK_BASE / gameSpeed);
       var cd = document.getElementById('shop-countdown');
-      if (cd) cd.textContent = shopPaused ? '⏸' : Math.max(0, Math.ceil((shopAutoCloseAt - now) / 1000));
-      if (!shopPaused && now >= shopAutoCloseAt) closeShop();
+      if (cd) cd.textContent = (shopPaused || bountyActive) ? (bountyActive ? '🏹' : '⏸') : Math.max(0, Math.ceil((shopAutoCloseAt - now) / 1000));
+      if (!shopPaused && !bountyActive && now >= shopAutoCloseAt) closeShop();
       renderUI(now);
       return;
     }
@@ -11107,6 +11979,7 @@ init();
   <button onclick="exportStats()" style="padding:2px 8px;border:1px solid #2a4a3a;background:#060f0a;color:#5aaa7a;font-size:10px;cursor:pointer;border-radius:2px;font-family:'Courier New',monospace;">Export Stats</button>
   <button onclick="debugRandomUnique()" style="padding:2px 8px;border:1px solid #4a2a5a;background:#0f060f;color:#c87af5;font-size:10px;cursor:pointer;border-radius:2px;font-family:'Courier New',monospace;">Rnd Unique</button>
   <button onclick="debugForceUniqueInShop=true;addLog('[DBG] Next shop will contain a unique.','info');" style="padding:2px 8px;border:1px solid #4a2a5a;background:#0f060f;color:#c87af5;font-size:10px;cursor:pointer;border-radius:2px;font-family:'Courier New',monospace;">Unique in Shop</button>
+  <button onclick="debugUnlockCompanion()" style="padding:2px 8px;border:1px solid #2a4a3a;background:#060f0a;color:#5aaa8a;font-size:10px;cursor:pointer;border-radius:2px;font-family:'Courier New',monospace;">+ Companion</button>
   <button onclick="wipeSave()"         style="padding:2px 8px;border:1px solid #4a1a1a;background:#0f0606;color:#aa4a4a;font-size:10px;cursor:pointer;border-radius:2px;font-family:'Courier New',monospace;">Wipe Save</button>
   <button onclick="toggleGodMode()" id="dbg-god-btn" style="padding:2px 8px;border:1px solid #2a3a2a;background:#060d06;color:#3a6a3a;font-size:10px;cursor:pointer;border-radius:2px;font-family:'Courier New',monospace;">God Mode</button>
 </div>
