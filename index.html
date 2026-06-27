@@ -1258,7 +1258,7 @@
 </div>
 
 
-  <span class="game-title">IDLE DEPTHS <span style="font-size:13px;letter-spacing:1px;opacity:0.6;">v1.11</span></span>
+  <span class="game-title">IDLE DEPTHS <span style="font-size:13px;letter-spacing:1px;opacity:0.6;">v1.12</span></span>
 </div>
 
 <!-- Difficulty / act bar -->
@@ -3517,7 +3517,7 @@ var statsData = {
   totalDeaths:    0,    // total deaths across all runs (for feature unlocks)
 };
 var _bossSpawnRealTime = 0;  // real Date.now() when boss was spawned
-var MERCHANT_DEATH_THRESHOLD = 5;
+var MERCHANT_DEATH_THRESHOLD = 5; // nightmare/hell; normal uses 3
 var MERCHANT_GOLD_PER_SCORE  = 3;
 
 // Item locks — slots that are locked cannot be auto-replaced
@@ -6857,7 +6857,7 @@ function triggerDeath() {
       _showLoopIntroCtx = 'boss-death';
     }
     _bossSpawnRealTime = 0;  // reset TTK timer on death
-    if (bossDeathCounts[bossKey] === MERCHANT_DEATH_THRESHOLD) {
+    if (bossDeathCounts[bossKey] === (difficulty === 'normal' ? 3 : MERCHANT_DEATH_THRESHOLD)) {
       bossDeathCounts[bossKey] = 0;
       addLog('A traveling merchant approaches, bearing wares…', 'shop');
       setTimeout(function() { openMerchant(); }, 1200);
