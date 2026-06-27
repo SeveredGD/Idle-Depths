@@ -2688,7 +2688,7 @@ function gainRage(amount) { hero.rage = Math.min(RAGE_MAX, (hero.rage || 0) + am
 
 function getPetRoll(petId) {
   if (!hero.petRolls) hero.petRolls = { wolf: 10 };
-  if (hero.petRolls[petId] === undefined) hero.petRolls[petId] = Math.floor(Math.random() * 31);
+  if (hero.petRolls[petId] === undefined) hero.petRolls[petId] = Math.floor(Math.pow(Math.random(), 2) * 31);
   return hero.petRolls[petId];
 }
 
@@ -6688,7 +6688,7 @@ function generateBounty() {
       var matching = lockedPets.filter(function(p) { return p.rarity === petTier.rarity; });
       if (!matching.length) matching = lockedPets; // fallback
       var chosenPet = matching[Math.floor(Math.random() * matching.length)];
-      var roll = Math.floor(Math.random() * 31);
+      var roll = Math.floor(Math.pow(Math.random(), 2) * 31);
       petEncounter = { petId: chosenPet.id, rarity: petTier.rarity, roll: roll };
     }
   }
@@ -12040,7 +12040,7 @@ function toggleLogVerbosity()   { settingsLogVerbosity = settingsLogVerbosity ==
 function setShopTimer(secs)     { settingsShopTimer = secs; _updateSettingsUI(); saveGame(); }
 
 // ── Offline Earnings Estimator ────────────────────────────────────────
-var OFFLINE_CAP_MS = 8 * 60 * 60 * 1000; // 8 hours
+var OFFLINE_CAP_MS = 5 * 60 * 60 * 1000; // 5 hours
 
 function _estimateOfflineEarnings(elapsedMs) {
   // Clamp to cap
@@ -12059,34 +12059,33 @@ function _estimateOfflineEarnings(elapsedMs) {
   var hitsPerMob = Math.max(1, Math.ceil(mobHpMid / effDmg));
   var msTPerMob  = hitsPerMob * cycleMs + 500; // +500ms spawn gap
   var killsPerSec = 1000 / msTPerMob;
-  var totalKills  = Math.floor(seconds * killsPerSec * 0.85); // 85% efficiency (deaths, pauses)
+  var totalKills  = Math.floor(seconds * killsPerSec * 0.70); // 70% efficiency (deaths, pauses)
 
-  // Gold per kill
+  // Gold per kill — 40% of normal
   var goldPerKill = Math.round(ri(2,8) * diff.goldMult * (1 + (hero._goldFind||0)/100));
-  var goldEarned  = Math.round(totalKills * goldPerKill * 0.7); // offline penalty
+  var goldEarned  = Math.round(totalKills * goldPerKill * 0.4);
 
-  // XP per kill
+  // XP per kill — 40% of normal
   var actXpMult  = 1 + actIdx * 0.15;
   var xpPerKill  = Math.round((5 + hero.level*3) * diff.xpMult * actXpMult);
-  var xpEarned   = Math.round(totalKills * xpPerKill * 0.7);
+  var xpEarned   = Math.round(totalKills * xpPerKill * 0.4);
 
   // Boss kills estimate (one per zone clear)
   var mobsPerZone = getEnemiesPerZone();
   var bossKills   = Math.floor(totalKills / (mobsPerZone + 1));
 
-  // Loot: one item per ~15 mob kills offline, bosses drop more
-  var itemDrops   = Math.floor(totalKills / 15) + bossKills * 2;
-  // Roll actual items for the best few
+  // Loot: one item per ~30 mob kills offline, bosses drop 1 (not 2)
+  var itemDrops   = Math.floor(totalKills / 30) + bossKills;
+  // Roll actual items — larger candidate pool, keep best 3
   var lootItems = [];
-  var isBossLoot = false;
-  for (var i = 0; i < Math.min(itemDrops, 12); i++) {
-    isBossLoot = (i < bossKills * 2);
+  for (var i = 0; i < Math.min(itemDrops, 20); i++) {
+    var isBossLoot = (i < bossKills);
     var item = generateItem(isBossLoot, null, 0, false);
     if (item.rarity !== 'normal') lootItems.push(item);
   }
-  // Sort by score, keep best 6
+  // Sort by score, keep best 3
   lootItems.sort(function(a,b){ return priorityScore(b)-priorityScore(a); });
-  lootItems = lootItems.slice(0, 6);
+  lootItems = lootItems.slice(0, 3);
 
   return {
     ms: ms,
@@ -12156,7 +12155,7 @@ function _showWelcomeBack(result, levelsGained) {
     html += '<div style="font-size:11px;color:#5a5a6a;font-style:italic;">No notable items found.</div>';
   }
 
-  html += '<div style="font-size:10px;color:#3a3a4a;margin-top:12px;font-style:italic;">Offline earnings are reduced. Check your vault for new gear.</div>';
+  html += '<div style="font-size:10px;color:#3a3a4a;margin-top:12px;font-style:italic;">Offline earnings are reduced (40% rate, 5h cap). Check your vault for new gear.</div>';
 
   bodyEl.innerHTML = html;
   overlay.style.display = 'flex';
