@@ -4043,7 +4043,7 @@ function generateItem(isBossLoot, forceSlot, extraMf, ignoreMf) {
   var _pickSlots = _ngPlusZone ? SLOTS : SLOTS.filter(function(s) { return s !== 'boots' && s !== 'ring2'; });
   var slot = forceSlot || _pickSlots[ri(0, _pickSlots.length-1)];
   var effectiveMf = totalMf() + (extraMf || 0);
-  var shift = Math.min(effectiveMf * MF_BOOST.rarityShiftPerMf, MF_BOOST.maxRarityShift);
+  var shift = effectiveMf / (effectiveMf + MF_BOOST.shiftHalfPoint) * MF_BOOST.shiftAsymptote;
   var uBase = isBossLoot ? LOOT_ODDS.uniqueBoss : LOOT_ODDS.uniqueBase;
   var rBase = isBossLoot ? LOOT_ODDS.rareBoss   : LOOT_ODDS.rareBase;
   var mBase = isBossLoot ? LOOT_ODDS.magicBoss  : LOOT_ODDS.magicBase;
