@@ -244,6 +244,8 @@
   }
   .discard-btn { flex-shrink:0;margin-left:6px;padding:1px 5px;border:1px solid #3a2a2a;background:#0a0608;color:#6a4a4a;font-size:10px;cursor:pointer;border-radius:2px;line-height:1.4;transition:all 0.12s; }
   .discard-btn:hover { border-color:#c83a3a !important;background:#2a0808 !important;color:#ff6a6a !important;box-shadow:0 0 6px #c83a3a88;transform:scale(1.15); }
+  .help-hdr { font-size:14px;color:#c8a84b;text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid #c8a84b33;padding-bottom:4px;margin-bottom:10px; }
+  .help-p { font-size:14px;color:#a09080;line-height:1.7;margin-bottom:14px; }
   .vault-slot-header { font-size:10px;color:#5a5a7a;text-transform:uppercase;letter-spacing:1px;padding:8px 6px 3px;border-bottom:1px solid #1a1a2a;margin-bottom:1px;display:flex;align-items:center;gap:5px; }
   .vault-slot-header:first-child { padding-top:2px; }
   .vault-row { cursor:grab; }
@@ -1039,53 +1041,79 @@
     <div style="font-size:22px;color:#c8a84b;margin-bottom:4px;letter-spacing:1px;">IDLE DEPTHS</div>
     <div style="font-size:13px;color:#5a5a6a;font-style:italic;margin-bottom:20px;">A guide to the descent</div>
 
-    <div style="font-size:14px;color:#c8a84b;text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid #c8a84b33;padding-bottom:4px;margin-bottom:10px;">The Basics</div>
-    <p style="font-size:14px;color:#a09080;line-height:1.7;margin-bottom:14px;">Idle Depths is an idle ARPG. Your hero fights automatically — enemies spawn, you attack, they die, loot drops. Your job is to manage skills, gear, and progression to push deeper into harder content.</p>
+    <div id="help-sec-basics">
+      <div class="help-hdr">The Basics</div>
+      <p class="help-p">Idle Depths is an idle ARPG. Your hero fights automatically — enemies spawn, you attack, they die, loot drops. Your job is to manage skills, gear, and progression to push deeper into harder content.</p>
+    </div>
 
-    <div style="font-size:14px;color:#c8a84b;text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid #c8a84b33;padding-bottom:4px;margin-bottom:10px;">You Will Die — That's Okay</div>
-    <p style="font-size:14px;color:#a09080;line-height:1.7;margin-bottom:14px;">Death is a core part of the loop, not a failure state. When a boss is killing you, don't keep throwing yourself at it — use <span style="color:#7aaa5a88;">🌾 Farm Zone</span> to idle a cleared zone instead. Farm for gear and XP until you're strong enough to push further. The game rewards patience. If a boss feels impossible, you're meant to farm first.</p>
+    <div id="help-sec-death">
+      <div class="help-hdr">You Will Die — That's Okay</div>
+      <p class="help-p">Death is a core part of the loop, not a failure state. When a boss is killing you, don't keep throwing yourself at it — use <span style="color:#7aaa5a88;">🌾 Farm Zone</span> to idle a cleared zone instead. Farm for gear and XP until you're strong enough to push further. The game rewards patience. If a boss feels impossible, you're meant to farm first.</p>
+    </div>
 
-    <div style="font-size:14px;color:#c8a84b;text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid #c8a84b33;padding-bottom:4px;margin-bottom:10px;">Class Philosophies</div>
-    <p style="font-size:14px;color:#a09080;line-height:1.7;margin-bottom:6px;"><span style="color:#d4c9a8;">Sorceress</span> — A glass cannon built around elemental damage and crowd control. She hits hard and can freeze, burn, shock, and chill entire packs, and has an innate affinity for elemental status effects — her procs land more often than other classes. Defensively she relies on her Energy Shield passive and Warmth regen rather than raw HP. Play her as a high-output nuker: invest in AoE skills for farming and single-target spells for boss fights. Her damage ceiling is the highest of any class, but she punishes greediness.</p>
-    <p style="font-size:14px;color:#a09080;line-height:1.7;margin-bottom:6px;"><span style="color:#d4c9a8;">Warrior</span> — A bruiser who thrives on momentum. He builds Rage by attacking and taking hits, then spends it through his active Technique for powerful effects. More HP and a base block chance make him naturally durable, but his damage output depends heavily on how well you manage Rage. The Warrior rewards staying in the fight and planning around his Technique — Execute for burst, Last Stand for survival, Item Find for farming.</p>
-    <p style="font-size:14px;color:#a09080;line-height:1.7;margin-bottom:6px;"><span style="color:#d4c9a8;">Rogue</span> — A specialist who commits to a playstyle from the start. The Rogue has no skills by default — first choose a <span style="color:#d4c9a8;">Specialization</span> in the T3 tab (Assassin, Toxicologist, or Mage Hunter), which unlocks your three T1 combat skills and defines how you fight. Then pick an active <span style="color:#d4c9a8;">Scheme</span> from the T2 tab (Lucky, Pilfer, or Excavation) for a passive bonus that enhances your loot and gold. The Assassin opens every fight with a guaranteed crit Backstab then switches to Blade Dance or Flurry — high burst, bleed-oriented. The Toxicologist stacks poison and neurotoxins, debilitating enemies while DoTs wear them down with HP sustain on kills. The Mage Hunter cycles through elemental attacks, building and consuming spell shields, with the strongest status effect bonuses of any class.</p>
-    <p style="font-size:14px;color:#a09080;line-height:1.7;margin-bottom:14px;"><span style="color:#d4c9a8;">Ranger</span> — A versatile hunter who fights alongside an Animal Companion. Choose a <span style="color:#d4c9a8;">Discipline</span> in the T3 tab (Hunter, Arcane Archer, or Trapper) and a <span style="color:#d4c9a8;">Stratagem</span> from T2. The Hunter bonds deeply with their companion — Mark Prey lets the companion fight in your place while you direct the battle. The Arcane Archer channels elemental arrows with AoE potential. The Trapper sets up freezing traps that detonate for heavy cold damage. Rangers also get unique advantages on the Bounty Board: only Rangers can tame wild creatures encountered during a hunt, and only Rangers can Scout (reroll) bounties for a fee.</p>
+    <div id="help-sec-classes">
+      <div class="help-hdr">Class Philosophies</div>
+      <p class="help-p"><span style="color:#d4c9a8;">Sorceress</span> — A glass cannon built around elemental damage and crowd control. She hits hard and can freeze, burn, shock, and chill entire packs, and has an innate affinity for elemental status effects — her procs land more often than other classes. Defensively she relies on her Energy Shield passive and Warmth regen rather than raw HP. Play her as a high-output nuker: invest in AoE skills for farming and single-target spells for boss fights. Her damage ceiling is the highest of any class, but she punishes greediness.</p>
+      <p class="help-p"><span style="color:#d4c9a8;">Warrior</span> — A bruiser who thrives on momentum. He builds Rage by attacking and taking hits, then spends it through his active Technique for powerful effects. More HP and a base block chance make him naturally durable, but his damage output depends heavily on how well you manage Rage. The Warrior rewards staying in the fight and planning around his Technique — Execute for burst, Last Stand for survival, Item Find for farming.</p>
+      <p class="help-p"><span style="color:#d4c9a8;">Rogue</span> — A specialist who commits to a playstyle from the start. The Rogue has no skills by default — first choose a <span style="color:#d4c9a8;">Specialization</span> in the T3 tab (Assassin, Toxicologist, or Mage Hunter), which unlocks your three T1 combat skills and defines how you fight. Then pick an active <span style="color:#d4c9a8;">Scheme</span> from the T2 tab (Lucky, Pilfer, or Excavation) for a passive bonus that enhances your loot and gold.</p>
+      <p class="help-p"><span style="color:#d4c9a8;">Ranger</span> — A versatile hunter who fights alongside an Animal Companion. Choose a <span style="color:#d4c9a8;">Discipline</span> in the T3 tab (Hunter, Arcane Archer, or Trapper) and a <span style="color:#d4c9a8;">Stratagem</span> from T2. Rangers get unique advantages on the Bounty Board: only Rangers can tame wild creatures encountered during a hunt, and only Rangers can Scout (reroll) bounties for a fee.</p>
+    </div>
 
-    <div style="font-size:14px;color:#c8a84b;text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid #c8a84b33;padding-bottom:4px;margin-bottom:10px;">Combat</div>
-    <p style="font-size:14px;color:#a09080;line-height:1.7;margin-bottom:14px;">Your character attacks automatically based on the skill selected in the right panel. Each zone has a pack of mobs then a boss — the size of the pack varies by difficulty and zone. Killing the boss opens a shop and advances to the next act. There are 5 acts per difficulty. Clearing Act 5 on a difficulty unlocks the next one. If you die on any difficulty you restart the act you died on — you never lose more than one act of progress.</p>
+    <div id="help-sec-combat">
+      <div class="help-hdr">Combat</div>
+      <p class="help-p">Your character attacks automatically based on the skill selected in the right panel. Each zone has a pack of mobs then a boss — the size of the pack varies by difficulty and zone. Killing the boss opens a shop and advances to the next act. There are 5 acts per difficulty. Clearing Act 5 on a difficulty unlocks the next one. If you die on any difficulty you restart the act you died on — you never lose more than one act of progress.</p>
+    </div>
 
-    <div style="font-size:14px;color:#c8a84b;text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid #c8a84b33;padding-bottom:4px;margin-bottom:10px;">Status Effects</div>
-    <p style="font-size:14px;color:#a09080;line-height:1.7;margin-bottom:14px;">Every damage type carries a chance to apply a status effect — fire burns, lightning shocks, cold chills and freezes, physical bleeds. Each behaves differently. The chance of triggering them and how powerful they are can be modified through your item choices and skill investment.</p>
+    <div id="help-sec-status">
+      <div class="help-hdr">Status Effects</div>
+      <p class="help-p">Every damage type carries a chance to apply a status effect — fire burns, lightning shocks, cold chills and freezes, physical bleeds. Each behaves differently. The chance of triggering them and how powerful they are can be modified through your item choices and skill investment.</p>
+    </div>
 
-    <div style="font-size:14px;color:#c8a84b;text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid #c8a84b33;padding-bottom:4px;margin-bottom:10px;">Skills</div>
-    <p style="font-size:14px;color:#a09080;line-height:1.7;margin-bottom:14px;">You gain a skill point every level, and occasionally from act and difficulty milestones. Spend them in the Skill Tree (right panel). You can respec all points at any time — you start with a free respec for each difficulty unlocked, then it costs gold (doubling each time). Use the <span style="color:#d4c9a8;">Skill Loadout</span> panel below the skill tree to assign a farm skill and a boss skill — the game swaps automatically when a boss spawns and back when mobs resume.</p>
+    <div id="help-sec-skills">
+      <div class="help-hdr">Skills</div>
+      <p class="help-p">You gain a skill point every level, and occasionally from act and difficulty milestones. Spend them in the Skill Tree (right panel). You can respec all points at any time — you start with a free respec for each difficulty unlocked, then it costs gold (doubling each time). Use the <span style="color:#d4c9a8;">Skill Loadout</span> panel below the skill tree to assign a farm skill and a boss skill — the game swaps automatically when a boss spawns and back when mobs resume.</p>
+    </div>
 
-    <div style="font-size:14px;color:#c8a84b;text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid #c8a84b33;padding-bottom:4px;margin-bottom:10px;">Gear &amp; Loot</div>
-    <p style="font-size:14px;color:#a09080;line-height:1.7;margin-bottom:10px;">Items drop with four rarities: <span style="color:#7a7a8a;">Normal</span>, <span style="color:#6fa3ef;">Magic</span>, <span style="color:#ffd700;">Rare</span>, and <span style="color:#e57bf5;">Unique</span>. Better items are automatically equipped if they score higher than what you have. The Vault holds the top items per slot — click a vault item to swap it in. Lock a slot to prevent auto-replacing it. Uniques that don't fit are queued for review — a purple button appears in the left panel when items are pending.</p>
-    <p style="font-size:14px;color:#c8a84b88;line-height:1.7;margin-bottom:14px;">💡 A little Magic Find goes a long way. Even modest MF meaningfully shifts your drop quality. Don't overlook it when evaluating gear — a piece with solid MF can outperform a pure damage item over a long farming session.</p>
+    <div id="help-sec-gear">
+      <div class="help-hdr">Gear &amp; Loot</div>
+      <p class="help-p">Items drop with four rarities: <span style="color:#7a7a8a;">Normal</span>, <span style="color:#6fa3ef;">Magic</span>, <span style="color:#ffd700;">Rare</span>, and <span style="color:#e57bf5;">Unique</span>. Better items are automatically equipped if they score higher than what you have. The Vault holds the top items per slot — click a vault item to swap it in. Lock a slot to prevent auto-replacing it. Uniques that don't fit are queued for review — a purple button appears in the left panel when items are pending.</p>
+      <p class="help-p" style="color:#c8a84b88;">💡 A little Magic Find goes a long way. Even modest MF meaningfully shifts your drop quality. Don't overlook it when evaluating gear — a piece with solid MF can outperform a pure damage item over a long farming session.</p>
+    </div>
 
-    <div style="font-size:14px;color:#c8a84b;text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid #c8a84b33;padding-bottom:4px;margin-bottom:10px;">The Shop</div>
-    <p style="font-size:14px;color:#a09080;line-height:1.7;margin-bottom:14px;">After every boss kill a shop opens briefly (pauseable). You can buy items on offer, an MF Blessing that temporarily boosts your Magic Find, a random Gem Fragment for reforging, or gamble a random item. The shop auto-closes and advances to the next act — hit Pause if you need more time. Use the <span style="color:#5a9aca;">💊 Top Off</span> button (once per act, costs a little gold) to heal to full before a tough boss.</p>
+    <div id="help-sec-shop">
+      <div class="help-hdr">The Shop</div>
+      <p class="help-p">After every boss kill a shop opens briefly (pauseable). You can buy items on offer, an MF Blessing that temporarily boosts your Magic Find, a random Gem Fragment for reforging, or gamble a random item. The shop auto-closes and advances to the next act — hit Pause if you need more time. Use the <span style="color:#5a9aca;">💊 Top Off</span> button (once per act, costs a little gold) to heal to full before a tough boss.</p>
+    </div>
 
-    <div style="font-size:14px;color:#c8a84b;text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid #c8a84b33;padding-bottom:4px;margin-bottom:10px;">Reforging</div>
-    <p style="font-size:14px;color:#a09080;line-height:1.7;margin-bottom:8px;">Gem Fragments drop rarely from mobs and more reliably from bosses. Each gem type favors different stats — Fortune (MF/Gold), Ruin (Dmg/XP), Tempest (Speed/Dmg), Ember (Elemental). Select a gem in the Reforging tab, then click the ↻ button on any Magic or Rare vault item to reforge its stats. Reforging costs gold and one gem. Stats can roll differently every time — sometimes better, sometimes worse. The Reforging tab blinks when you have gems to spend.</p>
-    <p style="font-size:14px;color:#c85a1a;line-height:1.7;margin-bottom:14px;">⚠ Every reforge carries a chance of destroying the item — and that chance grows with each successive reforge on the same piece. Hover over an item's reforge button to see the current risk before committing.</p>
+    <div id="help-sec-reforge">
+      <div class="help-hdr">Reforging</div>
+      <p class="help-p">Gem Fragments drop rarely from mobs and more reliably from bosses. Each gem type favors different stats — Fortune (MF/Gold), Ruin (Dmg/XP), Tempest (Speed/Dmg), Ember (Elemental). Select a gem in the Reforging tab, then click the ↻ button on any Magic or Rare vault item to reforge its stats. Reforging costs gold and one gem. Stats can roll differently every time — sometimes better, sometimes worse. The Reforging tab blinks when you have gems to spend.</p>
+      <p class="help-p" style="color:#c85a1a;">⚠ Every reforge carries a chance of destroying the item — and that chance grows with each successive reforge on the same piece. Hover over an item's reforge button to see the current risk before committing.</p>
+    </div>
 
-    <div style="font-size:14px;color:#c8a84b;text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid #c8a84b33;padding-bottom:4px;margin-bottom:10px;">Loops &amp; Farming</div>
-    <p style="font-size:14px;color:#a09080;line-height:1.7;margin-bottom:14px;">The <span style="color:#c8a84b88;">🎯 Target Boss</span> button repeatedly farms a specific boss for a prepaid gold cost. The <span style="color:#7aaa5a88;">🌾 Farm Zone</span> button farms mobs without a boss at a lower cost with increased rare pack chance. Inside Farm Zone you can choose a <strong>Hunt Pack</strong> type for extra gold — Ghost Packs drop jewelry and trinkets only, Undead Packs drop weapons and armor, Goblin Packs focus on gold with the occasional jewelry find. Rare packs are groups of bonus mobs marked ★ that drop extra loot.</p>
+    <div id="help-sec-loops">
+      <div class="help-hdr">Loops &amp; Farming</div>
+      <p class="help-p">The <span style="color:#c8a84b88;">🎯 Target Boss</span> button repeatedly farms a specific boss for a prepaid gold cost. The <span style="color:#7aaa5a88;">🌾 Farm Zone</span> button farms mobs without a boss at a lower cost with increased rare pack chance. Inside Farm Zone you can choose a <strong>Hunt Pack</strong> type for extra gold — Ghost Packs drop jewelry and trinkets only, Undead Packs drop weapons and armor, Goblin Packs focus on gold with the occasional jewelry find. Rare packs are groups of bonus mobs marked ★ that drop extra loot.</p>
+    </div>
 
-    <div style="font-size:14px;color:#c8a84b;text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid #c8a84b33;padding-bottom:4px;margin-bottom:10px;">Bounty Board</div>
-    <p style="font-size:14px;color:#a09080;line-height:1.7;margin-bottom:14px;">After killing a boss, the Act Shop may show a <span style="color:#c8a0ff;">📋 Bounty Board</span> with a contract — a named miniboss scaled to your power level, with a reward stated upfront (gold or an item). Click <span style="color:#c8a0ff;">Hunt</span> to begin a 10-second search, then face the target in combat. Bounty targets are not bosses — killing one won't trigger the shop or advance the act. Rewards are delivered immediately on kill. If you die during the hunt the bounty is lost. Rangers can <span style="color:#7aaa5a;">Scout</span> (reroll the bounty for 100g) and <span style="color:#c85a5a;">may encounter wild creatures during the search that can be tamed as companions.</span></p>
+    <div id="help-sec-bounty">
+      <div class="help-hdr">Bounty Board</div>
+      <p class="help-p">After killing a boss, the Act Shop may show a <span style="color:#c8a0ff;">📋 Bounty Board</span> with a contract — a named miniboss scaled to your power level, with a reward stated upfront (gold or an item). Click <span style="color:#c8a0ff;">Hunt</span> to begin a 10-second search, then face the target in combat. Bounty targets are not bosses — killing one won't trigger the shop or advance the act. Rewards are delivered immediately on kill. If you die during the hunt the bounty is lost. Rangers can <span style="color:#7aaa5a;">Scout</span> (reroll the bounty for 100g) and may encounter wild creatures during the search that can be tamed as companions.</p>
+    </div>
 
-    <div style="font-size:14px;color:#c8a84b;text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid #c8a84b33;padding-bottom:4px;margin-bottom:10px;">Animal Companions (Ranger)</div>
-    <p style="font-size:14px;color:#a09080;line-height:1.7;margin-bottom:14px;">Rangers bond with an Animal Companion that fights alongside them and provides a permanent passive bonus. Each companion's strength varies — some you find will be stronger than others. New companions are discovered through Bounty hunts and kept by choosing to tame them. Once tamed a companion is yours permanently. You can rename any companion from the companion panel. The Wolf starts as your default companion; others are unlocked through play.</p>
+    <div id="help-sec-companions">
+      <div class="help-hdr">Animal Companions (Ranger)</div>
+      <p class="help-p">Rangers bond with an Animal Companion that fights alongside them and provides a permanent passive bonus. Each companion's strength varies — some you find will be stronger than others. New companions are discovered through Bounty hunts and kept by choosing to tame them. Once tamed a companion is yours permanently. You can rename any companion from the companion panel. The Wolf starts as your default companion; others are unlocked through play.</p>
+    </div>
 
-    <div style="font-size:14px;color:#c8a84b;text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid #c8a84b33;padding-bottom:4px;margin-bottom:10px;">Build Priority</div>
-    <p style="font-size:14px;color:#a09080;line-height:1.7;margin-bottom:24px;">In the left panel under Build Priority, you can flag up to a few stats as important. The scoring system will weight those stats heavily when deciding whether to auto-equip or vault an item, making sure gear that matches your build gets prioritised. Click the ▾ button next to the Hero panel title to collapse secondary stats and save screen space.</p>
+    <div id="help-sec-priority">
+      <div class="help-hdr">Build Priority</div>
+      <p class="help-p" style="margin-bottom:24px;">In the left panel under Build Priority, you can flag up to a few stats as important. The scoring system will weight those stats heavily when deciding whether to auto-equip or vault an item, making sure gear that matches your build gets prioritised. Click the ▾ button next to the Hero panel title to collapse secondary stats and save screen space.</p>
+    </div>
 
-    <div id="help-relic-section" style="display:none;">
-      <div style="font-size:14px;color:#c8a84b;text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid #c8a84b33;padding-bottom:4px;margin-bottom:10px;">Relics</div>
-      <p style="font-size:14px;color:#a09080;line-height:1.7;margin-bottom:14px;">Relics are special items that charge from the deaths around you — mob kills grant one charge, boss kills refill all charges. When enough charges are stored, the relic activates and releases its power. The relic frame sits below the combat log; click Use to activate manually, or choose an automatic trigger mode: <span style="color:#d4c9a8;">When Full</span> (fires the moment charges max out), <span style="color:#d4c9a8;">On Boss</span> (fires when a boss spawns), or <span style="color:#d4c9a8;">On Expiry</span> (refires automatically when the previous use ends).</p>
+    <div id="help-relic-section">
+      <div class="help-hdr">Relics</div>
+      <p class="help-p">Relics are special items that charge from the deaths around you — mob kills grant one charge, boss kills refill all charges. When enough charges are stored, the relic activates and releases its power. The relic frame sits below the combat log; click Use to activate manually, or choose an automatic trigger mode: <span style="color:#d4c9a8;">When Full</span> (fires the moment charges max out), <span style="color:#d4c9a8;">On Boss</span> (fires when a boss spawns), or <span style="color:#d4c9a8;">On Expiry</span> (refires automatically when the previous use ends).</p>
     </div>
 
     <button onclick="closeHelp()" style="width:100%;padding:10px;border:1px solid #c8a84b44;background:#1a1510;color:#c8a84b;font-family:Georgia,serif;font-size:14px;cursor:pointer;border-radius:2px;">Close</button>
@@ -1258,7 +1286,7 @@
 </div>
 
 
-  <span class="game-title">IDLE DEPTHS <span style="font-size:13px;letter-spacing:1px;opacity:0.6;">v1.12</span></span>
+  <span class="game-title">IDLE DEPTHS <span style="font-size:13px;letter-spacing:1px;opacity:0.6;">v1.14</span></span>
 </div>
 
 <!-- Difficulty / act bar -->
@@ -9814,12 +9842,34 @@ var _helpPaused = false; // true if help overlay auto-paused the game
 
 function openHelp() {
   var el = document.getElementById('help-overlay');
-  if (el) {
-    var relicSection = document.getElementById('help-relic-section');
-    if (relicSection) relicSection.style.display = relicSystemUnlocked ? 'block' : 'none';
-    el.style.display = 'flex';
-    el.scrollTop = 0;
+  if (!el) return;
+
+  // Gate each section based on what the player has seen/unlocked
+  function _sec(id, show) {
+    var s = document.getElementById(id);
+    if (s) s.style.display = show ? '' : 'none';
   }
+
+  var bossKills  = getTotalBossKills ? getTotalBossKills() : 0;
+  var hasGems    = gemIntroSeen || (gemInventory && Object.keys(gemInventory).some(function(k){ return gemInventory[k] > 0; }));
+
+  _sec('help-sec-basics',        true);
+  _sec('help-sec-death',         true);
+  _sec('help-sec-classes',       true);
+  _sec('help-sec-combat',        true);
+  _sec('help-sec-status',        true);
+  _sec('help-sec-skills',        true);
+  _sec('help-sec-gear',          vaultIntroSeen || bossKills > 0);
+  _sec('help-sec-shop',          loopIntroSeen  || bossKills > 0);
+  _sec('help-sec-reforge',       hasGems);
+  _sec('help-sec-loops',         loopIntroSeen);
+  _sec('help-sec-bounty',        bountyIntroSeen);
+  _sec('help-sec-companions',    classKey === 'ranger');
+  _sec('help-sec-priority',      itemPriorityIntroSeen);
+  _sec('help-relic-section',     relicSystemUnlocked);
+
+  el.style.display = 'flex';
+  el.scrollTop = 0;
   if (!gamePaused) { togglePause(); _helpPaused = true; }
 }
 
@@ -14235,15 +14285,40 @@ function executeWipeSave() {
 
 function wipeAllData() {
   if (!confirm('☠ DELETE ALL DATA?\n\nThis will wipe every character save and the shared bank. There is no undo.')) return;
-  // Remove all character saves
+  executeWipeAll();
+}
+
+function confirmWipeAll() {
+  var overlay = document.getElementById('wipe-all-overlay');
+  if (overlay) { overlay.style.display = 'flex'; }
+  // Reset to first step in case it was previously opened
+  var step = document.getElementById('wipe-all-confirm-step');
+  if (step) step.style.display = 'none';
+  var btn = document.getElementById('wipe-all-first-btn');
+  if (btn) btn.style.display = '';
+}
+
+function showWipeAllConfirmStep() {
+  var step = document.getElementById('wipe-all-confirm-step');
+  if (step) step.style.display = 'block';
+  var btn = document.getElementById('wipe-all-first-btn');
+  if (btn) btn.style.display = 'none';
+}
+
+function closeWipeAll() {
+  var overlay = document.getElementById('wipe-all-overlay');
+  if (overlay) overlay.style.display = 'none';
+}
+
+function executeWipeAll() {
   var allClasses = ['sorceress', 'warrior', 'rogue', 'ranger'];
   for (var i = 0; i < allClasses.length; i++) {
     localStorage.removeItem('idledepths_save_' + allClasses[i]);
   }
-  // Remove bank and class selection
   localStorage.removeItem(BANK_KEY);
   localStorage.removeItem('idledepths_class');
   localStorage.removeItem('idledepths_visited');
+  localStorage.removeItem('idledepths_statscollapsed');
   location.reload();
 }
 
@@ -15315,12 +15390,19 @@ init();
     </div>
 
     <div style="font-size:12px;color:#c85a5a;text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid #5a1a1a33;padding-bottom:3px;margin-bottom:12px;margin-top:4px;">Danger Zone</div>
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
       <div>
         <div style="font-size:12px;color:#d4c9a8;">Wipe save data</div>
         <div style="font-size:10px;color:#5a5a6a;">Permanently delete all progress for this hero</div>
       </div>
       <button onclick="closeSettings();confirmWipeSave();" style="padding:3px 12px;border:1px solid #5a1a1a;background:#0a0608;color:#aa4a4a;font-family:Georgia,serif;font-size:11px;cursor:pointer;border-radius:2px;" onmouseover="this.style.color='#ff6a6a';this.style.borderColor='#c83a3a'" onmouseout="this.style.color='#aa4a4a';this.style.borderColor='#5a1a1a'">🗑 Wipe Save</button>
+    </div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;padding:10px 12px;border:1px solid #4a1a1a;border-radius:3px;background:#0d0608;">
+      <div>
+        <div style="font-size:12px;color:#ff6a6a;">☠ Full Reset</div>
+        <div style="font-size:10px;color:#5a3a3a;">Wipe all characters, bank, and settings — return to first run</div>
+      </div>
+      <button onclick="closeSettings();confirmWipeAll();" style="padding:3px 12px;border:1px solid #7a1a1a;background:#1a0608;color:#ff4a4a;font-family:Georgia,serif;font-size:11px;cursor:pointer;border-radius:2px;font-weight:bold;" onmouseover="this.style.color='#ff8a8a';this.style.borderColor='#ff3a3a';this.style.background='#2a0808'" onmouseout="this.style.color='#ff4a4a';this.style.borderColor='#7a1a1a';this.style.background='#1a0608'">☠ Reset All</button>
     </div>
 
     <button onclick="closeSettings()" style="width:100%;padding:7px;border:1px solid #c8a84b44;background:#1a1510;color:#c8a84b;font-family:Georgia,serif;font-size:12px;cursor:pointer;border-radius:2px;">Close</button>
@@ -15397,6 +15479,24 @@ init();
     <div style="display:flex;gap:10px;justify-content:center;">
       <button onclick="executeWipeSave()" style="padding:6px 20px;border:1px solid #6a1a1a;background:#1a0608;color:#ff6a6a;font-family:Georgia,serif;font-size:12px;cursor:pointer;border-radius:2px;transition:all 0.15s;" onmouseover="this.style.background='#2a0808';this.style.borderColor='#c83a3a'" onmouseout="this.style.background='#1a0608';this.style.borderColor='#6a1a1a'">Yes, wipe everything</button>
       <button onclick="closeWipeConfirm()" style="padding:6px 20px;border:1px solid #2a2a3a;background:#0a0a14;color:#7a7a9a;font-family:Georgia,serif;font-size:12px;cursor:pointer;border-radius:2px;transition:all 0.15s;" onmouseover="this.style.color='#c8a84b';this.style.borderColor='#4a4a2a'" onmouseout="this.style.color='#7a7a9a';this.style.borderColor='#2a2a3a'">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- Full reset (wipe all) confirmation overlay -->
+<div id="wipe-all-overlay" style="display:none;position:fixed;inset:0;background:#000000bb;z-index:401;align-items:center;justify-content:center;">
+  <div style="background:#0d0608;border:2px solid #7a1a1a;border-radius:4px;padding:28px 32px;max-width:400px;width:90%;text-align:center;box-shadow:0 0 60px #ff000033;">
+    <div style="font-size:22px;margin-bottom:8px;">☠</div>
+    <div style="font-size:16px;color:#ff6a6a;font-family:Georgia,serif;margin-bottom:8px;letter-spacing:1px;">Full Reset</div>
+    <div style="font-size:12px;color:#8a6a6a;line-height:1.8;margin-bottom:8px;">This will permanently delete <strong style="color:#ff8a8a;">all four characters</strong>, the shared bank, and all settings. The game will return to the class selection screen as if launched for the first time.</div>
+    <div style="font-size:11px;color:#5a3a3a;margin-bottom:22px;font-style:italic;">There is no undo.</div>
+    <div id="wipe-all-confirm-step" style="display:none;margin-bottom:16px;padding:10px;border:1px solid #5a1a1a;border-radius:3px;background:#0a0406;">
+      <div style="font-size:11px;color:#ff8a6a;margin-bottom:8px;">Are you absolutely sure? Click below to confirm.</div>
+      <button onclick="executeWipeAll()" style="padding:8px 28px;border:2px solid #c83a3a;background:#2a0808;color:#ff4a4a;font-family:Georgia,serif;font-size:13px;cursor:pointer;border-radius:3px;font-weight:bold;letter-spacing:1px;transition:all 0.15s;" onmouseover="this.style.background='#3a0a0a';this.style.boxShadow='0 0 16px #c83a3a88'" onmouseout="this.style.background='#2a0808';this.style.boxShadow='none'">☠ Confirm Full Reset</button>
+    </div>
+    <div style="display:flex;gap:10px;justify-content:center;">
+      <button onclick="showWipeAllConfirmStep()" id="wipe-all-first-btn" style="padding:6px 20px;border:1px solid #7a1a1a;background:#1a0608;color:#ff6a6a;font-family:Georgia,serif;font-size:12px;cursor:pointer;border-radius:2px;transition:all 0.15s;" onmouseover="this.style.background='#2a0808';this.style.borderColor='#c83a3a'" onmouseout="this.style.background='#1a0608';this.style.borderColor='#7a1a1a'">Yes, reset everything</button>
+      <button onclick="closeWipeAll()" style="padding:6px 20px;border:1px solid #2a2a3a;background:#0a0a14;color:#7a7a9a;font-family:Georgia,serif;font-size:12px;cursor:pointer;border-radius:2px;transition:all 0.15s;" onmouseover="this.style.color='#c8a84b';this.style.borderColor='#4a4a2a'" onmouseout="this.style.color='#7a7a9a';this.style.borderColor='#2a2a3a'">Cancel</button>
     </div>
   </div>
 </div>
