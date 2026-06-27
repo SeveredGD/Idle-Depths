@@ -2852,11 +2852,11 @@ var STAT_RANGES = {
 };
 
 var SCORE_WEIGHTS  = {
-  mainDmg:3.0, mainSpd:2.5, hp:0.5, mf:4.0, hpRegen:3.0, reducedDmg:2.5,
+  mainDmg:3.0, mainSpd:2.5, hp:0.5, mf:2.0, hpRegen:3.0, reducedDmg:2.5,
   fireDmg:1.5, lightDmg:1.5, coldDmg:1.5, magicDmg:2.5,
-  critChance:3.5, aoeChance:1.5,
+  critChance:3.5, aoeChance:2.5,
   blockChance:1.0, spellShield:1.5,
-  xpGain:1.0, goldFind:1.0, castCooldown:1.5,
+  xpGain:1.0, goldFind:1.0, castCooldown:3.5,
   statusEffect:2.0,
 };
 var SKILL_BONUS_SCORES = { 1:18, 2:40, 3:75 };
@@ -3439,7 +3439,7 @@ function recalcStats() {
   var _passiveBlock = classKey==='rogue' ? (hero.skillTree['evasion']||0)*1.5 : classKey==='warrior' ? 5 : classKey==='ranger' ? 3 : 0;
   hero._blockChanceRaw  = bonusBlock + _passiveBlock;
   hero._blockChance     = Math.min(hero._blockChanceRaw, 40);
-  var _passiveShield = classKey==='sorceress' ? (hero.skillTree['energyshield']||0)*3.5 : classKey==='rogue' ? (hero.skillTree['shadowveil']||0)*3.5 : 0;
+  var _passiveShield = classKey==='sorceress' ? 10 + (hero.skillTree['energyshield']||0)*3.5 : classKey==='rogue' ? (hero.skillTree['shadowveil']||0)*3.5 : 0;
   hero._spellShield     = bonusShield + _passiveShield;
   hero._passiveMf       = classKey==='sorceress' ? (hero.skillTree['fortune']||0) : (hero.skillTree['plunder']||0);
   // Execute global dmg bonus
@@ -4574,7 +4574,7 @@ function heroAttack(now) {
 
   if (skill.id === 'fire') {
     var fireMult  = 1 + (hero._fireDmg || 0) / 100;
-    var aoeChance = ((sk.aoe || AOE_BASE_CHANCE) + (hero._aoeChance || 0)) / 100;
+    var aoeChance = ((sk.aoe || AOE_BASE_CHANCE)) / 100;
     var dmg = Math.round(base * fireMult * stunBonusMult);
     _lastDealtDmg = dmg;
     addLog('Fireball: '+dmg+' fire dmg', 'fire');
@@ -4612,7 +4612,7 @@ function heroAttack(now) {
 
   } else if (skill.id === 'meteor') {
     var fireMult  = 1 + (hero._fireDmg || 0) / 100;
-    var aoeChance = ((sk.aoe || 6) + (hero._aoeChance || 0)) / 100;
+    var aoeChance = ((sk.aoe || 6)) / 100;
     var dmg = Math.round(base * fireMult * stunBonusMult);
     _lastDealtDmg = dmg;
     addLog('Meteor: '+dmg+' fire dmg', 'fire');
@@ -4643,7 +4643,7 @@ function heroAttack(now) {
   } else if (skill.id === 'chainlight') {
     var lightMult  = 1 + (hero._lightDmg || 0) / 100;
     var critChance = (sk.critChance || 0.20) + (hero._critChance || 0) / 100;
-    var aoeChance  = ((sk.aoe || 6) + (hero._aoeChance || 0)) / 100;
+    var aoeChance  = ((sk.aoe || 6)) / 100;
     if (Math.random() < critChance) {
       _isCrit = true;
       var dmg = Math.round(base * lightMult * 2);
@@ -4658,7 +4658,7 @@ function heroAttack(now) {
 
   } else if (skill.id === 'lightnova') {
     var lightMult = 1 + (hero._lightDmg || 0) / 100;
-    var aoeChance = ((sk.aoe || 10) + (hero._aoeChance || 0)) / 100;
+    var aoeChance = ((sk.aoe || 10)) / 100;
     var critChance = (sk.critChance || 0.05) + (hero._critChance || 0) / 100;
     if (Math.random() < critChance) {
       _isCrit = true;
@@ -4674,7 +4674,7 @@ function heroAttack(now) {
 
   } else if (skill.id === 'blizzard') {
     var coldMult     = 1 + (hero._coldDmg || 0) / 100;
-    var aoeChance    = ((sk.aoe || 16) + (hero._aoeChance || 0)) / 100;
+    var aoeChance    = ((sk.aoe || 16)) / 100;
     var freezeChance = enemy.isBoss ? (sk.bossFreeze||0.025) : (sk.mobFreeze||0.05);
     var dmg = Math.round(base * coldMult * stunBonusMult);
     if (!alreadyFrozen && Math.random() < freezeChance) {
@@ -4717,8 +4717,8 @@ function heroAttack(now) {
 
   if (skill.id === 'slash') {
     var physMult  = 1 + (hero._fireDmg || 0) / 100;
-    var aoe1Chance = ((sk.aoe || 6) + (hero._aoeChance || 0)) / 100;
-    var aoe2Chance = ((sk.aoe2 || 3) + (hero._aoeChance || 0) * 0.5) / 100;
+    var aoe1Chance = ((sk.aoe || 6)) / 100;
+    var aoe2Chance = (sk.aoe2 || 3) / 100;
     var critChance = warriorBaseCrit + (hero._critChance || 0) / 100;
     var dmg = Math.round(base * physMult * techMult);
     if (Math.random() < critChance) {
@@ -4789,7 +4789,7 @@ function heroAttack(now) {
 
   } else if (skill.id === 'leapslam') {
     var physMult  = 1 + (hero._fireDmg || 0) / 100;
-    var aoeChance = ((sk.aoe || 20) + (hero._aoeChance || 0)) / 100;
+    var aoeChance = ((sk.aoe || 20)) / 100;
     var critChance = warriorBaseCrit + (hero._critChance || 0) / 100;
     var dmg = Math.round(base * physMult * techMult);
     if (Math.random() < critChance) { _isCrit = true; dmg = Math.round(dmg * warriorCritMult); }
@@ -5026,7 +5026,7 @@ function heroAttack(now) {
 
   } else if (skill.id === 'fanknives') {
     var pierceMult = 1 + (hero._fireDmg || 0) / 100;
-    var aoeChance  = ((sk.aoe || AOE_BASE_CHANCE) + (hero._aoeChance || 0)) / 100;
+    var aoeChance  = ((sk.aoe || AOE_BASE_CHANCE)) / 100;
     var dmg = Math.round(base * pierceMult);
     addLog('Fan of Knives: '+dmg+' piercing dmg', 'fire');
     enemy.hp = Math.max(0, enemy.hp - dmg);
@@ -5078,7 +5078,7 @@ function heroAttack(now) {
   } else if (skill.id === 'bladeflurry') {
     var pierceMult = 1 + (hero._lightDmg || 0) / 100;
     var critChance = (sk.critChance || 0.20) + (hero._critChance || 0) / 100;
-    var aoeChance  = ((sk.aoe || 6) + (hero._aoeChance || 0)) / 100;
+    var aoeChance  = ((sk.aoe || 6)) / 100;
     if (Math.random() < critChance) {
       _isCrit = true;
       var dmg = Math.round(base * pierceMult * 2);
@@ -5093,7 +5093,7 @@ function heroAttack(now) {
 
   } else if (skill.id === 'shurikenstorm') {
     var pierceMult = 1 + (hero._fireDmg || 0) / 100;
-    var aoeChance  = ((sk.aoe || 12) + (hero._aoeChance || 0)) / 100;
+    var aoeChance  = ((sk.aoe || 12)) / 100;
     var dmg = Math.round(base * pierceMult);
     addLog('Shuriken Storm: '+dmg+' piercing dmg', 'fire');
     enemy.hp = Math.max(0, enemy.hp - dmg);
@@ -5101,7 +5101,7 @@ function heroAttack(now) {
 
   } else if (skill.id === 'rupture') {
     var shadowMult   = 1 + (hero._coldDmg || 0) / 100;
-    var aoeChance    = ((sk.aoe || 10) + (hero._aoeChance || 0)) / 100;
+    var aoeChance    = ((sk.aoe || 10)) / 100;
     var poisonChance = enemy.isBoss ? (sk.bossFreeze||0.025) : (sk.mobFreeze||0.05);
     var dmg = Math.round(base * shadowMult);
     if (!alreadyPoisoned && Math.random() < poisonChance) {
@@ -5377,6 +5377,12 @@ function heroAttack(now) {
       hero.rage = 0;
       enemy._executeUsed = true;
     }
+  }
+
+  // Universal AoE proc — gear aoeChance applies to every skill swing
+  if (!enemy.isBoss && (hero._aoeChance || 0) > 0 && Math.random() < hero._aoeChance / 100) {
+    addLog('↳ AoE splash — bonus mob slain!', 'fire');
+    gainKill(false, true, now);
   }
 
   if (enemy.hp <= 0) {
