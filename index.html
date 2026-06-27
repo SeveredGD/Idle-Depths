@@ -2633,12 +2633,9 @@ var hero = {
   rangerDiscipline: null,  // 'trapper' | 'arcanearcher' | 'hunter' | null
   quiver: 0,               // stored recovered crits (max 5)
   recoverAutoMode: 'all',  // 'all' | 'boss' — when to auto-use quiver crits
-  activePet: 'wolf',       // wolf is always bonded by default
-  unlockedPets: ['wolf'],  // only wolf unlocked at start; others found via events
-  companionName: '',       // custom name for active companion (empty = use default)
+  activePetSlot: 0,         // index into petRoster (null = no active companion)
+  petRoster: [{ id:'wolf', roll:10, name:'' }], // up to 6 companions; wolf always starts
   companionStance: 'aggressive', // 'aggressive' | 'defensive' | 'utility'
-  petRolls: { wolf: 10 }, // passive magnitude per pet (0-30), wolf fixed at 10
-  petNames: {},            // custom names per pet id
   _overloadCharge: 0,      // Overload Shot charge counter (0-3)
   _longShotMode: true,     // true = Long Shot available, false = caught up (Basic Shot)
   _markPreyActive: false,  // true when Mark Prey is active skill and ranger is hunter
@@ -2686,10 +2683,31 @@ var _bossRegenNext    = 0;   // timestamp for next hell boss regen tick
 var _lynxFirstStrikeDone = false; // lynx: first strike tracker per enemy
 function gainRage(amount) { hero.rage = Math.min(RAGE_MAX, (hero.rage || 0) + amount); }
 
-function getPetRoll(petId) {
-  if (!hero.petRolls) hero.petRolls = { wolf: 10 };
-  if (hero.petRolls[petId] === undefined) hero.petRolls[petId] = Math.floor(Math.pow(Math.random(), 2) * 31);
-  return hero.petRolls[petId];
+var PET_ROSTER_MAX = 6;
+
+function _activeRosterSlot() {
+  var idx = hero.activePetSlot;
+  if (idx === null || idx === undefined) return null;
+  if (!hero.petRoster || !hero.petRoster[idx]) return null;
+  return hero.petRoster[idx];
+}
+
+function getPetRoll(petIdOrSlot) {
+  // If called with a slot index (number), use petRoster
+  if (typeof petIdOrSlot === 'number') {
+    var slot = hero.petRoster && hero.petRoster[petIdOrSlot];
+    return slot ? slot.roll : 0;
+  }
+  // Legacy: called with petId string — look for active slot matching that id
+  var active = _activeRosterSlot();
+  if (active && active.id === petIdOrSlot) return active.roll;
+  // Fallback: scan roster for first matching id
+  if (hero.petRoster) {
+    for (var _ri = 0; _ri < hero.petRoster.length; _ri++) {
+      if (hero.petRoster[_ri] && hero.petRoster[_ri].id === petIdOrSlot) return hero.petRoster[_ri].roll;
+    }
+  }
+  return 0;
 }
 
 function getPetAdjective(roll) {
@@ -2702,8 +2720,8 @@ function getPetAdjective(roll) {
   return 'Feeble';
 }
 
-function getPetPassiveDesc(pet) {
-  var roll = getPetRoll(pet.id);
+function getPetPassiveDesc(pet, roll) {
+  if (roll === undefined) roll = getPetRoll(pet.id);
   var adj  = getPetAdjective(roll);
   var descs = {
     wolf:    adj+' Pack Bond — companion attacks deal +'+roll+'% bonus damage.',
@@ -2720,14 +2738,20 @@ function getPetPassiveDesc(pet) {
   return descs[pet.id] || 'Passive: '+roll+'%';
 }
 
-function companionDisplayName(petId) {
-  var pid = petId || hero.activePet;
-  if (!pid) return 'Companion';
-  var customName = (hero.petNames || {})[pid];
-  if (customName && customName.trim()) return customName.trim();
-  // Fall back to old single companionName for wolf backward compat
-  if (pid === hero.activePet && hero.companionName && hero.companionName.trim()) return hero.companionName.trim();
-  var pet = PETS.find(function(p) { return p.id === pid; });
+function companionDisplayName(slotOrId) {
+  var slot = null;
+  if (typeof slotOrId === 'number') {
+    slot = hero.petRoster && hero.petRoster[slotOrId];
+  } else if (slotOrId === undefined || slotOrId === null) {
+    slot = _activeRosterSlot();
+  } else {
+    // legacy: called with petId string
+    var _active = _activeRosterSlot();
+    if (_active && _active.id === slotOrId) slot = _active;
+  }
+  if (!slot) return 'Companion';
+  if (slot.name && slot.name.trim()) return slot.name.trim();
+  var pet = PETS.find(function(p) { return p.id === slot.id; });
   return pet ? pet.name : 'Companion';
 }
 function ragePerSwing(skill) {
@@ -3008,14 +3032,15 @@ function recalcStats() {
   }
 
   // ── Companion passive bonuses (active companion only, all stances) ──
-  if (classKey === 'ranger' && hero.activePet) {
-    var _cRoll = getPetRoll(hero.activePet);
+  var _activeSlot = _activeRosterSlot();
+  if (classKey === 'ranger' && _activeSlot) {
+    var _cRoll = _activeSlot.roll;
     var _cPct  = _cRoll / 100;
-    switch (hero.activePet) {
-      case 'bear':    hero._reducedDmg     += Math.round(_cPct * 100); break; // flat % dmg reduce
-      case 'eagle':   hero._critChance     += _cRoll; break; // flat % crit
-      case 'raven':   hero._passiveMf      += _cRoll; break; // flat MF
-      case 'hound':   hero._xpGain         += _cRoll; break; // flat % XP
+    switch (_activeSlot.id) {
+      case 'bear':    hero._reducedDmg     += Math.round(_cPct * 100); break;
+      case 'eagle':   hero._critChance     += _cRoll; break;
+      case 'raven':   hero._passiveMf      += _cRoll; break;
+      case 'hound':   hero._xpGain         += _cRoll; break;
     }
     // wolf, boar, lynx, serpent, panther, wyvern passives applied in combat (not recalcStats)
   }
@@ -4997,7 +5022,8 @@ function enemyAttack(now) {
     return;
   }
   // Bear provoke: next enemy attack is absorbed (no damage to hero)
-  if (classKey === 'ranger' && hero.activePet === 'bear' && enemy._bearProvoked) {
+  var _actSlot = _activeRosterSlot();
+  if (classKey === 'ranger' && _actSlot && _actSlot.id === 'bear' && enemy._bearProvoked) {
     enemy._bearProvoked = false;
     var petName = companionDisplayName();
     addLog('🐻 '+petName+' absorbs the hit!', 'info');
@@ -5007,7 +5033,7 @@ function enemyAttack(now) {
 
   // Companion defensive stance: 5% + 1% per hero level flat damage reduction
   var _companionReduce = 0;
-  if (classKey === 'ranger' && hero.activePet && hero.companionStance === 'defensive') {
+  if (classKey === 'ranger' && _actSlot && hero.companionStance === 'defensive') {
     _companionReduce = Math.round(dmg * (0.05 + hero.level * 0.01));
   }
   // Hunter Long Shot: enemy landing a hit means they've "caught up" — switch to Basic Shot
@@ -5058,9 +5084,9 @@ function enemyAttack(now) {
       triggerEnemyHitAnim();
       if (classKey === 'warrior') gainRage(2);
       // Boar passive: Bristle — reflects roll% of damage back
-      if (classKey === 'ranger' && hero.activePet === 'boar' && enemy && enemy.hp > 0) {
-        var _bristleRoll = getPetRoll('boar');
-        var _bristleDmg = Math.max(1, Math.round(dmg * _bristleRoll / 100));
+      var _boarSlot = _activeRosterSlot();
+      if (classKey === 'ranger' && _boarSlot && _boarSlot.id === 'boar' && enemy && enemy.hp > 0) {
+        var _bristleDmg = Math.max(1, Math.round(dmg * _boarSlot.roll / 100));
         enemy.hp = Math.max(0, enemy.hp - _bristleDmg);
         if (_bristleDmg > 0) addLog('🐗 Bristle: '+_bristleDmg+' reflected!', 'info');
         if (enemy.hp <= 0) gainKill(enemy.isBoss, false, Date.now());
@@ -6681,15 +6707,13 @@ function generateBounty() {
   var hasPetEncounter = Math.random() < 0.15;
   var petEncounter = null;
   if (hasPetEncounter) {
-    var lockedPets = PETS.filter(function(p) { return (hero.unlockedPets || ['wolf']).indexOf(p.id) < 0; });
-    if (lockedPets.length > 0) {
-      var petTier = _wRandPick(BOUNTY_PET_RARITY_WEIGHTS);
-      var matching = lockedPets.filter(function(p) { return p.rarity === petTier.rarity; });
-      if (!matching.length) matching = lockedPets; // fallback
-      var chosenPet = matching[Math.floor(Math.random() * matching.length)];
-      var roll = Math.floor(Math.pow(Math.random(), 2) * 31);
-      petEncounter = { petId: chosenPet.id, rarity: petTier.rarity, roll: roll };
-    }
+    // Any pet can appear — roster allows duplicates, no filter on owned pets
+    var petTier = _wRandPick(BOUNTY_PET_RARITY_WEIGHTS);
+    var matching = PETS.filter(function(p) { return p.rarity === petTier.rarity; });
+    if (!matching.length) matching = PETS;
+    var chosenPet = matching[Math.floor(Math.random() * matching.length)];
+    var roll = Math.floor(Math.pow(Math.random(), 2) * 31);
+    petEncounter = { petId: chosenPet.id, rarity: petTier.rarity, roll: roll };
   }
 
   return {
@@ -6892,17 +6916,75 @@ function _showBountyPetEncounter(enc) {
 function tameBountyPet() {
   if (!bountyPendingPet) { _startBountyFight(); return; }
   var enc = bountyPendingPet;
-  bountyPendingPet = null;
-  if (!hero.unlockedPets) hero.unlockedPets = ['wolf'];
-  if (hero.unlockedPets.indexOf(enc.petId) < 0) {
-    hero.unlockedPets.push(enc.petId);
-    if (!hero.petRolls) hero.petRolls = {};
-    hero.petRolls[enc.petId] = enc.roll;
-    var pet = PETS.find(function(p) { return p.id === enc.petId; });
-    var adj = getPetAdjective(enc.roll);
-    addLog('🐾 '+pet.name+' tamed! ['+adj+' · '+pet.rarity+']', 'level');
-    saveGame();
+  if (!hero.petRoster) hero.petRoster = [{ id:'wolf', roll:10, name:'' }];
+
+  if (hero.petRoster.length >= PET_ROSTER_MAX) {
+    // Roster full — show release picker before taming
+    _showPetReleasePicker(enc);
+    return;
   }
+
+  // Add to roster
+  hero.petRoster.push({ id: enc.petId, roll: enc.roll, name: '' });
+  bountyPendingPet = null;
+  var pet = PETS.find(function(p) { return p.id === enc.petId; });
+  var adj = getPetAdjective(enc.roll);
+  addLog('🐾 '+pet.name+' tamed! ['+adj+' · '+enc.roll+'% · '+pet.rarity+']', 'level');
+  saveGame();
+  _startBountyFight();
+}
+
+function _showPetReleasePicker(enc) {
+  var pet = PETS.find(function(p) { return p.id === enc.petId; });
+  var col = PET_RARITY_COLORS[pet.rarity] || '#9a9aaa';
+  var overlay = document.getElementById('overlay');
+  var box = document.getElementById('overlay-box');
+  var html = '<div class="overlay-title" style="color:'+col+';">🐾 Roster Full</div>';
+  html += '<div class="overlay-sub">Release a companion to make room for '+pet.name+'.</div>';
+  html += '<div style="border:1px solid '+col+'44;padding:8px;border-radius:3px;margin:8px 0;background:#050810;font-size:11px;color:'+col+';">';
+  html += pet.icon+' <b>'+pet.name+'</b> <span style="color:#5a5a6a;">('+pet.species+')</span><br>';
+  html += '<span style="color:#5a5a6a;font-size:10px;">'+getPetAdjective(enc.roll)+' · '+enc.roll+'% · '+pet.rarity+'</span>';
+  html += '</div>';
+  html += '<div style="font-size:10px;color:#7a7a5a;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">Your Companions (click to release):</div>';
+  for (var i = 0; i < hero.petRoster.length; i++) {
+    var slot = hero.petRoster[i];
+    var sp = PETS.find(function(p) { return p.id === slot.id; });
+    if (!sp) continue;
+    var sc = PET_RARITY_COLORS[sp.rarity] || '#9a9aaa';
+    var sName = (slot.name && slot.name.trim()) ? slot.name : sp.name;
+    html += '<button onclick="releaseAndTame('+i+')" style="width:100%;text-align:left;padding:7px 10px;border:1px solid #3a3a4a;background:#0a0a14;color:'+sc+';font-family:Georgia,serif;font-size:11px;cursor:pointer;border-radius:2px;margin-bottom:4px;transition:all 0.15s;" '
+      + 'onmouseover="this.style.borderColor=\'#c85a5a\';this.style.background=\'#1a0808\'" '
+      + 'onmouseout="this.style.borderColor=\'#3a3a4a\';this.style.background=\'#0a0a14\'">'
+      + sp.icon+' '+sName+' <span style="color:#5a5a6a;font-size:9px;">'+getPetAdjective(slot.roll)+' · '+slot.roll+'%</span>'
+      + (hero.activePetSlot === i ? ' <span style="color:#7aaa5a;font-size:9px;">✓ active</span>' : '')
+      + '</button>';
+  }
+  html += '<button class="overlay-btn sec" onclick="shooBountyPet()" style="margin-top:6px;">🚫 Shoo Away — Keep Current Roster</button>';
+  box.innerHTML = html;
+  overlay.classList.add('active');
+}
+
+function releaseAndTame(releaseIdx) {
+  if (!bountyPendingPet) return;
+  var enc = bountyPendingPet;
+  if (!hero.petRoster) hero.petRoster = [];
+  var released = hero.petRoster[releaseIdx];
+  if (!released) return;
+  var releasedPet = PETS.find(function(p) { return p.id === released.id; });
+  var relName = (released.name && released.name.trim()) ? released.name : (releasedPet ? releasedPet.name : 'Companion');
+  // Release
+  hero.petRoster.splice(releaseIdx, 1);
+  // Fix active slot index
+  if (hero.activePetSlot === releaseIdx) hero.activePetSlot = null;
+  else if (hero.activePetSlot > releaseIdx) hero.activePetSlot--;
+  // Add new pet
+  hero.petRoster.push({ id: enc.petId, roll: enc.roll, name: '' });
+  bountyPendingPet = null;
+  var newPet = PETS.find(function(p) { return p.id === enc.petId; });
+  addLog('🐾 Released '+relName+'. '+newPet.name+' tamed! ['+getPetAdjective(enc.roll)+' · '+enc.roll+'%]', 'level');
+  document.getElementById('overlay').classList.remove('active');
+  recalcStats();
+  saveGame();
   _startBountyFight();
 }
 
@@ -7272,23 +7354,23 @@ function renderPetPanel() {
   var panel = document.getElementById('pet-panel-content');
   if (!panel) return;
 
-  var activePet = hero.activePet || null;
-  var unlocked  = hero.unlockedPets || ['wolf'];
+  var roster = hero.petRoster || [];
+  var activeSlot = hero.activePetSlot;
+  var activeEntry = (activeSlot !== null && activeSlot !== undefined) ? roster[activeSlot] : null;
   var html = '';
 
   // ── Active companion summary ──
-  if (activePet) {
-    var ap = PETS.find(function(p) { return p.id === activePet; });
+  if (activeEntry) {
+    var ap = PETS.find(function(p) { return p.id === activeEntry.id; });
     if (ap) {
       var dispName = companionDisplayName();
       html += '<div style="border:1px solid '+PET_RARITY_COLORS[ap.rarity]+';border-radius:3px;padding:10px 14px;margin-bottom:12px;background:#0d1a0a;">';
       html += '<div style="font-size:13px;color:'+PET_RARITY_COLORS[ap.rarity]+';">'+ap.icon+' '+dispName+' <span style="font-size:10px;color:#5a5a6a;">('+ap.species+')</span></div>';
-      html += '<div style="font-size:10px;color:#5a7a5a;margin-top:4px;">'+getPetPassiveDesc(ap)+'</div>';
+      html += '<div style="font-size:10px;color:#5a7a5a;margin-top:4px;">'+getPetPassiveDesc(ap, activeEntry.roll)+'</div>';
       html += '<div style="font-size:10px;color:#5a7a5a;margin-top:2px;">'+ap.active+'</div>';
-      // Name input — per-pet
       html += '<div style="margin-top:8px;display:flex;gap:6px;align-items:center;">';
-      html += '<input id="pet-name-input" type="text" maxlength="20" placeholder="'+ap.name+'" value="'+((hero.petNames||{})[ap.id]||'')+'" style="flex:1;padding:3px 6px;background:#0a0a14;border:1px solid #2a3a2a;border-radius:2px;color:#d4c9a8;font-family:Georgia,serif;font-size:11px;" />';
-      html += '<button onclick="savePetName(\''+ap.id+'\')" style="padding:3px 10px;border:1px solid #2a4a2a;background:#0a140a;color:#7aaa5a;font-family:Georgia,serif;font-size:10px;cursor:pointer;border-radius:2px;">Save</button>';
+      html += '<input id="pet-name-input" type="text" maxlength="20" placeholder="'+ap.name+'" value="'+(activeEntry.name||'')+'" style="flex:1;padding:3px 6px;background:#0a0a14;border:1px solid #2a3a2a;border-radius:2px;color:#d4c9a8;font-family:Georgia,serif;font-size:11px;" />';
+      html += '<button onclick="savePetName('+activeSlot+')" style="padding:3px 10px;border:1px solid #2a4a2a;background:#0a140a;color:#7aaa5a;font-family:Georgia,serif;font-size:10px;cursor:pointer;border-radius:2px;">Save</button>';
       html += '</div>';
       html += '</div>';
     }
@@ -7311,47 +7393,48 @@ function renderPetPanel() {
     html += '<button onclick="setCompanionStance(\''+st.id+'\')" style="flex:1;padding:4px 2px;border:1px solid '+(isOn?'#7aaa5a':'#2a3a2a')+';background:'+(isOn?'#0a1a0a':'#080d08')+';color:'+(isOn?'#7aaa5a':'#4a6a4a')+';font-family:Georgia,serif;font-size:10px;cursor:pointer;border-radius:2px;" title="'+st.desc+'">'+st.label+'</button>';
   }
   html += '</div>';
-  // Show active stance desc
   var activeSt = stances.find(function(s) { return s.id === hero.companionStance; });
   if (activeSt) html += '<div style="font-size:9px;color:#4a6a4a;margin-top:4px;font-style:italic;">'+activeSt.desc+'</div>';
   html += '</div>';
 
-  // ── Unlocked companions ──
-  html += '<div style="font-size:10px;color:#7a7a5a;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">Companions</div>';
-  html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">';
-  PETS.forEach(function(pet) {
-    if (unlocked.indexOf(pet.id) < 0) return; // hidden if not unlocked
-    var isActive = activePet === pet.id;
-    var col = PET_RARITY_COLORS[pet.rarity] || '#9a9aaa';
-    var _petRoll = getPetRoll(pet.id);
-    var _petAdj  = getPetAdjective(_petRoll);
-    html += '<div onclick="selectPet(\''+pet.id+'\')" style="cursor:pointer;border:1px solid '+(isActive?col:'#2a3a2a')+';border-radius:3px;padding:8px 10px;background:'+(isActive?'#0d1a0a':'#080d08')+';transition:border-color 0.15s;" '
-      + 'onmouseover="this.style.borderColor=\''+col+'\'" onmouseout="this.style.borderColor=\''+(isActive?col:'#2a3a2a')+'\'">'
-      + '<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">'
-      + '<span style="font-size:20px;">'+pet.icon+'</span>'
-      + '<div><div style="font-size:12px;color:'+col+';">'+(isActive?companionDisplayName(pet.id):pet.name)+(isActive?' ✓':'')+'</div>'
-      + '<div style="font-size:9px;color:#4a6a4a;">'+pet.species+'</div></div>'
-      + '</div>'
-      + '<div style="font-size:9px;color:'+col+';margin-bottom:2px;font-style:italic;">'+_petAdj+' · '+_petRoll+'%</div>'
-      + '<div style="font-size:10px;color:#6a8a6a;line-height:1.4;">'+pet.desc+'</div>'
-      + '</div>';
-  });
-  html += '</div>';
+  // ── Roster ──
+  html += '<div style="font-size:10px;color:#7a7a5a;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">Companions ('+roster.length+'/'+PET_ROSTER_MAX+')</div>';
+  if (!roster.length) {
+    html += '<div style="font-size:11px;color:#3a3a4a;font-style:italic;">No companions tamed yet.</div>';
+  } else {
+    html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">';
+    for (var ri = 0; ri < roster.length; ri++) {
+      var slot = roster[ri];
+      var pet = PETS.find(function(p) { return p.id === slot.id; });
+      if (!pet) continue;
+      var isActive = activeSlot === ri;
+      var col = PET_RARITY_COLORS[pet.rarity] || '#9a9aaa';
+      var adj = getPetAdjective(slot.roll);
+      var sName = (slot.name && slot.name.trim()) ? slot.name : pet.name;
+      html += '<div onclick="selectPet('+ri+')" style="cursor:pointer;border:1px solid '+(isActive?col:'#2a3a2a')+';border-radius:3px;padding:8px 10px;background:'+(isActive?'#0d1a0a':'#080d08')+';transition:border-color 0.15s;" '
+        + 'onmouseover="this.style.borderColor=\''+col+'\'" onmouseout="this.style.borderColor=\''+(isActive?col:'#2a3a2a')+'\'">'
+        + '<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">'
+        + '<span style="font-size:20px;">'+pet.icon+'</span>'
+        + '<div><div style="font-size:12px;color:'+col+';">'+(isActive?sName:sName)+(isActive?' ✓':'')+'</div>'
+        + '<div style="font-size:9px;color:#4a6a4a;">'+pet.species+'</div></div>'
+        + '</div>'
+        + '<div style="font-size:9px;color:'+col+';margin-bottom:2px;font-style:italic;">'+adj+' · '+slot.roll+'%</div>'
+        + '<div style="font-size:10px;color:#6a8a6a;line-height:1.4;">'+pet.desc+'</div>'
+        + '</div>';
+    }
+    html += '</div>';
+  }
 
   panel.innerHTML = html;
 }
 
-function savePetName(petId) {
+function savePetName(slotIdx) {
   var inp = document.getElementById('pet-name-input');
-  if (!inp) return;
-  var pid = petId || hero.activePet;
-  if (!hero.petNames) hero.petNames = {};
-  hero.petNames[pid] = inp.value.trim();
-  // Backward compat: keep companionName for wolf
-  if (pid === 'wolf') hero.companionName = hero.petNames[pid];
+  if (!inp || !hero.petRoster || !hero.petRoster[slotIdx]) return;
+  hero.petRoster[slotIdx].name = inp.value.trim();
   saveGame();
   renderPetPanel();
-  var name = companionDisplayName(pid);
+  var name = companionDisplayName();
   if (name) addLog('🐾 '+name+' — noted.', 'info');
 }
 
@@ -7362,18 +7445,19 @@ function setCompanionStance(stance) {
   saveGame();
 }
 
-function selectPet(petId) {
-  var unlocked = hero.unlockedPets || ['wolf'];
-  if (unlocked.indexOf(petId) < 0) return; // can't select locked companions
-  hero.activePet = (hero.activePet === petId) ? null : petId;
-  var pet = PETS.find(function(p) { return p.id === petId; });
-  if (hero.activePet && pet) {
+function selectPet(slotIdx) {
+  if (!hero.petRoster || !hero.petRoster[slotIdx]) return;
+  hero.activePetSlot = (hero.activePetSlot === slotIdx) ? null : slotIdx;
+  var slot = hero.petRoster[slotIdx];
+  var pet = slot && PETS.find(function(p) { return p.id === slot.id; });
+  if (hero.activePetSlot !== null && pet) {
     var name = companionDisplayName();
     addLog('🐾 '+name+' the '+pet.species+' bonds with you.', 'level');
   } else if (pet) {
     addLog('🐾 '+pet.name+' watches you from the treeline.', 'info');
   }
   _companionNextAtk = Date.now() + 2000;
+  recalcStats();
   renderPetPanel();
   saveGame();
 }
@@ -9566,14 +9650,12 @@ function togglePause() {
 
 function debugUnlockCompanion() {
   if (classKey !== 'ranger') { addLog('[DBG] Switch to Ranger to unlock companions.', 'info'); return; }
+  if (!hero.petRoster) hero.petRoster = [{ id:'wolf', roll:10, name:'' }];
+  if (hero.petRoster.length >= PET_ROSTER_MAX) { addLog('[DBG] Roster full ('+PET_ROSTER_MAX+').', 'level'); return; }
   var allIds = PETS.map(function(p) { return p.id; });
-  var locked = allIds.filter(function(id) { return (hero.unlockedPets || []).indexOf(id) < 0; });
-  if (!locked.length) { addLog('[DBG] All companions already unlocked!', 'level'); return; }
-  var newId = locked[Math.floor(Math.random() * locked.length)];
-  var roll  = Math.floor(Math.random() * 31); // 0-30
-  if (!hero.petRolls) hero.petRolls = {};
-  hero.petRolls[newId] = roll;
-  hero.unlockedPets = (hero.unlockedPets || ['wolf']).concat([newId]);
+  var newId = allIds[Math.floor(Math.random() * allIds.length)];
+  var roll  = Math.floor(Math.random() * 31);
+  hero.petRoster.push({ id: newId, roll: roll, name: '' });
   var pet = PETS.find(function(p) { return p.id === newId; });
   var adj = getPetAdjective(roll);
   addLog('[DBG] '+pet.icon+' '+pet.name+' found! ('+adj+' · '+roll+'%)', 'level');
@@ -11782,12 +11864,9 @@ function saveGame() {
         rage: hero.rage || 0,
         activeTechnique: hero.activeTechnique || null,
         consecutiveHits: hero._consecutiveHits || 0,
-        activePet:       hero.activePet || 'wolf',
-        unlockedPets:    hero.unlockedPets || ['wolf'],
-        companionName:   hero.companionName || '',
+        activePetSlot:   hero.activePetSlot !== undefined ? hero.activePetSlot : null,
+        petRoster:       hero.petRoster || [{ id:'wolf', roll:10, name:'' }],
         companionStance: hero.companionStance || 'aggressive',
-        petRolls:        hero.petRolls || { wolf: 10 },
-        petNames:        hero.petNames || {},
         _actSkillPtsGranted:  hero._actSkillPtsGranted  || {},
         _diffSkillPtsGranted: hero._diffSkillPtsGranted || {},
       },
@@ -11881,12 +11960,26 @@ function loadGame() {
     hero.rage           = h.rage           || 0;
     hero.activeTechnique = h.activeTechnique || null;
     hero._consecutiveHits = h.consecutiveHits || 0;
-    hero.activePet      = h.activePet      || 'wolf';
-    hero.unlockedPets   = h.unlockedPets   || ['wolf'];
-    hero.companionName  = h.companionName  || '';
+    // Migrate old pet system to petRoster
+    if (h.petRoster) {
+      hero.petRoster    = h.petRoster;
+      hero.activePetSlot = h.activePetSlot !== undefined ? h.activePetSlot : null;
+    } else {
+      // Migrate from old unlockedPets + petRolls system
+      var _oldUnlocked = h.unlockedPets || ['wolf'];
+      var _oldRolls    = h.petRolls || { wolf: 10 };
+      var _oldNames    = h.petNames || {};
+      hero.petRoster = _oldUnlocked.map(function(id) {
+        return { id: id, roll: _oldRolls[id] !== undefined ? _oldRolls[id] : 10, name: _oldNames[id] || '' };
+      });
+      // Find active pet slot
+      var _oldActive = h.activePet || 'wolf';
+      hero.activePetSlot = null;
+      for (var _mi = 0; _mi < hero.petRoster.length; _mi++) {
+        if (hero.petRoster[_mi].id === _oldActive) { hero.activePetSlot = _mi; break; }
+      }
+    }
     hero.companionStance = h.companionStance || 'aggressive';
-    hero.petRolls       = h.petRolls       || { wolf: 10 };
-    hero.petNames       = h.petNames       || {};
     hero._actSkillPtsGranted  = h._actSkillPtsGranted  || {};
     hero._diffSkillPtsGranted = h._diffSkillPtsGranted || {};
 
@@ -12627,11 +12720,12 @@ var _dpsWindow = [];       // array of { ts, dmg } for rolling 5s window
 var _lastDpsUpdate = 0;    // last time DPS display was updated
 
 function companionTick(now) {
-  if (!hero.activePet || !enemy || enemy.hp <= 0 || dead) return;
+  var _cs = _activeRosterSlot();
+  if (!_cs || !enemy || enemy.hp <= 0 || dead) return;
   var stance  = hero.companionStance || 'aggressive';
-  var petId   = hero.activePet;
+  var petId   = _cs.id;
   var petName = companionDisplayName();
-  var roll    = getPetRoll(petId);
+  var roll    = _cs.roll;
   var rollPct = roll / 100;
 
   // Mark Prey mode: companion fights at 100% dmg, all stances
@@ -12971,8 +13065,8 @@ function _gameTick() {
         }
       }
       // Combined DoT log every 3 seconds
-      if (!enemy._dotLogNext) enemy._dotLogNext = now + 3000;
-      if ((_bleedTotal > 0 || _poisonTotal > 0) && now >= enemy._dotLogNext) {
+      if (enemy && !enemy._dotLogNext) enemy._dotLogNext = now + 3000;
+      if (enemy && (_bleedTotal > 0 || _poisonTotal > 0) && now >= enemy._dotLogNext) {
         var _dotParts = [];
         if (_bleedTotal > 0) _dotParts.push('🩸 '+_bleedTotal+(_bleedActive>1?' ×'+_bleedActive:''));
         if (_poisonTotal > 0) _dotParts.push('☠ '+_poisonTotal+(_poisonActive>1?' ×'+_poisonActive:''));
@@ -13000,7 +13094,7 @@ function _gameTick() {
       }
     }
     // Companion combat tick (ranger only)
-    if (classKey === 'ranger' && hero.activePet && enemy && enemy.hp > 0 && !dead) {
+    if (classKey === 'ranger' && _activeRosterSlot() && enemy && enemy.hp > 0 && !dead) {
       companionTick(now);
     }
     renderUI(Date.now());
