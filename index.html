@@ -9770,20 +9770,23 @@ function togglePriority(statKey) {
   renderBuildPriority();
 }
 
+var _helpPaused = false; // true if help overlay auto-paused the game
+
 function openHelp() {
   var el = document.getElementById('help-overlay');
   if (el) {
-    // Show or hide relic section based on unlock state
     var relicSection = document.getElementById('help-relic-section');
     if (relicSection) relicSection.style.display = relicSystemUnlocked ? 'block' : 'none';
     el.style.display = 'flex';
     el.scrollTop = 0;
   }
+  if (!gamePaused) { togglePause(); _helpPaused = true; }
 }
 
 function closeHelp() {
   var el = document.getElementById('help-overlay');
   if (el) el.style.display = 'none';
+  if (_helpPaused) { togglePause(); _helpPaused = false; }
 }
 
 function openStats() {
