@@ -18,7 +18,6 @@
     font-family: Georgia, 'Times New Roman', serif;
     font-size: 13px;
     height: 100vh;
-    height: -webkit-fill-available;
     display: flex;
     flex-direction: column;
     overflow: hidden;
@@ -148,6 +147,7 @@
     padding: 10px;
     overflow-y: auto;
     height: 100%;
+    min-height: 0;
   }
   .panel:last-child { border-right: none; box-shadow: none; }
   .panel-title {
@@ -431,90 +431,67 @@
     overflow: hidden;
   }
 
-  /* ── Paperdoll panel ── */
-  #paperdoll-panel.pd-panel-drag-over {
-    background: rgba(120, 60, 200, 0.08) !important;
-    box-shadow: inset 0 0 0 2px #8040cc55;
-  }
+  /* ── Gear list panel ── */
   #paperdoll-panel {
-    flex: 1;
-    min-width: 0;
+    flex: 0 0 auto;
+    width: 45%;
+    min-width: 120px;
+    max-width: 70%;
     overflow-y: auto;
     padding: 8px 10px;
-    border-right: 1px solid #c8a84b22;
+  }
+  /* ── Center-bottom resize handle ── */
+  #center-resize-handle {
+    width: 5px;
+    flex-shrink: 0;
+    background: transparent;
+    cursor: col-resize;
+    transition: background 0.15s;
+    position: relative;
+    z-index: 2;
+  }
+  #center-resize-handle:hover, #center-resize-handle.dragging { background: #c8a84b55; }
+  #gear-list {
+    width: 100%;
     display: flex;
     flex-direction: column;
-    align-items: center;
+    gap: 2px;
   }
-  #paperdoll-grid {
-    display: grid;
-    grid-template-areas:
-      "amulet amulet armor"
-      "ring   body   weapon"
-      "trink  trink  .";
-    grid-template-columns: 1fr 90px 1fr;
-    grid-template-rows: auto auto auto;
-    gap: 6px;
-    padding: 4px 2px;
-    align-items: start;
-    justify-items: stretch;
-    width: 100%;
-    box-sizing: border-box;
-  }
-  #paperdoll-grid.ng-plus {
-    grid-template-columns: 1fr 1fr 1fr;
-    grid-template-areas:
-      "amulet amulet armor"
-      "ring   body   weapon"
-      "ring2  trink  boots";
-  }
-  #pd-slot-amulet  { grid-area: amulet; justify-self: stretch; }
-  #pd-slot-ring    { grid-area: ring;   justify-self: stretch; }
-  #pd-body         { grid-area: body;   display:flex; align-items:center; justify-content:center; justify-self: center; align-self: center; }
-  #pd-slot-armor   { grid-area: armor;  justify-self: stretch; }
-  #pd-slot-weapon  { grid-area: weapon; justify-self: stretch; }
-  #pd-slot-trinket { grid-area: trink;  justify-self: stretch; }
-  #pd-slot-ring2   { grid-area: ring2;  justify-self: stretch; }
-  #pd-slot-boots   { grid-area: boots;  justify-self: stretch; }
-  /* ── Strip card slot (Concept B) ── */
-  .pd-slot {
-    width: 100%;
-    border: 1px solid #1e1e2e;
-    border-radius: 3px;
+  /* Gear row — Option A flat slot rows */
+  .gear-row {
     display: flex;
-    align-items: stretch;
-    overflow: hidden;
+    align-items: center;
+    gap: 7px;
+    padding: 5px 6px;
+    border-bottom: 1px solid #1a1a2a;
     position: relative;
-    box-sizing: border-box;
-    background: #080812;
-    transition: border-color 0.1s, background 0.1s;
     cursor: default;
+    transition: background 0.1s;
   }
-  .pd-slot:hover { border-color: #2e2e4e; background: #0a0a16; }
-  .pd-slot.drag-over { border-color: #c8a84b88 !important; box-shadow: inset 0 0 0 1px #c8a84b44; }
-  .pd-slot.slot-locked { border-color: #c8a84b33 !important; }
-  /* Rarity left-edge accent */
-  .pd-slot.rare   { border-color: #ffd70022; border-left: 2px solid #ffd70066; }
-  .pd-slot.unique { border-color: #e57bf522; border-left: 2px solid #e57bf566; }
-  .pd-slot.magic  { border-color: #6fa3ef22; border-left: 2px solid #6fa3ef55; }
-  /* Watermark icon */
-  .pd-slot::before {
-    position: absolute;
-    bottom: -6px; right: 4px;
-    font-size: 54px;
-    line-height: 1;
-    opacity: 0.05;
-    pointer-events: none;
-    z-index: 0;
-    filter: grayscale(1);
-  }
-  #pd-slot-weapon::before  { content: '⚔'; }
-  #pd-slot-armor::before   { content: '🛡'; }
-  #pd-slot-ring::before    { content: '💍'; }
-  #pd-slot-amulet::before  { content: '📿'; }
-  #pd-slot-trinket::before { content: '🏺'; }
-  #pd-slot-boots::before   { content: '👟'; }
-  #pd-slot-ring2::before   { content: '💍'; }
+  .gear-row:last-child { border-bottom: none; }
+  .gear-row:hover { background: #0a0a16; }
+  .gear-row.drag-over { background: rgba(200,168,75,0.08); box-shadow: inset 0 0 0 1px #c8a84b44; }
+  .gear-row.slot-locked .gr-name::after { content: ' 🔒'; font-size: 9px; }
+  /* Rarity left accent */
+  .gear-row.rare   { border-left: 2px solid #ffd70066; }
+  .gear-row.unique { border-left: 2px solid #e57bf566; }
+  .gear-row.magic  { border-left: 2px solid #6fa3ef55; }
+  /* Gear row internals */
+  .gr-icon  { font-size: 14px; width: 18px; text-align: center; flex-shrink: 0; opacity: 0.7; }
+  .gr-label { font-size: 10px; color: #5a5a7a; width: 42px; flex-shrink: 0; }
+  .gr-body  { flex: 1; min-width: 0; }
+  .gr-name  { font-size: 12px; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .gr-name.rare   { color: #ffd700; }
+  .gr-name.unique { color: #e57bf5; }
+  .gr-name.magic  { color: #6fa3ef; }
+  .gr-name.normal { color: #8a8a9a; }
+  .gr-name.item-new::after { content: ' ✦'; font-size: 9px; color: #c8a84b; }
+  .gr-stat  { font-size: 10px; color: #5a5a6a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .gr-bonus { font-size: 10px; color: #9a7aaa; }
+  .gr-empty { font-size: 11px; color: #3a3a5a; font-style: italic; }
+  .gr-lock  { font-size: 10px; color: #4a4a6a; cursor: pointer; padding: 1px 4px; border: 1px solid #2a2a3a; border-radius: 2px; background: #080810; flex-shrink: 0; }
+  .gr-lock:hover { color: #c8a84b; border-color: #c8a84b44; }
+  .gr-lock.locked { color: #c8a84b; border-color: #c8a84b44; }
   /* Strip internals */
   .ps-icon-col {
     width: 36px;
@@ -1267,12 +1244,7 @@
 </div>
 
 
-  <span class="game-title">IDLE DEPTHS <span style="font-size:13px;letter-spacing:1px;opacity:0.6;">v1.2</span></span>
-  <button id="class-switch-btn" onclick="switchClass()" title="Switch class — choose a different hero"
-    style="padding:7px 18px;border:2px solid #7a5ac8;background:linear-gradient(180deg,#1e0e38,#0d0520);color:#c8a8ff;font-family:Georgia,serif;font-size:14px;font-weight:bold;cursor:pointer;border-radius:4px;letter-spacing:1px;transition:all 0.15s;flex-shrink:0;box-shadow:0 0 14px #7a5ac855,inset 0 1px 0 #ffffff11;"
-    onmouseover="this.style.borderColor='#c8a84b';this.style.color='#ffe8a0';this.style.boxShadow='0 0 20px #c8a84b88,inset 0 1px 0 #ffffff22';this.style.background='linear-gradient(180deg,#2a1a48,#150a28)'"
-    onmouseout="this.style.borderColor='#7a5ac8';this.style.color='#c8a8ff';this.style.boxShadow='0 0 14px #7a5ac855,inset 0 1px 0 #ffffff11';this.style.background='linear-gradient(180deg,#1e0e38,#0d0520)'">⚔ —</button>
-  <span class="gold-display" style="font-size:12px;">⬡ <span id="gold-display">0</span> gold</span>
+  <span class="game-title">IDLE DEPTHS <span style="font-size:13px;letter-spacing:1px;opacity:0.6;">v1.1</span></span>
 </div>
 
 <!-- Difficulty / act bar -->
@@ -1359,6 +1331,10 @@
         <div class="zone-name" id="zone-name">Rogue Encampment</div>
         <div class="zone-flavor" id="zone-flavor">The Blood Moor reeks of corruption.</div>
         <div class="zone-progress" id="zone-progress">Mob 0/10</div>
+        <button id="class-switch-btn" onclick="switchClass()" title="Switch class — choose a different hero"
+          style="margin-top:6px;padding:3px 10px;border:1px solid #7a5ac8;background:#0d0520;color:#c8a8ff;font-family:Georgia,serif;font-size:11px;cursor:pointer;border-radius:3px;letter-spacing:0.5px;transition:all 0.15s;"
+          onmouseover="this.style.borderColor='#c8a84b';this.style.color='#ffe8a0';"
+          onmouseout="this.style.borderColor='#7a5ac8';this.style.color='#c8a8ff';">⚔ —</button>
       </div>
       <div style="display:flex;align-items:center;gap:6px;margin-top:2px;">
         <div style="display:flex;align-items:center;gap:3px;">
@@ -1442,58 +1418,21 @@
     </div>
 
     <div id="center-bottom">
-      <!-- Paperdoll: character equipment display -->
-      <div id="paperdoll-panel">
-        <div class="panel-title" style="margin-bottom:6px;align-self:flex-start;width:100%;">Character</div>
-        <div id="paperdoll-grid">
-
-          <!-- Amulet — top center -->
-          <div class="pd-slot drop-target" id="pd-slot-amulet" data-slot="amulet"></div>
-
-          <!-- Armor — top right -->
-          <div class="pd-slot drop-target" id="pd-slot-armor" data-slot="armor"></div>
-
-          <!-- Ring — middle left -->
-          <div class="pd-slot drop-target" id="pd-slot-ring" data-slot="ring"></div>
-
-          <!-- Body silhouette — center -->
-          <div id="pd-body">
-            <svg viewBox="0 0 60 120" width="58" height="120" xmlns="http://www.w3.org/2000/svg">
-              <!-- Head -->
-              <circle cx="30" cy="13" r="10" fill="#0c0c18" stroke="#c8a84b33" stroke-width="1.2"/>
-              <!-- Neck -->
-              <rect x="26" y="22" width="8" height="6" rx="1" fill="#0c0c18" stroke="#c8a84b22" stroke-width="1"/>
-              <!-- Torso -->
-              <rect x="14" y="28" width="32" height="36" rx="3" fill="#0c0c18" stroke="#c8a84b33" stroke-width="1.2"/>
-              <!-- Left arm -->
-              <rect x="4"  y="28" width="9"  height="32" rx="3" fill="#0c0c18" stroke="#c8a84b22" stroke-width="1"/>
-              <!-- Right arm -->
-              <rect x="47" y="28" width="9"  height="32" rx="3" fill="#0c0c18" stroke="#c8a84b22" stroke-width="1"/>
-              <!-- Belt line -->
-              <rect x="14" y="60" width="32" height="5" rx="1" fill="#0f0f1e" stroke="#c8a84b22" stroke-width="1"/>
-              <!-- Left leg -->
-              <rect x="14" y="65" width="13" height="46" rx="3" fill="#0c0c18" stroke="#c8a84b22" stroke-width="1"/>
-              <!-- Right leg -->
-              <rect x="33" y="65" width="13" height="46" rx="3" fill="#0c0c18" stroke="#c8a84b22" stroke-width="1"/>
-              <!-- Chest highlight -->
-              <rect x="22" y="32" width="16" height="20" rx="2" fill="#0f0f1e" stroke="#c8a84b11" stroke-width="1"/>
-            </svg>
-          </div>
-
-          <!-- Weapon — middle right -->
-          <div class="pd-slot drop-target" id="pd-slot-weapon" data-slot="weapon"></div>
-
-          <!-- Trinket — bottom center -->
-          <div class="pd-slot drop-target" id="pd-slot-trinket" data-slot="trinket"></div>
-
-          <!-- Ring 2 — bottom left (NG+) -->
-          <div class="pd-slot drop-target" id="pd-slot-ring2" data-slot="ring2" style="display:none;"></div>
-
-          <!-- Boots — bottom right (NG+) -->
-          <div class="pd-slot drop-target" id="pd-slot-boots" data-slot="boots" style="display:none;"></div>
-
-        </div><!-- /#paperdoll-grid -->
+      <!-- Gear list: flat slot rows replacing paperdoll -->
+      <div id="paperdoll-panel" style="width:100%;">
+        <div class="panel-title" style="margin-bottom:4px;">Character</div>
+        <div id="gear-list">
+          <div class="gear-row drop-target" id="pd-slot-weapon" data-slot="weapon"></div>
+          <div class="gear-row drop-target" id="pd-slot-armor"  data-slot="armor"></div>
+          <div class="gear-row drop-target" id="pd-slot-ring"   data-slot="ring"></div>
+          <div class="gear-row drop-target" id="pd-slot-ring2"  data-slot="ring2" style="display:none;"></div>
+          <div class="gear-row drop-target" id="pd-slot-amulet" data-slot="amulet"></div>
+          <div class="gear-row drop-target" id="pd-slot-trinket" data-slot="trinket"></div>
+          <div class="gear-row drop-target" id="pd-slot-boots"  data-slot="boots" style="display:none;"></div>
+        </div>
       </div><!-- /#paperdoll-panel -->
+
+      <div id="center-resize-handle" title="Drag to resize · Double-click to reset"></div>
 
       <div id="center-vault">
         <div class="panel-title" style="display:flex;justify-content:space-between;align-items:center;">
@@ -9064,12 +9003,6 @@ function renderUI(now) {
   if (gfEl)     gfEl.textContent     = (hero._goldFind      || 0) + '%';
   var seEl = document.getElementById('stat-statuseffect');
   if (seEl) seEl.textContent = (hero._statusEffect || 0) + '%';
-  var pdGrid = document.getElementById('paperdoll-grid');
-  if (pdGrid) pdGrid.classList.toggle('ng-plus', !!ngPlusUnlocked);
-  var ring2SlotEl = document.getElementById('pd-slot-ring2');
-  var bootsSlotEl = document.getElementById('pd-slot-boots');
-  if (ring2SlotEl) ring2SlotEl.style.display = ngPlusUnlocked ? '' : 'none';
-  if (bootsSlotEl) bootsSlotEl.style.display = ngPlusUnlocked ? '' : 'none';
 
   var resistRow = document.getElementById('stat-resist-row');
   var resistEl  = document.getElementById('stat-resist');
@@ -9290,42 +9223,50 @@ function renderUI(now) {
 }
 
 function renderEquipped() {
-  var SLOT_ICONS = { weapon:'⚔', armor:'🛡', ring:'💍', amulet:'📿', trinket:'🏺', boots:'👟', ring2:'💍' };
-  var _renderSlots = SLOTS.concat(ngPlusUnlocked ? ['ring2'] : []);
-  for (var i = 0; i < _renderSlots.length; i++) {
-    var slot = _renderSlots[i];
-    var item = hero.equipped[slot];
-    var locked = itemLocks[slot];
-    var slotEl = document.getElementById('pd-slot-' + slot);
+  var SLOT_ICONS  = { weapon:'⚔', armor:'🛡', ring:'💍', amulet:'📿', trinket:'🏺', boots:'👟', ring2:'💍' };
+  var _allSlots   = ['weapon','armor','ring','ring2','amulet','trinket','boots'];
+  for (var i = 0; i < _allSlots.length; i++) {
+    var slot    = _allSlots[i];
+    var slotEl  = document.getElementById('pd-slot-' + slot);
     if (!slotEl) continue;
 
-    // Rarity class on container drives left-border accent
-    slotEl.className = 'pd-slot drop-target' + (item ? ' ' + item.rarity : '') + (locked && item ? ' slot-locked' : '');
+    // Ring2 and boots only visible when NG+ unlocked
+    var isNgSlot = (slot === 'ring2' || slot === 'boots');
+    slotEl.style.display = (isNgSlot && !ngPlusUnlocked) ? 'none' : '';
 
-    var icon = SLOT_ICONS[slot] || '?';
-    var html = '<div class="ps-icon-col">' + icon + '</div>';
-    html += '<div class="ps-body">';
-    var _slotLabel = (slot === 'ring' && ngPlusUnlocked) ? 'Left Ring' : (SLOT_LABELS[slot] || slot);
-    html += '<div class="ps-slot-label">' + _slotLabel + '</div>';
+    var item   = hero.equipped[slot];
+    var locked = itemLocks[slot];
+    var icon   = SLOT_ICONS[slot] || '?';
+    var label  = (slot === 'ring' && ngPlusUnlocked) ? 'L. Ring' : (slot === 'ring2' ? 'R. Ring' : (SLOT_LABELS[slot] || slot));
+
+    // Rarity class drives left-border accent
+    slotEl.className = 'gear-row drop-target' + (item ? ' ' + item.rarity : '') + (locked && item ? ' slot-locked' : '');
+
+    var html = '<span class="gr-icon">' + icon + '</span>'
+             + '<span class="gr-label">' + label + '</span>'
+             + '<div class="gr-body">';
 
     if (item) {
-      var eNew = !isItemSeen(slot, item);
-      html += '<div class="ps-name ' + item.rarity + (eNew ? ' item-new' : '') + '">' + item.name + '</div>';
+      var eNew  = !isItemSeen(slot, item);
       var stats = statLine(item.stats);
-      if (stats) html += '<div class="ps-stats">' + stats + '</div>';
-      if (item.skillBonus) html += '<div class="ps-bonus">+' + item.skillBonus + ' to ' + item.skillName + '</div>';
-      if (item.allSkills)  html += '<div class="ps-bonus">+' + item.allSkills + ' All Skills</div>';
-      html += '<button class="ps-lock' + (locked ? ' locked' : '') + '" onclick="toggleItemLock(\'' + slot + '\')">'
-            + (locked ? '🔒 Locked' : 'lock') + '</button>';
+      html += '<div class="gr-name ' + item.rarity + (eNew ? ' item-new' : '') + '">' + item.name + '</div>';
+      if (item.skillBonus) html += '<div class="gr-bonus">+' + item.skillBonus + ' ' + item.skillName + '</div>';
+      else if (item.allSkills) html += '<div class="gr-bonus">+' + item.allSkills + ' All Skills</div>';
+      else if (stats)      html += '<div class="gr-stat">' + stats + '</div>';
     } else {
-      html += '<div class="ps-empty">— empty —</div>';
+      html += '<div class="gr-empty">— empty —</div>';
     }
+
     html += '</div>';
+    if (item) {
+      html += '<button class="gr-lock' + (locked ? ' locked' : '') + '" onclick="toggleItemLock(\'' + slot + '\')">'
+            + (locked ? '🔒' : 'lock') + '</button>';
+    }
     slotEl.innerHTML = html;
 
-    // Re-attach tooltip to name element
+    // Tooltip on name
     if (item) {
-      var nameEl = slotEl.querySelector('.ps-name');
+      var nameEl = slotEl.querySelector('.gr-name');
       if (nameEl) {
         (function(el, s, it) {
           el.addEventListener('mouseenter', function() {
@@ -15182,6 +15123,70 @@ init();
     document.addEventListener('mousemove', onMove);
     document.addEventListener('mouseup', onUp);
   });
+})();
+
+// ── Center-bottom drag-to-resize (gear list vs vault) ──────────────────────
+(function() {
+  var MIN = 120, MAX_PCT = 0.70, DEFAULT_PCT = 0.45;
+  var STORE_KEY = 'idledepths_centerbottom_w';
+
+  var container  = document.getElementById('center-bottom');
+  var gearPanel  = document.getElementById('paperdoll-panel');
+  var handle     = document.getElementById('center-resize-handle');
+  if (!container || !gearPanel || !handle) return;
+
+  function applyWidth(w) { gearPanel.style.width = w + 'px'; }
+
+  function savedOrDefault() {
+    var saved = parseInt(localStorage.getItem(STORE_KEY), 10);
+    if (saved && saved >= MIN) return saved;
+    return Math.round(container.offsetWidth * DEFAULT_PCT);
+  }
+
+  // Apply on load (after layout settles)
+  setTimeout(function() { applyWidth(savedOrDefault()); }, 0);
+
+  handle.addEventListener('dblclick', function() {
+    var w = Math.round(container.offsetWidth * DEFAULT_PCT);
+    applyWidth(w);
+    localStorage.removeItem(STORE_KEY);
+  });
+
+  function startDrag(startX, startW) {
+    handle.classList.add('dragging');
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+
+    function onMove(e) {
+      var cx = e.clientX || (e.touches && e.touches[0].clientX);
+      var max = Math.round(container.offsetWidth * MAX_PCT);
+      applyWidth(Math.max(MIN, Math.min(max, startW + (cx - startX))));
+    }
+    function onUp(e) {
+      handle.classList.remove('dragging');
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+      document.removeEventListener('touchmove', onMove);
+      document.removeEventListener('touchend', onUp);
+      var cx = (e.clientX !== undefined ? e.clientX : null) || (e.changedTouches && e.changedTouches[0].clientX);
+      var max = Math.round(container.offsetWidth * MAX_PCT);
+      localStorage.setItem(STORE_KEY, Math.max(MIN, Math.min(max, startW + (cx - startX))));
+    }
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+    document.addEventListener('touchmove', onMove, { passive: false });
+    document.addEventListener('touchend', onUp);
+  }
+
+  handle.addEventListener('mousedown', function(e) {
+    e.preventDefault();
+    startDrag(e.clientX, gearPanel.offsetWidth);
+  });
+  handle.addEventListener('touchstart', function(e) {
+    startDrag(e.touches[0].clientX, gearPanel.offsetWidth);
+  }, { passive: true });
 })();
 </script>
 
