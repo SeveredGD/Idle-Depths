@@ -1072,6 +1072,48 @@
   </div>
 </div>
 
+<!-- Loop Feature Introduction Overlay (shown after first boss kill) -->
+<div id="loop-intro-overlay" style="display:none;position:fixed;inset:0;background:#000000cc;z-index:250;align-items:center;justify-content:center;">
+  <div style="background:#0d0d18;border:1px solid #c8a84b66;border-radius:4px;padding:28px 32px;max-width:460px;width:90%;font-family:Georgia,serif;color:#d4c9a8;text-align:center;">
+    <div id="loop-intro-title" style="font-size:18px;color:#c8a84b;margin-bottom:4px;letter-spacing:2px;">THE HUNT DEEPENS</div>
+    <div id="loop-intro-sub" style="font-size:11px;color:#5a5a6a;font-style:italic;margin-bottom:18px;letter-spacing:1px;"></div>
+    <div style="text-align:left;margin-bottom:16px;">
+      <div style="display:flex;align-items:flex-start;gap:10px;background:#0a0a14;border:1px solid #5a4a2a;border-radius:3px;padding:10px 12px;margin-bottom:10px;">
+        <span style="font-size:18px;flex-shrink:0;">🎯</span>
+        <div>
+          <div style="font-size:12px;color:#c8a84b;margin-bottom:3px;">Target Boss</div>
+          <div style="font-size:11px;color:#8a7a6a;line-height:1.6;">Lock onto any boss you've defeated and run it on repeat. Pay a small gold cost per loop — refundable if you cancel. Good for farming specific drops.</div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:flex-start;gap:10px;background:#0a0a14;border:1px solid #1a4a1a;border-radius:3px;padding:10px 12px;">
+        <span style="font-size:18px;flex-shrink:0;">🌾</span>
+        <div>
+          <div style="font-size:12px;color:#7aaa5a;margin-bottom:3px;">Farm Zone</div>
+          <div style="font-size:11px;color:#8a7a6a;line-height:1.6;">Grind mobs in any unlocked zone without ever triggering a boss. Lower cost, higher rare pack chance. Use it to level up or gear up before a tough fight.</div>
+        </div>
+      </div>
+    </div>
+    <div style="font-size:10px;color:#3a3a5a;margin-bottom:16px;font-style:italic;">Both buttons appear in the zone header at the top of the center panel.</div>
+    <button onclick="dismissLoopIntro()" style="width:100%;padding:9px;border:1px solid #c8a84b88;background:#131008;color:#c8a84b;font-family:Georgia,serif;font-size:12px;cursor:pointer;border-radius:2px;letter-spacing:1px;transition:all 0.2s;" onmouseover="this.style.background='#1e1a0c'" onmouseout="this.style.background='#131008'">Got it</button>
+  </div>
+</div>
+
+<!-- Bounty Board Introduction Overlay (shown on 3rd boss kill) -->
+<div id="bounty-intro-overlay" style="display:none;position:fixed;inset:0;background:#000000cc;z-index:250;align-items:center;justify-content:center;">
+  <div style="background:#0d0d18;border:1px solid #c8a0ff66;border-radius:4px;padding:28px 32px;max-width:460px;width:90%;font-family:Georgia,serif;color:#d4c9a8;text-align:center;">
+    <div style="font-size:18px;color:#c8a0ff;margin-bottom:4px;letter-spacing:2px;">📋 BOUNTY BOARD</div>
+    <div style="font-size:11px;color:#5a5a6a;font-style:italic;margin-bottom:18px;letter-spacing:1px;">A contract awaits you in the shop.</div>
+    <div style="text-align:left;margin-bottom:16px;background:#0a0a14;border:1px solid #3a2a5a;border-radius:3px;padding:12px 14px;">
+      <div style="font-size:11px;color:#a090c0;line-height:1.8;">
+        <div style="margin-bottom:6px;">The board offers a contract against a <span style="color:#c8a0ff;">named miniboss</span> scaled to your current power. The reward — gold or an item — is shown upfront before you commit.</div>
+        <div style="margin-bottom:6px;">Hit <span style="color:#c8a0ff;">Hunt</span> to begin a 10-second search, then face the target. Killing it delivers the reward immediately. Dying loses the bounty.</div>
+        <div style="color:#5a5a7a;font-size:10px;font-style:italic;">Bounty targets are not bosses — they won't advance the act or open the shop.</div>
+      </div>
+    </div>
+    <button onclick="dismissBountyIntro()" style="width:100%;padding:9px;border:1px solid #c8a0ff88;background:#0e0818;color:#c8a0ff;font-family:Georgia,serif;font-size:12px;cursor:pointer;border-radius:2px;letter-spacing:1px;transition:all 0.2s;" onmouseover="this.style.background='#180e24'" onmouseout="this.style.background='#0e0818'">Got it</button>
+  </div>
+</div>
+
 <!-- Relic Introduction Overlay -->
 <div id="relic-intro-overlay" style="display:none;position:fixed;inset:0;background:#000000cc;z-index:250;align-items:center;justify-content:center;">
   <div style="background:#0d0d18;border:1px solid #c8a84b88;border-radius:4px;padding:32px 36px;max-width:480px;width:90%;font-family:Georgia,serif;color:#d4c9a8;text-align:center;">
@@ -3135,6 +3177,12 @@ var bossDeathCounts    = {};   // key: "diff-actIdx" → number of deaths to tha
 
 // ── Relic System ──────────────────────────────────────────
 var relicSystemUnlocked = false;  // true once Hell is first unlocked
+var loopIntroSeen = false;        // true once the Target Boss / Farm Zone intro popup has been shown
+var _loopIntroPendingShop = false;      // true while the loop intro popup is blocking the shop from opening
+var _showLoopIntroAfterRespawn = false; // set to context string ('boss-death'|'mob-death') when intro should fire after respawn
+var _showLoopIntroCtx = '';
+var bountyIntroSeen = false;            // true once the bounty board intro popup has been shown
+var _bountyIntroPendingShop = false;    // true while the bounty intro popup is blocking the shop from opening
 var equippedRelic = null;         // { name, effect, maxCharges, chargeCost, duration, charges, triggerMode, activeUntil }
 var relicTriggerMode = 'full';    // 'full' | 'boss' | 'expiry'
 var relicActiveUntil = 0;         // timestamp when current relic effect expires
@@ -3147,6 +3195,7 @@ var statsData = {
   actFirstClear:  {},   // key: "diff-actIdx" → real timestamp ms
   diffUnlock:     {},   // key: diff → real timestamp ms
   gameStartTs:    0,    // real timestamp when session began
+  totalDeaths:    0,    // total deaths across all runs (for feature unlocks)
 };
 var _bossSpawnRealTime = 0;  // real Date.now() when boss was spawned
 var MERCHANT_DEATH_THRESHOLD = 5;
@@ -4064,6 +4113,19 @@ function spawnNextEnemy(simNow) {
       }
     }
   } else if (bossSpawned && enemy === null && !bountyActive) {
+    // First boss kill: show the loop feature intro popup before opening the shop
+    if (_loopIntroPendingShop) return; // loop intro popup is open, waiting for dismissal
+    if (!loopIntroSeen && getTotalBossKills() === 1) {
+      _loopIntroPendingShop = true;
+      showLoopIntro();
+      return;
+    }
+    if (_bountyIntroPendingShop) return; // bounty intro popup is open, waiting for dismissal
+    if (!bountyIntroSeen && getTotalBossKills() >= 3) {
+      _bountyIntroPendingShop = true;
+      showBountyIntro();
+      return;
+    }
     openShop();
     return;
   } else {
@@ -5620,6 +5682,53 @@ function unlockRelicSystem() {
   if (overlay) overlay.style.display = 'flex';
 }
 
+function showLoopIntro(context) {
+  // context: 'kill' | 'boss-death' | 'mob-death'
+  if (loopIntroSeen) return;
+  loopIntroSeen = true;
+  var titleEl = document.getElementById('loop-intro-title');
+  var subEl   = document.getElementById('loop-intro-sub');
+  if (context === 'boss-death') {
+    if (titleEl) titleEl.textContent = 'REGROUP & PREPARE';
+    if (subEl)   subEl.textContent   = 'You fell to the boss. Before you charge back in, consider these options.';
+  } else if (context === 'mob-death') {
+    if (titleEl) titleEl.textContent = 'DEATH IS A TEACHER';
+    if (subEl)   subEl.textContent   = 'The mob pack got you. These options can help you come back stronger.';
+  } else {
+    if (titleEl) titleEl.textContent = 'THE HUNT DEEPENS';
+    if (subEl)   subEl.textContent   = 'Your first boss is slain. New options are now available.';
+  }
+  var overlay = document.getElementById('loop-intro-overlay');
+  if (overlay) overlay.style.display = 'flex';
+  saveGame();
+}
+
+function dismissLoopIntro() {
+  var overlay = document.getElementById('loop-intro-overlay');
+  if (overlay) overlay.style.display = 'none';
+  if (_loopIntroPendingShop) {
+    _loopIntroPendingShop = false;
+    openShop();
+  }
+}
+
+function showBountyIntro() {
+  if (bountyIntroSeen) return;
+  bountyIntroSeen = true;
+  var overlay = document.getElementById('bounty-intro-overlay');
+  if (overlay) overlay.style.display = 'flex';
+  saveGame();
+}
+
+function dismissBountyIntro() {
+  var overlay = document.getElementById('bounty-intro-overlay');
+  if (overlay) overlay.style.display = 'none';
+  if (_bountyIntroPendingShop) {
+    _bountyIntroPendingShop = false;
+    openShop();
+  }
+}
+
 function confirmRelicIntro() {
   var overlay = document.getElementById('relic-intro-overlay');
   if (overlay) overlay.style.display = 'none';
@@ -5829,6 +5938,7 @@ function gainKill(isBoss, isAoe, simNow) {
         var _killMs = _bossSpawnRealTime > 0 ? (Date.now() - _bossSpawnRealTime) : 0;
         var _gs = totalGearScore();
         var _lv = hero.level;
+        var _isFirstBossKill = (getTotalBossKills() === 0);
         if (!statsData.bossKills[_bk]) statsData.bossKills[_bk] = { count:0, fastestMs:Infinity, fastestSpeed:1, firstGearScore:_gs, firstLevel:_lv, lastGearScore:_gs, lastLevel:_lv };
         statsData.bossKills[_bk].count++;
         statsData.bossKills[_bk].lastGearScore = _gs;
@@ -5838,6 +5948,8 @@ function gainKill(isBoss, isAoe, simNow) {
           statsData.bossKills[_bk].fastestSpeed = gameSpeed;
         }
         if (!statsData.actFirstClear[_bk]) statsData.actFirstClear[_bk] = Date.now();
+        // (Loop intro popup is triggered from spawnNextEnemy on first boss kill)
+        // (Bounty Board intro popup fires when the 3rd-kill shop opens)
         _bossSpawnRealTime = 0;
         // Act milestone skill points: Act 1 (idx 0) and Act 4 (idx 4) each grant +1
         if (actIdx === 0 || actIdx === 4) {
@@ -5859,6 +5971,9 @@ function gainKill(isBoss, isAoe, simNow) {
             if (!statsData.diffUnlock[nextDiff]) statsData.diffUnlock[nextDiff] = Date.now();
             addLog('★ '+DIFFICULTY[nextDiff].label+' difficulty unlocked!', 'level');
             addLog('↑ Ascending to '+DIFFICULTY[nextDiff].label+' after the shop…', 'zone');
+            if (nextDiff === 'nightmare') {
+              addLog('🏦 Bank unlocked — share items between characters from the left panel.', 'info');
+            }
             // Relic system unlock — triggers when Hell difficulty is first unlocked
             if (nextDiff === 'hell' && !relicSystemUnlocked) {
               setTimeout(function() { unlockRelicSystem(); }, 800);
@@ -5941,6 +6056,15 @@ function triggerDeath() {
   addLog('☠ You have died.', 'death');
   triggerHeroDeathAnim();
 
+  // Track total deaths for feature unlocks
+  statsData.totalDeaths++;
+
+  // Died to mobs (not a boss) before the loop intro has been shown — queue it for after respawn
+  if (!bossSpawned && !loopIntroSeen && !_showLoopIntroAfterRespawn) {
+    _showLoopIntroAfterRespawn = true;
+    _showLoopIntroCtx = 'mob-death';
+  }
+
   // Bounty cleanup on death — lose the bounty, restore boss loop if it was paused
   if (bountyActive) {
     bountyActive = false;
@@ -5960,6 +6084,11 @@ function triggerDeath() {
     var bossKey = difficulty + '-' + actIdx;
     bossDeathCounts[bossKey] = (bossDeathCounts[bossKey] || 0) + 1;
     statsData.bossDeaths[bossKey] = (statsData.bossDeaths[bossKey] || 0) + 1;
+    // First boss encounter with no kills yet — queue the loop intro for after respawn
+    if (!loopIntroSeen && getTotalBossKills() === 0) {
+      _showLoopIntroAfterRespawn = true;
+      _showLoopIntroCtx = 'boss-death';
+    }
     _bossSpawnRealTime = 0;  // reset TTK timer on death
     if (bossDeathCounts[bossKey] === MERCHANT_DEATH_THRESHOLD) {
       bossDeathCounts[bossKey] = 0;
@@ -6048,6 +6177,13 @@ function doRespawn() {
   // document.getElementById('respawn-bar').classList.remove('active'); // respawn bar removed
   addLog('Returned to '+ACTS[actIdx].name+'.', 'zone');
   spawnNextEnemy();
+  // Show loop intro after first death (mob or boss) if not yet seen
+  if (_showLoopIntroAfterRespawn) {
+    var _ctx = _showLoopIntroCtx;
+    _showLoopIntroAfterRespawn = false;
+    _showLoopIntroCtx = '';
+    setTimeout(function() { showLoopIntro(_ctx); }, 600);
+  }
 }
 
 // ═══════════════════════════════════════════════════
@@ -6878,6 +7014,16 @@ function setFarmPackType(type) {
 // BOUNTY BOARD
 // ═══════════════════════════════════════════════════
 
+// Returns the total number of boss kills across all zones and difficulties
+function getTotalBossKills() {
+  var total = 0;
+  var keys = Object.keys(statsData.bossKills);
+  for (var i = 0; i < keys.length; i++) {
+    total += (statsData.bossKills[keys[i]].count || 0);
+  }
+  return total;
+}
+
 // Returns the highest-power boss the player has defeated, as { diff, actIdx, bossHp }
 function getHighestDefeatedBoss() {
   var best = null;
@@ -7044,6 +7190,7 @@ function getBountyRewardStr(bounty) {
 function renderBountyBoard() {
   var highest = getHighestDefeatedBoss();
   if (!highest) return ''; // no kills yet, no board
+  if (getTotalBossKills() < 3) return ''; // locked until 3rd boss kill
 
   // Auto-generate if none exists
   if (!currentBounty) currentBounty = generateBounty();
@@ -8095,24 +8242,30 @@ function renderUI(now) {
     document.getElementById('status-line').innerHTML = '';
   }
 
-  // Boss loop button highlight
+  // Boss loop button — hidden until first boss kill or first boss death (whichever comes first)
   var loopBtn = document.getElementById('boss-loop-btn');
   if (loopBtn && !sessionDropsPending) {
-    var anyBossUnlocked = Object.keys(unlockedBosses).length > 0;
-    loopBtn.disabled = !anyBossUnlocked;
-    loopBtn.style.opacity     = anyBossUnlocked ? '1' : '0.35';
-    loopBtn.style.cursor      = anyBossUnlocked ? 'pointer' : 'not-allowed';
-    loopBtn.style.borderColor = bossLoop ? '#c8a84b' : (anyBossUnlocked ? '#5a4a2a' : '#3a2a1a');
-    loopBtn.style.color       = bossLoop ? '#c8a84b' : (anyBossUnlocked ? '#c8a84b88' : '#5a4a3a');
-    loopBtn.textContent       = bossLoop ? '🔁 '+ACTS[bossLoop.actIdx].bossName.split(',')[0]+' ('+bossLoop.loopsRemaining+')' : '🎯 Target Boss';
+    var anyBossKilled = getTotalBossKills() > 0 || loopIntroSeen;
+    loopBtn.style.display = anyBossKilled ? '' : 'none';
+    if (anyBossKilled) {
+      loopBtn.disabled      = false;
+      loopBtn.style.opacity = '1';
+      loopBtn.style.cursor  = 'pointer';
+      loopBtn.style.borderColor = bossLoop ? '#c8a84b' : '#5a4a2a';
+      loopBtn.style.color       = bossLoop ? '#c8a84b' : '#c8a84b88';
+      loopBtn.textContent       = bossLoop ? '🔁 '+ACTS[bossLoop.actIdx].bossName.split(',')[0]+' ('+bossLoop.loopsRemaining+')' : '🎯 Target Boss';
+    }
   }
 
-  // Farm loop button highlight
+  // Farm loop button — hidden until first boss kill (introduced alongside Target Boss)
   var farmBtn = document.getElementById('farm-loop-btn');
   if (farmBtn && !sessionDropsPending) {
-    farmBtn.style.borderColor = farmLoop ? '#7aaa5a' : '#1a3a1a';
-    farmBtn.style.color       = farmLoop ? '#7aaa5a' : '#7aaa5a88';
-    farmBtn.textContent       = farmLoop ? '🌾 '+ACTS[farmLoop.actIdx].name.split(' ')[1]+'... ('+farmLoop.loopsRemaining+')' : '🌾 Farm Zone';
+    farmBtn.style.display = anyBossKilled ? '' : 'none';
+    if (anyBossKilled) {
+      farmBtn.style.borderColor = farmLoop ? '#7aaa5a' : '#1a3a1a';
+      farmBtn.style.color       = farmLoop ? '#7aaa5a' : '#7aaa5a88';
+      farmBtn.textContent       = farmLoop ? '🌾 '+ACTS[farmLoop.actIdx].name.split(' ')[1]+'... ('+farmLoop.loopsRemaining+')' : '🌾 Farm Zone';
+    }
   }
   var topOffBtn = document.getElementById('topoff-btn');
   if (topOffBtn) {
@@ -8428,9 +8581,28 @@ function discardVaultItem(slot, idx) {
 
 // ── Bank ──────────────────────────────────────────────────────────────
 function renderBank() {
-  var list  = document.getElementById('bank-items-list');
-  var hint  = document.getElementById('bank-empty-hint');
-  var count = document.getElementById('bank-count');
+  var dropZone = document.getElementById('bank-drop-zone');
+  var count    = document.getElementById('bank-count');
+  if (!dropZone) return;
+
+  // Bank is locked until Nightmare difficulty is reached
+  if (!unlockedDiffs.nightmare) {
+    if (count) count.textContent = '🔒';
+    dropZone.innerHTML = '<div style="font-size:10px;color:#5a3a6a;text-align:center;padding:10px 4px;line-height:1.6;">'
+      + '🔒 <span style="color:#7a5a8a;">Bank locked</span><br>'
+      + '<span style="font-size:9px;color:#3a2a4a;">Unlocks when you reach Nightmare difficulty</span>'
+      + '</div>';
+    return;
+  }
+
+  // Rebuild inner structure if it was replaced by the locked state
+  if (!document.getElementById('bank-items-list')) {
+    dropZone.innerHTML = '<div id="bank-items-list"></div>'
+      + '<div id="bank-empty-hint" style="font-size:10px;color:#3a3a5a;text-align:center;padding:4px 0;font-style:italic;">Drag vault items here to share with other characters</div>';
+  }
+
+  var list = document.getElementById('bank-items-list');
+  var hint = document.getElementById('bank-empty-hint');
   if (!list) return;
 
   if (count) count.textContent = bank.length + '/' + BANK_SIZE;
@@ -8475,6 +8647,10 @@ function renderBank() {
 }
 
 function depositToBank(slot, vaultIdx) {
+  if (!unlockedDiffs.nightmare) {
+    addLog('🏦 Bank unlocks when you reach Nightmare difficulty.', 'info');
+    return;
+  }
   if (bank.length >= BANK_SIZE) {
     addLog('🏦 Bank is full ('+BANK_SIZE+' items max).', 'info');
     return;
@@ -12181,6 +12357,8 @@ function saveGame() {
       statsData:       statsData,
       // Relic system
       relicSystemUnlocked: relicSystemUnlocked,
+      loopIntroSeen:       loopIntroSeen,
+      bountyIntroSeen:     bountyIntroSeen,
       equippedRelic:       equippedRelic,
       relicTriggerMode:    relicTriggerMode,
       relicActiveUntil:    relicActiveUntil,
@@ -12300,9 +12478,12 @@ function loadGame() {
       statsData.actFirstClear = state.statsData.actFirstClear || {};
       statsData.diffUnlock    = state.statsData.diffUnlock    || {};
       statsData.gameStartTs   = state.statsData.gameStartTs   || 0;
+      statsData.totalDeaths   = state.statsData.totalDeaths   || 0;
     }
     // Relic system
     relicSystemUnlocked = state.relicSystemUnlocked || false;
+    loopIntroSeen       = state.loopIntroSeen       || false;
+    bountyIntroSeen     = state.bountyIntroSeen     || false;
     equippedRelic       = state.equippedRelic       || null;
     relicTriggerMode    = state.relicTriggerMode    || 'full';
     relicActiveUntil    = state.relicActiveUntil    || 0;
