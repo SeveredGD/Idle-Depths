@@ -243,6 +243,10 @@
   }
   .discard-btn { flex-shrink:0;margin-left:6px;padding:1px 5px;border:1px solid #3a2a2a;background:#0a0608;color:#6a4a4a;font-size:10px;cursor:pointer;border-radius:2px;line-height:1.4;transition:all 0.12s; }
   .discard-btn:hover { border-color:#c83a3a !important;background:#2a0808 !important;color:#ff6a6a !important;box-shadow:0 0 6px #c83a3a88;transform:scale(1.15); }
+  .vault-slot-header { font-size:10px;color:#5a5a7a;text-transform:uppercase;letter-spacing:1px;padding:8px 6px 3px;border-bottom:1px solid #1a1a2a;margin-bottom:1px;display:flex;align-items:center;gap:5px; }
+  .vault-slot-header:first-child { padding-top:2px; }
+  .vault-row { cursor:grab; }
+  .vault-row:active { cursor:grabbing; }
   /* ── Unique drop beacon ── */
   @keyframes uniqueBeacon {
     0%   { box-shadow: 0 0 8px #e57bf5, 0 0 20px #e57bf588, 0 0 40px #e57bf544; border-color: #e57bf5; }
@@ -283,9 +287,10 @@
   }
   .vault-item[draggable="true"] { cursor: grab; }
   .vault-item[draggable="true"]:active { cursor: grabbing; }
-  .vault-item.dragging { opacity: 0.4; outline: 1px dashed #c8a84b55; }
+  .vault-item.dragging, .vault-row.dragging { opacity: 0.4; outline: 1px dashed #c8a84b55; }
   .drop-target.drag-over { background: rgba(200,168,75,0.12) !important; box-shadow: inset 0 0 0 2px #c8a84b88 !important; }
   #phaser-container.drag-over { box-shadow: inset 0 0 0 3px #c8a84b, 0 0 24px #c8a84b44 !important; }
+  #paperdoll-panel.pd-panel-drag-over { box-shadow: inset 0 0 0 2px #c8a84b, 0 0 20px #c8a84b33; background: rgba(200,168,75,0.06); transition: box-shadow 0.1s, background 0.1s; }
   @keyframes tabBlink {
     0%,100% { opacity:1; }
     50%      { opacity:0.4; border-color:#c8a84b88; color:#c8a84b; }
@@ -603,6 +608,7 @@
     flex: 1;
     min-width: 0;
     overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
     padding: 8px 10px;
     display: flex;
     flex-direction: column;
@@ -9622,13 +9628,8 @@ function withdrawFromBank(bankIdx) {
 }
 
 function renderVault() {
-  var html = '';
-  var col1 = '', col2 = '', col3 = '';
-
-  // Column assignment by slot
-  var COL1_SLOTS = ['weapon', 'ring'];
-  var COL2_SLOTS = ['armor', 'amulet'];
-  var COL3_SLOTS = ['trinket', 'boots'];
+  var SLOT_ICONS = { weapon:'⚔', armor:'🛡', ring:'💍', ring2:'💍', amulet:'📿', trinket:'🏺', boots:'👟' };
+  var centerRows = '';
 
   for (var i = 0; i < SLOTS.length; i++) {
     var slot = SLOTS[i];
@@ -9636,58 +9637,50 @@ function renderVault() {
     var vault = hero.vault[slot];
     if (!vault.length) continue;
 
-    var slotLabel = '<div class="slot-label">'+(SLOT_LABELS[slot] || slot)+'</div>';
-    html += slotLabel;
+    var icon  = SLOT_ICONS[slot] || '?';
+    var label = SLOT_LABELS[slot] || slot;
 
-    var inCol1 = COL1_SLOTS.indexOf(slot) !== -1;
-    var inCol2 = COL2_SLOTS.indexOf(slot) !== -1;
-    var inCol3 = COL3_SLOTS.indexOf(slot) !== -1;
-    if (inCol1) col1 += slotLabel;
-    else if (inCol2) col2 += slotLabel;
-    else if (inCol3) col3 += slotLabel;
+    // Slot group header
+    centerRows += '<div class="vault-slot-header"><span class="gr-icon" style="opacity:0.6;">'+icon+'</span> '+label+'</div>';
 
     for (var j = 0; j < vault.length; j++) {
       var v = vault[j];
       var canReroll = (v.rarity === 'magic' || v.rarity === 'rare');
       var hasGem = selectedGem && (gemInventory[selectedGem] || 0) > 0 && hero.gold >= GEM_REROLL_COST;
       var vNew = !isItemSeen(slot, v);
-      var itemHtml = '<div class="vault-item '+v.rarity+(vNew?' item-new':'')+'" draggable="true" data-slot="'+slot+'" data-idx="'+j+'" style="display:flex;justify-content:space-between;align-items:flex-start;">'
+      var stats = statLine(v.stats);
+      var extra = v.skillBonus ? '+'+v.skillBonus+' '+v.skillName : (v.allSkills ? '+'+v.allSkills+' All Skills' : (stats || ''));
+
+      // Mirrored gear-row: [reroll] [body: name / stat] [discard]  — no double rarity class
+      var itemHtml = '<div class="gear-row vault-row '+v.rarity+(vNew?' item-new':'')+'" draggable="true" data-slot="'+slot+'" data-idx="'+j+'">'
         + (canReroll
           ? '<button onclick="event.stopPropagation();rerollVaultItem(\''+slot+'\','+j+')" title="Reforge with selected gem (50g)" class="vault-reroll-btn" '+(hasGem?'':'disabled')+'>↻</button>'
-          : '<span style="width:20px;flex-shrink:0;margin-right:4px;"></span>')
-        + '<div style="flex:1;min-width:0;cursor:pointer;">'+v.name + (v.skillBonus ? ' [+'+v.skillBonus+' '+v.skillName+']' : '') + (v.allSkills ? ' [+'+v.allSkills+' All Skills]' : '')
-        + '<div class="vault-item-stats">'+statLine(v.stats)+'</div>'
+          : '<span style="width:20px;flex-shrink:0;"></span>')
+        + '<div class="gr-body" style="text-align:right;">'
+          + '<div class="gr-name '+v.rarity+'" style="text-align:right;">'+v.name+'</div>'
+          + (extra ? '<div class="gr-stat" style="text-align:right;">'+extra+'</div>' : '')
         + '</div>'
         + '<button onclick="event.stopPropagation();discardVaultItem(\''+slot+'\','+j+')" title="Discard" class="discard-btn">✕</button>'
         + '</div>';
-      html += itemHtml;
-      if (inCol1) col1 += itemHtml;
-      else if (inCol2) col2 += itemHtml;
-      else if (inCol3) col3 += itemHtml;
+      centerRows += itemHtml;
     }
   }
 
-  // Left panel stub
+  // Left panel stub (hidden but kept so JS getElementById('vault-panel') doesn't break)
   var panel = document.getElementById('vault-panel');
-  if (panel) panel.innerHTML = html || '<span style="font-size:11px;color:#3a3a4a;">Empty</span>';
+  if (panel) panel.innerHTML = '';
 
-  // Center panel — 3 column grid
+  // Center panel — flat mirrored list
   var centerPanel = document.getElementById('vault-panel-center');
   if (centerPanel) {
-    if (!col1 && !col2 && !col3) {
-      centerPanel.innerHTML = '<span style="font-size:11px;color:#3a3a4a;grid-column:1/-1;">Empty</span>';
-    } else {
-      centerPanel.innerHTML =
-        '<div style="display:flex;flex-direction:column;gap:3px;">' + (col1 || '<span style="font-size:11px;color:#3a3a4a;">—</span>') + '</div>' +
-        '<div style="display:flex;flex-direction:column;gap:3px;border-left:1px solid #c8a84b22;padding-left:6px;">' + (col2 || '<span style="font-size:11px;color:#3a3a4a;">—</span>') + '</div>' +
-        '<div style="display:flex;flex-direction:column;gap:3px;border-left:1px solid #c8a84b22;padding-left:6px;">' + (col3 || '<span style="font-size:11px;color:#3a3a4a;">—</span>') + '</div>';
-    }
+    centerPanel.style.display = 'block';
+    centerPanel.innerHTML = centerRows || '<span style="font-size:11px;color:#3a3a4a;">Empty</span>';
   }
 
   // Attach tooltips to both panels
   [panel, centerPanel].forEach(function(p) {
     if (!p) return;
-    var vItems = p.querySelectorAll('.vault-item');
+    var vItems = p.querySelectorAll('.vault-item, .vault-row');
     for (var _vi = 0; _vi < vItems.length; _vi++) {
       (function(el) {
         el.addEventListener('mouseenter', function() {
@@ -14428,7 +14421,7 @@ function init() {
     var p = document.getElementById(panelId);
     if (!p) return;
     p.addEventListener('dragstart', function(e) {
-      var el = e.target.closest ? e.target.closest('.vault-item') : e.target;
+      var el = e.target.closest ? (e.target.closest('.vault-row') || e.target.closest('.vault-item')) : e.target;
       if (!el || !el.dataset.slot) return;
       _dragSlot = el.dataset.slot;
       _dragIdx  = parseInt(el.dataset.idx);
