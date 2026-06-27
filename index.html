@@ -1646,11 +1646,11 @@ var SKILL_DEFS = {
   mark_prey: {
     getStats: function(pts, ab) { return {}; },
     rows: function(pts, ab) { var eff=pts+(ab||0);
-      var atkInterval = Math.max(500, Math.round(2000 - eff * 50));
+      var atkInterval = Math.max(1200, Math.round(2800 - eff * 40));
       return [
-        { label:'Mode',              upgraded:true,  value:'Companion fights for you at 100% dmg' },
-        { label:'All stances',       upgraded:true,  value:'Aggressive + Defensive + Utility all active' },
-        { label:'Companion interval',upgraded:pts>0, value:atkInterval+'ms (base 2000ms)' },
+        { label:'Mode',              upgraded:true,  value:'Companion fights at 50% hero dmg' },
+        { label:'Primary active',    upgraded:true,  value:'Pet ability still fires on its own timer' },
+        { label:'Companion interval',upgraded:pts>0, value:atkInterval+'ms (base 2800ms)' },
       ]; },
   },
   // ── Ranger Arcane Archer skills ──
@@ -4500,7 +4500,7 @@ function heroAttack(now) {
     var trapperPts = hero.skillTree['trapper'] || 0;
     var trapMult = 1 + trapPts * 0.02 + trapperPts * 0.03;
     var fireMlt = 1 + (hero._fireDmg || 0) / 100;
-    var dmg = Math.round(base * rangPhysMult * trapMult * fireMlt * stunBonusMult);
+    var dmg = Math.round(base * fireMlt * trapMult * stunBonusMult); // fire only, not rangPhysMult
     addLog('💥 Explosive Trap: '+dmg+' — BOOM!', 'fire');
     enemy.hp = Math.max(0, enemy.hp - dmg);
     // Always burns — bypass random chance
@@ -12642,17 +12642,18 @@ function companionTick(now) {
 
   if (_markPrey) {
     var mpPts = hero.skillTree['mark_prey'] || 0;
-    var mpInterval = Math.max(500, Math.round(2000 - mpPts * 50));
+    var mpInterval = Math.max(1200, Math.round(2800 - mpPts * 40)); // 2800ms → 1200ms at 20pts
     if (now >= _companionNextAtk) {
       _companionNextAtk = now + Math.round(mpInterval / gameSpeed);
-      var dmg = Math.round(ri(hero.dmgMin || 1, hero.dmgMax || 1));
+      var dmg = Math.round(ri(hero.dmgMin || 1, hero.dmgMax || 1) * 0.50); // 50% hero dmg, not 100%
       if (petId === 'wolf') dmg = Math.round(dmg * (1 + rollPct));
       if (enemy._arcaneVuln) dmg = Math.round(dmg * arcaneVulnMult());
       enemy.hp = Math.max(0, enemy.hp - dmg);
-      addLog('\u{1F3AF} '+petName+' hunts for '+dmg+'.', 'crit');
+      addLog('\uD83C\uDFAF ' + petName + ' hunts for ' + dmg + '.', 'crit');
       if (enemy.hp <= 0) { gainKill(enemy.isBoss, false, now); return; }
+      // Only fire the pet's own primary active — not all stances simultaneously
+      _fireCompanionActive(petId, petName, roll, rollPct, now);
     }
-    _fireCompanionActive(petId, petName, roll, rollPct, now);
     return;
   }
 
