@@ -18,6 +18,7 @@
     font-family: Georgia, 'Times New Roman', serif;
     font-size: 13px;
     height: 100vh;
+    height: calc(var(--vh, 1vh) * 100);
     display: flex;
     flex-direction: column;
     overflow: hidden;
@@ -1257,7 +1258,7 @@
 </div>
 
 
-  <span class="game-title">IDLE DEPTHS <span style="font-size:13px;letter-spacing:1px;opacity:0.6;">v1.1</span></span>
+  <span class="game-title">IDLE DEPTHS <span style="font-size:13px;letter-spacing:1px;opacity:0.6;">v1.11</span></span>
 </div>
 
 <!-- Difficulty / act bar -->
@@ -1511,6 +1512,14 @@
 </div>
 
 <script>
+// ── Real viewport height (accounts for browser chrome on iPad/mobile) ──
+(function(){
+  function _setVh(){ document.documentElement.style.setProperty('--vh', (window.innerHeight * 0.01) + 'px'); }
+  _setVh();
+  window.addEventListener('resize', _setVh);
+  window.addEventListener('orientationchange', function(){ setTimeout(_setVh, 100); });
+})();
+
 // ── DragDropTouch polyfill — long-press to drag, free scroll otherwise ──
 (function(){
   var _src=null,_ghost=null,_lastOver=null,_pt={x:0,y:0},_ptDown=null,_dt=null,_dragging=false,_ready=false,_holdTimer=null;
