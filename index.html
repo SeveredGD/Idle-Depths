@@ -5813,7 +5813,6 @@ function openShop() {
     shopItems.push({ item: item, price: price, sold: false });
   }
   renderShop();
-  _maybeBountyAutoAccept();
 }
 
 function renderPendingRelic() {
@@ -6950,8 +6949,9 @@ function _startBountyFight() {
   document.getElementById('overlay').classList.remove('active');
   addLog('⚔ '+b.label+' appears! [Bounty · '+b.tier+']', 'death');
   recalcStats();
-  scheduleHeroAttack();
-  scheduleEnemyAttack();
+  var _now = Date.now();
+  heroNextAtk  = _now + heroAttackInterval();
+  enemyNextAtk = _now + MOB_MS;
   renderUI();
   saveGame();
 }
@@ -12900,7 +12900,13 @@ function _gameTick() {
       if (shopPaused || bountyActive) shopAutoCloseAt += Math.round(TICK_BASE / gameSpeed);
       var cd = document.getElementById('shop-countdown');
       if (cd) cd.textContent = (shopPaused || bountyActive) ? (bountyActive ? '🏹' : '⏸') : Math.max(0, Math.ceil((shopAutoCloseAt - now) / 1000));
-      if (!shopPaused && !bountyActive && now >= shopAutoCloseAt) closeShop();
+      if (!shopPaused && !bountyActive && now >= shopAutoCloseAt) {
+        if (bountyAutoAccept && currentBounty && !bountyActive) {
+          _maybeBountyAutoAccept();
+        } else {
+          closeShop();
+        }
+      }
       renderUI(now);
       return;
     }
