@@ -8,13 +8,20 @@
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
 
+  /* Remove 300ms tap delay on buttons; cursor:pointer fixes iOS tap on onclick divs */
+  a, button, input, select, textarea { touch-action: manipulation; }
+  [onclick] { cursor: pointer; }
+
   body {
     background: #0a0a0f url('https://severedgd.github.io/gamesprites/full-screen-background.png') center center / cover fixed;
     color: #d4c9a8;
     font-family: Georgia, 'Times New Roman', serif;
     font-size: 13px;
-    min-height: 100vh;
-    overflow-x: hidden;
+    height: 100vh;
+    height: -webkit-fill-available;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
   }
 
   #phaser-container canvas {
@@ -116,7 +123,8 @@
     display: grid;
     grid-template-columns: 220px 1fr 210px;
     gap: 0;
-    height: calc(100vh - 98px);
+    flex: 1;
+    min-height: 0;
     overflow: hidden;
   }
   #left-resize-handle {
@@ -329,6 +337,14 @@
 
   /* ── Center panel ── */
   #center-panel { border-right: 1px solid #c8a84b33; box-shadow: -1px 0 8px #c8a84b11, 1px 0 8px #c8a84b11; display: flex; flex-direction: column; height: 100%; overflow: hidden; background: rgba(6,6,12,0.55); padding: 0; }
+
+  /* ── Mobile / iPad — shrink combat scene so panels below are reachable ── */
+  @media (max-height: 900px) {
+    #combat-scene { height: 260px !important; }
+  }
+  @media (max-height: 700px) {
+    #combat-scene { height: 180px !important; }
+  }
 
   /* ── Zone header ── */
   #zone-header {
@@ -1251,7 +1267,7 @@
 </div>
 
 
-  <span class="game-title">IDLE DEPTHS</span>
+  <span class="game-title">IDLE DEPTHS <span style="font-size:13px;letter-spacing:1px;opacity:0.6;">v1.2</span></span>
   <button id="class-switch-btn" onclick="switchClass()" title="Switch class — choose a different hero"
     style="padding:7px 18px;border:2px solid #7a5ac8;background:linear-gradient(180deg,#1e0e38,#0d0520);color:#c8a8ff;font-family:Georgia,serif;font-size:14px;font-weight:bold;cursor:pointer;border-radius:4px;letter-spacing:1px;transition:all 0.15s;flex-shrink:0;box-shadow:0 0 14px #7a5ac855,inset 0 1px 0 #ffffff11;"
     onmouseover="this.style.borderColor='#c8a84b';this.style.color='#ffe8a0';this.style.boxShadow='0 0 20px #c8a84b88,inset 0 1px 0 #ffffff22';this.style.background='linear-gradient(180deg,#2a1a48,#150a28)'"
@@ -1354,47 +1370,46 @@
       </div>
     </div>
 
-    <div id="enemy-block" style="position:relative;">
-      <!-- Ranger discipline / Rogue spec warning banner -->
-      <div id="discipline-warning" style="display:none;padding:8px 14px;background:#1a0800;border:2px solid #c85a1a;border-radius:3px;margin-bottom:6px;cursor:pointer;text-align:center;" onclick="setSkillTab(3);document.getElementById('discipline-warning').style.display='none';">
-        <div id="discipline-warning-text" style="font-size:13px;color:#ff8844;font-family:Georgia,serif;letter-spacing:1px;">⚔ Choose your Specialization to begin fighting</div>
-        <div style="font-size:10px;color:#c85a1a;margin-top:3px;">Click here or open the Skill Tree tab</div>
-      </div>
-      <div id="boss-announce">
-        <div class="boss-announce-name" id="boss-announce-name"></div>
-        <div class="boss-announce-sub">has appeared</div>
-      </div>
-      <div class="enemy-name" id="enemy-name">—</div>
-      <div class="enemy-hp-outer"><div class="enemy-hp-inner" id="enemy-hp-bar" style="width:100%"></div></div>
-      <div class="enemy-hp-text" id="enemy-hp-text">— / —</div>
-      <div class="status-line" id="status-line"></div>
-    </div>
-
-    <!-- respawn-bar commented out
-    <div id="respawn-bar">
-      <span class="resp-label">Respawning…</span>
-      <div class="resp-progress"><div class="resp-fill" id="resp-fill" style="width:0%"></div></div>
-      <button class="resp-btn" onclick="respawnNow()">Respawn now</button>
-    </div>
-    -->
-
     <!-- Combat scene — Phaser canvas -->
     <div id="combat-scene" style="position:relative;height:480px;width:100%;background:transparent;border-bottom:2px solid #c8a84b44;box-shadow:0 4px 16px #00000088;overflow:hidden;flex-shrink:0;">
+      <!-- Boss announce + discipline warning overlaid inside scene -->
+      <div id="enemy-block" style="position:absolute;top:70px;left:0;right:0;z-index:16;pointer-events:none;">
+        <div id="discipline-warning" style="display:none;margin:0 8px 4px;padding:8px 14px;background:#1a0800ee;border:2px solid #c85a1a;border-radius:3px;cursor:pointer;text-align:center;pointer-events:auto;" onclick="setSkillTab(3);document.getElementById('discipline-warning').style.display='none';">
+          <div id="discipline-warning-text" style="font-size:13px;color:#ff8844;font-family:Georgia,serif;letter-spacing:1px;">⚔ Choose your Specialization to begin fighting</div>
+          <div style="font-size:10px;color:#c85a1a;margin-top:3px;">Click here or open the Skill Tree tab</div>
+        </div>
+        <div id="boss-announce" style="pointer-events:none;">
+          <div class="boss-announce-name" id="boss-announce-name"></div>
+          <div class="boss-announce-sub">has appeared</div>
+        </div>
+      </div>
       <div id="phaser-container" style="width:100%;height:100%;position:absolute;top:0;left:0;"></div>
-      <!-- Combat HUD: gold | loop buttons | top-off overlay -->
-      <div id="combat-hud-top" style="position:absolute;top:8px;left:8px;right:8px;z-index:15;display:flex;align-items:center;justify-content:space-between;pointer-events:none;">
-        <div style="background:#00000099;border:1px solid #c8a84b44;border-radius:3px;padding:5px 12px;display:flex;align-items:center;gap:6px;pointer-events:auto;">
-          <span style="font-size:15px;color:#c8a84b;letter-spacing:1px;">⬡</span>
-          <span id="combat-gold-display" style="font-size:15px;color:#c8a84b;font-family:Georgia,serif;font-weight:bold;">0</span>
-          <span style="font-size:11px;color:#8a7a4a;">gold</span>
+      <!-- Combat HUD: enemy info row + gold/buttons row -->
+      <div id="combat-hud-top" style="position:absolute;top:0;left:0;right:0;z-index:15;display:flex;flex-direction:column;pointer-events:none;">
+        <!-- Row 1: enemy name + HP bar -->
+        <div style="background:#000000bb;border-bottom:1px solid #3a1a1a;padding:5px 10px;pointer-events:none;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:3px;">
+            <div class="enemy-name" id="enemy-name" style="margin:0;">—</div>
+            <div class="enemy-hp-text" id="enemy-hp-text" style="margin:0;">— / —</div>
+          </div>
+          <div class="enemy-hp-outer" style="margin:0;"><div class="enemy-hp-inner" id="enemy-hp-bar" style="width:100%"></div></div>
+          <div class="status-line" id="status-line" style="margin-top:2px;"></div>
         </div>
-        <div style="background:#00000099;border:1px solid #2a2a2a44;border-radius:3px;padding:5px 8px;display:flex;align-items:center;gap:6px;pointer-events:auto;">
-          <button id="boss-loop-btn" onclick="openBossLoopMenu()" style="padding:5px 13px;border:1px solid #3a2a1a;background:#0f0a06;color:#c8a84b88;font-family:Georgia,serif;font-size:12px;cursor:pointer;border-radius:2px;transition:all 0.15s;">🎯 Target Boss</button>
-          <button id="farm-loop-btn" onclick="openFarmLoopMenu()" style="padding:5px 13px;border:1px solid #1a3a1a;background:#060f06;color:#7aaa5a88;font-family:Georgia,serif;font-size:12px;cursor:pointer;border-radius:2px;transition:all 0.15s;">🌾 Farm Zone</button>
-        </div>
-        <div style="background:#00000099;border:1px solid #1a2a3a;border-radius:3px;padding:5px 10px;display:flex;align-items:center;gap:8px;pointer-events:auto;">
-          <button id="topoff-btn" onclick="doTopOff()" style="padding:4px 12px;border:1px solid #1a2a3a;background:#060a0f;color:#5a9aca88;font-family:Georgia,serif;font-size:12px;cursor:pointer;border-radius:2px;transition:all 0.15s;" title="Heal to full (25g, once per act)">💊 Top Off</button>
-          <label id="topoff-auto-label" style="font-size:11px;color:#5a7a9a;cursor:pointer;white-space:nowrap;display:flex;align-items:center;gap:4px;" title="Auto-heal to full before boss spawns"><input type="checkbox" id="topoff-auto" onchange="hero.autoTopOff=this.checked" style="margin:0;cursor:pointer;">Auto</label>
+        <!-- Row 2: gold | loop buttons | top-off -->
+        <div style="padding:5px 8px;display:flex;align-items:center;justify-content:space-between;pointer-events:none;">
+          <div style="background:#00000099;border:1px solid #c8a84b44;border-radius:3px;padding:4px 10px;display:flex;align-items:center;gap:6px;pointer-events:auto;">
+            <span style="font-size:15px;color:#c8a84b;letter-spacing:1px;">⬡</span>
+            <span id="combat-gold-display" style="font-size:15px;color:#c8a84b;font-family:Georgia,serif;font-weight:bold;">0</span>
+            <span style="font-size:11px;color:#8a7a4a;">gold</span>
+          </div>
+          <div style="background:#00000099;border:1px solid #2a2a2a44;border-radius:3px;padding:4px 6px;display:flex;align-items:center;gap:6px;pointer-events:auto;">
+            <button id="boss-loop-btn" onclick="openBossLoopMenu()" style="padding:4px 10px;border:1px solid #3a2a1a;background:#0f0a06;color:#c8a84b88;font-family:Georgia,serif;font-size:12px;cursor:pointer;border-radius:2px;transition:all 0.15s;">🎯 Target Boss</button>
+            <button id="farm-loop-btn" onclick="openFarmLoopMenu()" style="padding:4px 10px;border:1px solid #1a3a1a;background:#060f06;color:#7aaa5a88;font-family:Georgia,serif;font-size:12px;cursor:pointer;border-radius:2px;transition:all 0.15s;">🌾 Farm Zone</button>
+          </div>
+          <div style="background:#00000099;border:1px solid #1a2a3a;border-radius:3px;padding:4px 8px;display:flex;align-items:center;gap:8px;pointer-events:auto;">
+            <button id="topoff-btn" onclick="doTopOff()" style="padding:3px 10px;border:1px solid #1a2a3a;background:#060a0f;color:#5a9aca88;font-family:Georgia,serif;font-size:12px;cursor:pointer;border-radius:2px;transition:all 0.15s;" title="Heal to full (25g, once per act)">💊 Top Off</button>
+            <label id="topoff-auto-label" style="font-size:11px;color:#5a7a9a;cursor:pointer;white-space:nowrap;display:flex;align-items:center;gap:4px;" title="Auto-heal to full before boss spawns"><input type="checkbox" id="topoff-auto" onchange="hero.autoTopOff=this.checked" style="margin:0;cursor:pointer;">Auto</label>
+          </div>
         </div>
       </div>
       <!-- Death overlay -->
@@ -1544,6 +1559,90 @@
 </div>
 
 <script>
+// ── DragDropTouch polyfill — makes HTML5 drag-and-drop work on iOS/iPadOS ──
+(function(){
+  var _src=null,_ghost=null,_lastOver=null,_pt={x:0,y:0},_ptDown=null,_dt=null,_dragging=false;
+  var SLOP=8; // pixels of movement before we commit to a drag
+  function _mkDT(){
+    var _d={};
+    return {
+      setData:function(k,v){_d[k]=v;},
+      getData:function(k){return _d[k]||'';},
+      clearData:function(){_d={};},
+      effectAllowed:'all', dropEffect:'move', files:[], types:[]
+    };
+  }
+  function _pt2(e){var t=e.changedTouches[0];return{x:t.clientX,y:t.clientY};}
+  function _dist(a,b){var dx=a.x-b.x,dy=a.y-b.y;return Math.sqrt(dx*dx+dy*dy);}
+  function _elAt(x,y){
+    if(_ghost){_ghost.style.display='none';}
+    var el=document.elementFromPoint(x,y);
+    if(_ghost){_ghost.style.display='';}
+    return el;
+  }
+  function _fire(el,type){
+    if(!el)return;
+    var e=document.createEvent('Event');
+    e.initEvent(type,true,true);
+    e.dataTransfer=_dt;
+    el.dispatchEvent(e);
+  }
+  function _closest(el){
+    while(el){if(el.draggable)return el;el=el.parentElement;}
+    return null;
+  }
+  function _cancel(){
+    if(_ghost){document.body.removeChild(_ghost);_ghost=null;}
+    if(_src&&_dragging)_fire(_src,'dragend');
+    _src=null;_dt=null;_lastOver=null;_ptDown=null;_dragging=false;
+  }
+  document.addEventListener('touchstart',function(e){
+    var drag=_closest(e.target);
+    if(!drag)return;
+    _src=drag; _dt=_mkDT(); _ptDown=_pt=_pt2(e); _dragging=false;
+    // Don't preventDefault yet — let taps on buttons still fire
+  },{passive:true});
+  document.addEventListener('touchmove',function(e){
+    if(!_src)return;
+    _pt=_pt2(e);
+    if(!_dragging){
+      if(_dist(_pt,_ptDown)<SLOP)return; // haven't moved enough yet
+      // Crossed the threshold — commit to drag
+      _dragging=true;
+      _fire(_src,'dragstart');
+    }
+    var r=_src.getBoundingClientRect();
+    if(!_ghost){
+      _ghost=_src.cloneNode(true);
+      _ghost.style.cssText='position:fixed;pointer-events:none;z-index:99999;opacity:0.75;margin:0;transition:none;';
+      _ghost.style.width=r.width+'px';_ghost.style.height=r.height+'px';
+      document.body.appendChild(_ghost);
+    }
+    _ghost.style.left=(_pt.x-_ghost.offsetWidth/2)+'px';
+    _ghost.style.top=(_pt.y-_ghost.offsetHeight/2)+'px';
+    var over=_elAt(_pt.x,_pt.y);
+    if(over!==_lastOver){
+      _fire(_lastOver,'dragleave');
+      _fire(over,'dragenter');
+      _lastOver=over;
+    }
+    _fire(over,'dragover');
+    e.preventDefault();
+  },{passive:false});
+  document.addEventListener('touchend',function(e){
+    if(!_src)return;
+    if(_dragging){
+      if(_ghost){document.body.removeChild(_ghost);_ghost=null;}
+      var over=_elAt(_pt.x,_pt.y);
+      _fire(over,'drop');
+      _fire(_src,'dragend');
+    }
+    _src=null;_dt=null;_lastOver=null;_ptDown=null;_dragging=false;
+  },{passive:true});
+  document.addEventListener('touchcancel',function(){_cancel();},{passive:true});
+})();
+// ── End DragDropTouch polyfill ──
+
 var _REPO = 'https://severedgd.github.io/gamesprites/';
 
 var ACT_BACKGROUNDS = {
