@@ -8,8 +8,8 @@
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
 
-  /* Remove 300ms tap delay on buttons; cursor:pointer fixes iOS tap on onclick divs */
-  a, button, input, select, textarea { touch-action: manipulation; }
+  /* Remove 300ms tap delay on all interactive elements */
+  a, button, input, select, textarea, [onclick] { touch-action: manipulation; }
   [onclick] { cursor: pointer; }
 
   body {
@@ -1286,7 +1286,7 @@
 </div>
 
 
-  <span class="game-title">IDLE DEPTHS <span style="font-size:13px;letter-spacing:1px;opacity:0.6;">v1.14</span></span>
+  <span class="game-title">IDLE DEPTHS <span style="font-size:13px;letter-spacing:1px;opacity:0.6;">v1.16</span></span>
 </div>
 
 <!-- Difficulty / act bar -->
@@ -10619,8 +10619,8 @@ function renderSkillTree() {
                     isScheme? (hero.activeScheme === s.id) :
                     (isTech && hero.activeTechnique === s.id);
     var isPassive = s.passive && !isTech;
-    var t2Max     = s.tier === 2 ? Math.min(SKILL_MAX, hero.level - SKILL_T2_LEVEL_REQ + 1) : SKILL_MAX;
-    var maxPts    = s.tier === 2 ? t2Max : SKILL_MAX;
+    var t2Max     = s.tier === 2 ? Math.max(0, Math.min(SKILL_MAX, hero.level - SKILL_T2_LEVEL_REQ + 1)) : SKILL_MAX;
+    var maxPts    = locked ? SKILL_MAX : (s.tier === 2 ? t2Max : SKILL_MAX);
     var canAdd    = !locked && hero.skillPts > 0 && pts < maxPts;
 
     var cardClass = 'stree-skill';
