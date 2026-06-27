@@ -10925,6 +10925,9 @@ function scheduleTooltip(fn) {
   _tooltipTimer = setTimeout(fn, 300);
 }
 
+// Dismiss stuck tooltips on any tap (touch devices don't fire mouseleave reliably)
+document.addEventListener('touchstart', function() { hideTooltip(); }, { passive: true });
+
 // ── Stat label descriptions ──
 var STAT_TOOLTIPS = {
   'HP':          'Your total hit points. Reaches zero and you die, dropping back to the previous difficulty.',
