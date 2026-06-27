@@ -8910,7 +8910,7 @@ function renderUI(now) {
   var xpPct = (hero.level >= LEVEL_CAP) ? 100 : Math.min(100, Math.round(hero.xp / hero.xpNext * 100));
   document.getElementById('xp-bar').style.width = xpPct + '%';
   document.getElementById('xp-label').textContent = (hero.level >= LEVEL_CAP) ? 'MAX LEVEL' : (hero.xp + ' / ' + hero.xpNext + ' XP (' + xpPct + '%)');
-  document.getElementById('gold-display').textContent = hero.gold;
+  var _gd = document.getElementById('gold-display'); if (_gd) _gd.textContent = hero.gold;
   var cgd = document.getElementById('combat-gold-display'); if (cgd) cgd.textContent = hero.gold;
   var xpWrap = document.getElementById('xp-strip-bar-wrap');
   if (xpWrap) xpWrap.classList.toggle('xp-near-max', xpPct >= 85);
