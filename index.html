@@ -994,61 +994,61 @@
 
 <!-- Help overlay -->
 <div id="help-overlay" style="display:none;position:fixed;inset:0;background:#00000099;z-index:200;align-items:flex-start;justify-content:center;overflow-y:auto;padding:20px 0;" onclick="if(event.target===this)closeHelp()">
-  <div style="background:#0d0d18;border:1px solid #c8a84b44;border-radius:4px;padding:24px 28px;max-width:560px;width:100%;font-family:Georgia,serif;color:#d4c9a8;position:relative;">
-    <button onclick="closeHelp()" style="position:absolute;top:12px;right:14px;background:none;border:none;color:#5a5a6a;font-size:18px;cursor:pointer;font-family:Georgia,serif;">✕</button>
-    <div style="font-size:18px;color:#c8a84b;margin-bottom:4px;letter-spacing:1px;">IDLE DEPTHS</div>
-    <div style="font-size:11px;color:#5a5a6a;font-style:italic;margin-bottom:16px;">A guide to the descent</div>
+  <div style="background:#0d0d18;border:1px solid #c8a84b44;border-radius:4px;padding:32px 40px;max-width:760px;width:100%;font-family:Georgia,serif;color:#d4c9a8;position:relative;">
+    <button onclick="closeHelp()" style="position:absolute;top:12px;right:14px;background:none;border:none;color:#5a5a6a;font-size:20px;cursor:pointer;font-family:Georgia,serif;">✕</button>
+    <div style="font-size:22px;color:#c8a84b;margin-bottom:4px;letter-spacing:1px;">IDLE DEPTHS</div>
+    <div style="font-size:13px;color:#5a5a6a;font-style:italic;margin-bottom:20px;">A guide to the descent</div>
 
-    <div style="font-size:12px;color:#c8a84b;text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid #c8a84b33;padding-bottom:3px;margin-bottom:8px;">The Basics</div>
-    <p style="font-size:12px;color:#a09080;line-height:1.7;margin-bottom:12px;">Idle Depths is an idle ARPG. Your hero fights automatically — enemies spawn, you attack, they die, loot drops. Your job is to manage skills, gear, and progression to push deeper into harder content.</p>
+    <div style="font-size:14px;color:#c8a84b;text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid #c8a84b33;padding-bottom:4px;margin-bottom:10px;">The Basics</div>
+    <p style="font-size:14px;color:#a09080;line-height:1.7;margin-bottom:14px;">Idle Depths is an idle ARPG. Your hero fights automatically — enemies spawn, you attack, they die, loot drops. Your job is to manage skills, gear, and progression to push deeper into harder content.</p>
 
-    <div style="font-size:12px;color:#c8a84b;text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid #c8a84b33;padding-bottom:3px;margin-bottom:8px;">You Will Die — That's Okay</div>
-    <p style="font-size:12px;color:#a09080;line-height:1.7;margin-bottom:12px;">Death is a core part of the loop, not a failure state. When a boss is killing you, don't keep throwing yourself at it — use <span style="color:#7aaa5a88;">🌾 Farm Zone</span> to idle a cleared zone instead. Farm for gear and XP until you're strong enough to push further. The game rewards patience. If a boss feels impossible, you're meant to farm first.</p>
+    <div style="font-size:14px;color:#c8a84b;text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid #c8a84b33;padding-bottom:4px;margin-bottom:10px;">You Will Die — That's Okay</div>
+    <p style="font-size:14px;color:#a09080;line-height:1.7;margin-bottom:14px;">Death is a core part of the loop, not a failure state. When a boss is killing you, don't keep throwing yourself at it — use <span style="color:#7aaa5a88;">🌾 Farm Zone</span> to idle a cleared zone instead. Farm for gear and XP until you're strong enough to push further. The game rewards patience. If a boss feels impossible, you're meant to farm first.</p>
 
-    <div style="font-size:12px;color:#c8a84b;text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid #c8a84b33;padding-bottom:3px;margin-bottom:8px;">Class Philosophies</div>
-    <p style="font-size:12px;color:#a09080;line-height:1.7;margin-bottom:4px;"><span style="color:#d4c9a8;">Sorceress</span> — A glass cannon built around elemental damage and crowd control. She hits hard and can freeze, burn, shock, and chill entire packs, and has an innate affinity for elemental status effects — her procs land more often than other classes. Defensively she relies on her Energy Shield passive and Warmth regen rather than raw HP. Play her as a high-output nuker: invest in AoE skills for farming and single-target spells for boss fights. Her damage ceiling is the highest of any class, but she punishes greediness.</p>
-    <p style="font-size:12px;color:#a09080;line-height:1.7;margin-bottom:4px;"><span style="color:#d4c9a8;">Warrior</span> — A bruiser who thrives on momentum. He builds Rage by attacking and taking hits, then spends it through his active Technique for powerful effects. More HP and a base block chance make him naturally durable, but his damage output depends heavily on how well you manage Rage. The Warrior rewards staying in the fight and planning around his Technique — Execute for burst, Last Stand for survival, Item Find for farming.</p>
-    <p style="font-size:12px;color:#a09080;line-height:1.7;margin-bottom:4px;"><span style="color:#d4c9a8;">Rogue</span> — A specialist who commits to a playstyle from the start. The Rogue has no skills by default — first choose a <span style="color:#d4c9a8;">Specialization</span> in the T3 tab (Assassin, Toxicologist, or Mage Hunter), which unlocks your three T1 combat skills and defines how you fight. Then pick an active <span style="color:#d4c9a8;">Scheme</span> from the T2 tab (Lucky, Pilfer, or Excavation) for a passive bonus that enhances your loot and gold. The Assassin opens every fight with a guaranteed crit Backstab then switches to Blade Dance or Flurry — high burst, bleed-oriented. The Toxicologist stacks poison and neurotoxins, debilitating enemies while DoTs wear them down with HP sustain on kills. The Mage Hunter cycles through elemental attacks, building and consuming spell shields, with the strongest status effect bonuses of any class.</p>
-    <p style="font-size:12px;color:#a09080;line-height:1.7;margin-bottom:12px;"><span style="color:#d4c9a8;">Ranger</span> — A versatile hunter who fights alongside an Animal Companion. Choose a <span style="color:#d4c9a8;">Discipline</span> in the T3 tab (Hunter, Arcane Archer, or Trapper) and a <span style="color:#d4c9a8;">Stratagem</span> from T2. The Hunter bonds deeply with their companion — Mark Prey lets the companion fight in your place while you direct the battle. The Arcane Archer channels elemental arrows with AoE potential. The Trapper sets up freezing traps that detonate for heavy cold damage. Rangers also get unique advantages on the Bounty Board: only Rangers can tame wild creatures encountered during a hunt, and only Rangers can Scout (reroll) bounties for a fee.</p>
+    <div style="font-size:14px;color:#c8a84b;text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid #c8a84b33;padding-bottom:4px;margin-bottom:10px;">Class Philosophies</div>
+    <p style="font-size:14px;color:#a09080;line-height:1.7;margin-bottom:6px;"><span style="color:#d4c9a8;">Sorceress</span> — A glass cannon built around elemental damage and crowd control. She hits hard and can freeze, burn, shock, and chill entire packs, and has an innate affinity for elemental status effects — her procs land more often than other classes. Defensively she relies on her Energy Shield passive and Warmth regen rather than raw HP. Play her as a high-output nuker: invest in AoE skills for farming and single-target spells for boss fights. Her damage ceiling is the highest of any class, but she punishes greediness.</p>
+    <p style="font-size:14px;color:#a09080;line-height:1.7;margin-bottom:6px;"><span style="color:#d4c9a8;">Warrior</span> — A bruiser who thrives on momentum. He builds Rage by attacking and taking hits, then spends it through his active Technique for powerful effects. More HP and a base block chance make him naturally durable, but his damage output depends heavily on how well you manage Rage. The Warrior rewards staying in the fight and planning around his Technique — Execute for burst, Last Stand for survival, Item Find for farming.</p>
+    <p style="font-size:14px;color:#a09080;line-height:1.7;margin-bottom:6px;"><span style="color:#d4c9a8;">Rogue</span> — A specialist who commits to a playstyle from the start. The Rogue has no skills by default — first choose a <span style="color:#d4c9a8;">Specialization</span> in the T3 tab (Assassin, Toxicologist, or Mage Hunter), which unlocks your three T1 combat skills and defines how you fight. Then pick an active <span style="color:#d4c9a8;">Scheme</span> from the T2 tab (Lucky, Pilfer, or Excavation) for a passive bonus that enhances your loot and gold. The Assassin opens every fight with a guaranteed crit Backstab then switches to Blade Dance or Flurry — high burst, bleed-oriented. The Toxicologist stacks poison and neurotoxins, debilitating enemies while DoTs wear them down with HP sustain on kills. The Mage Hunter cycles through elemental attacks, building and consuming spell shields, with the strongest status effect bonuses of any class.</p>
+    <p style="font-size:14px;color:#a09080;line-height:1.7;margin-bottom:14px;"><span style="color:#d4c9a8;">Ranger</span> — A versatile hunter who fights alongside an Animal Companion. Choose a <span style="color:#d4c9a8;">Discipline</span> in the T3 tab (Hunter, Arcane Archer, or Trapper) and a <span style="color:#d4c9a8;">Stratagem</span> from T2. The Hunter bonds deeply with their companion — Mark Prey lets the companion fight in your place while you direct the battle. The Arcane Archer channels elemental arrows with AoE potential. The Trapper sets up freezing traps that detonate for heavy cold damage. Rangers also get unique advantages on the Bounty Board: only Rangers can tame wild creatures encountered during a hunt, and only Rangers can Scout (reroll) bounties for a fee.</p>
 
-    <div style="font-size:12px;color:#c8a84b;text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid #c8a84b33;padding-bottom:3px;margin-bottom:8px;">Combat</div>
-    <p style="font-size:12px;color:#a09080;line-height:1.7;margin-bottom:12px;">Your character attacks automatically based on the skill selected in the right panel. Each zone has a pack of mobs then a boss — the size of the pack varies by difficulty and zone. Killing the boss opens a shop and advances to the next act. There are 5 acts per difficulty. Clearing Act 5 on a difficulty unlocks the next one. If you die on any difficulty you restart the act you died on — you never lose more than one act of progress.</p>
+    <div style="font-size:14px;color:#c8a84b;text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid #c8a84b33;padding-bottom:4px;margin-bottom:10px;">Combat</div>
+    <p style="font-size:14px;color:#a09080;line-height:1.7;margin-bottom:14px;">Your character attacks automatically based on the skill selected in the right panel. Each zone has a pack of mobs then a boss — the size of the pack varies by difficulty and zone. Killing the boss opens a shop and advances to the next act. There are 5 acts per difficulty. Clearing Act 5 on a difficulty unlocks the next one. If you die on any difficulty you restart the act you died on — you never lose more than one act of progress.</p>
 
-    <div style="font-size:12px;color:#c8a84b;text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid #c8a84b33;padding-bottom:3px;margin-bottom:8px;">Status Effects</div>
-    <p style="font-size:12px;color:#a09080;line-height:1.7;margin-bottom:12px;">Every damage type carries a chance to apply a status effect — fire burns, lightning shocks, cold chills and freezes, physical bleeds. Each behaves differently. The chance of triggering them and how powerful they are can be modified through your item choices and skill investment.</p>
+    <div style="font-size:14px;color:#c8a84b;text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid #c8a84b33;padding-bottom:4px;margin-bottom:10px;">Status Effects</div>
+    <p style="font-size:14px;color:#a09080;line-height:1.7;margin-bottom:14px;">Every damage type carries a chance to apply a status effect — fire burns, lightning shocks, cold chills and freezes, physical bleeds. Each behaves differently. The chance of triggering them and how powerful they are can be modified through your item choices and skill investment.</p>
 
-    <div style="font-size:12px;color:#c8a84b;text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid #c8a84b33;padding-bottom:3px;margin-bottom:8px;">Skills</div>
-    <p style="font-size:12px;color:#a09080;line-height:1.7;margin-bottom:12px;">You gain a skill point every level, and occasionally from act and difficulty milestones. Spend them in the Skill Tree (right panel). You can respec all points at any time — you start with a free respec for each difficulty unlocked, then it costs gold (doubling each time). Use the <span style="color:#d4c9a8;">Skill Loadout</span> panel below the skill tree to assign a farm skill and a boss skill — the game swaps automatically when a boss spawns and back when mobs resume.</p>
+    <div style="font-size:14px;color:#c8a84b;text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid #c8a84b33;padding-bottom:4px;margin-bottom:10px;">Skills</div>
+    <p style="font-size:14px;color:#a09080;line-height:1.7;margin-bottom:14px;">You gain a skill point every level, and occasionally from act and difficulty milestones. Spend them in the Skill Tree (right panel). You can respec all points at any time — you start with a free respec for each difficulty unlocked, then it costs gold (doubling each time). Use the <span style="color:#d4c9a8;">Skill Loadout</span> panel below the skill tree to assign a farm skill and a boss skill — the game swaps automatically when a boss spawns and back when mobs resume.</p>
 
-    <div style="font-size:12px;color:#c8a84b;text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid #c8a84b33;padding-bottom:3px;margin-bottom:8px;">Gear &amp; Loot</div>
-    <p style="font-size:12px;color:#a09080;line-height:1.7;margin-bottom:8px;">Items drop with four rarities: <span style="color:#7a7a8a;">Normal</span>, <span style="color:#6fa3ef;">Magic</span>, <span style="color:#ffd700;">Rare</span>, and <span style="color:#e57bf5;">Unique</span>. Better items are automatically equipped if they score higher than what you have. The Vault holds the top items per slot — click a vault item to swap it in. Lock a slot to prevent auto-replacing it. Uniques that don't fit are queued for review — a purple button appears in the left panel when items are pending.</p>
-    <p style="font-size:12px;color:#c8a84b88;line-height:1.7;margin-bottom:12px;">💡 A little Magic Find goes a long way. Even modest MF meaningfully shifts your drop quality. Don't overlook it when evaluating gear — a piece with solid MF can outperform a pure damage item over a long farming session.</p>
+    <div style="font-size:14px;color:#c8a84b;text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid #c8a84b33;padding-bottom:4px;margin-bottom:10px;">Gear &amp; Loot</div>
+    <p style="font-size:14px;color:#a09080;line-height:1.7;margin-bottom:10px;">Items drop with four rarities: <span style="color:#7a7a8a;">Normal</span>, <span style="color:#6fa3ef;">Magic</span>, <span style="color:#ffd700;">Rare</span>, and <span style="color:#e57bf5;">Unique</span>. Better items are automatically equipped if they score higher than what you have. The Vault holds the top items per slot — click a vault item to swap it in. Lock a slot to prevent auto-replacing it. Uniques that don't fit are queued for review — a purple button appears in the left panel when items are pending.</p>
+    <p style="font-size:14px;color:#c8a84b88;line-height:1.7;margin-bottom:14px;">💡 A little Magic Find goes a long way. Even modest MF meaningfully shifts your drop quality. Don't overlook it when evaluating gear — a piece with solid MF can outperform a pure damage item over a long farming session.</p>
 
-    <div style="font-size:12px;color:#c8a84b;text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid #c8a84b33;padding-bottom:3px;margin-bottom:8px;">The Shop</div>
-    <p style="font-size:12px;color:#a09080;line-height:1.7;margin-bottom:12px;">After every boss kill a shop opens briefly (pauseable). You can buy items on offer, an MF Blessing that temporarily boosts your Magic Find, a random Gem Fragment for reforging, or gamble a random item. The shop auto-closes and advances to the next act — hit Pause if you need more time. Use the <span style="color:#5a9aca;">💊 Top Off</span> button (once per act, costs a little gold) to heal to full before a tough boss.</p>
+    <div style="font-size:14px;color:#c8a84b;text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid #c8a84b33;padding-bottom:4px;margin-bottom:10px;">The Shop</div>
+    <p style="font-size:14px;color:#a09080;line-height:1.7;margin-bottom:14px;">After every boss kill a shop opens briefly (pauseable). You can buy items on offer, an MF Blessing that temporarily boosts your Magic Find, a random Gem Fragment for reforging, or gamble a random item. The shop auto-closes and advances to the next act — hit Pause if you need more time. Use the <span style="color:#5a9aca;">💊 Top Off</span> button (once per act, costs a little gold) to heal to full before a tough boss.</p>
 
-    <div style="font-size:12px;color:#c8a84b;text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid #c8a84b33;padding-bottom:3px;margin-bottom:8px;">Reforging</div>
-    <p style="font-size:12px;color:#a09080;line-height:1.7;margin-bottom:6px;">Gem Fragments drop rarely from mobs and more reliably from bosses. Each gem type favors different stats — Fortune (MF/Gold), Ruin (Dmg/XP), Tempest (Speed/Dmg), Ember (Elemental). Select a gem in the Reforging tab, then click the ↻ button on any Magic or Rare vault item to reforge its stats. Reforging costs gold and one gem. Stats can roll differently every time — sometimes better, sometimes worse. The Reforging tab blinks when you have gems to spend.</p>
-    <p style="font-size:12px;color:#c85a1a;line-height:1.7;margin-bottom:12px;">⚠ Every reforge carries a chance of destroying the item — and that chance grows with each successive reforge on the same piece. Hover over an item's reforge button to see the current risk before committing.</p>
+    <div style="font-size:14px;color:#c8a84b;text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid #c8a84b33;padding-bottom:4px;margin-bottom:10px;">Reforging</div>
+    <p style="font-size:14px;color:#a09080;line-height:1.7;margin-bottom:8px;">Gem Fragments drop rarely from mobs and more reliably from bosses. Each gem type favors different stats — Fortune (MF/Gold), Ruin (Dmg/XP), Tempest (Speed/Dmg), Ember (Elemental). Select a gem in the Reforging tab, then click the ↻ button on any Magic or Rare vault item to reforge its stats. Reforging costs gold and one gem. Stats can roll differently every time — sometimes better, sometimes worse. The Reforging tab blinks when you have gems to spend.</p>
+    <p style="font-size:14px;color:#c85a1a;line-height:1.7;margin-bottom:14px;">⚠ Every reforge carries a chance of destroying the item — and that chance grows with each successive reforge on the same piece. Hover over an item's reforge button to see the current risk before committing.</p>
 
-    <div style="font-size:12px;color:#c8a84b;text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid #c8a84b33;padding-bottom:3px;margin-bottom:8px;">Loops &amp; Farming</div>
-    <p style="font-size:12px;color:#a09080;line-height:1.7;margin-bottom:12px;">The <span style="color:#c8a84b88;">🎯 Target Boss</span> button repeatedly farms a specific boss for a prepaid gold cost. The <span style="color:#7aaa5a88;">🌾 Farm Zone</span> button farms mobs without a boss at a lower cost with increased rare pack chance. Inside Farm Zone you can choose a <strong>Hunt Pack</strong> type for extra gold — Ghost Packs drop jewelry and trinkets only, Undead Packs drop weapons and armor, Goblin Packs focus on gold with the occasional jewelry find. Rare packs are groups of bonus mobs marked ★ that drop extra loot.</p>
+    <div style="font-size:14px;color:#c8a84b;text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid #c8a84b33;padding-bottom:4px;margin-bottom:10px;">Loops &amp; Farming</div>
+    <p style="font-size:14px;color:#a09080;line-height:1.7;margin-bottom:14px;">The <span style="color:#c8a84b88;">🎯 Target Boss</span> button repeatedly farms a specific boss for a prepaid gold cost. The <span style="color:#7aaa5a88;">🌾 Farm Zone</span> button farms mobs without a boss at a lower cost with increased rare pack chance. Inside Farm Zone you can choose a <strong>Hunt Pack</strong> type for extra gold — Ghost Packs drop jewelry and trinkets only, Undead Packs drop weapons and armor, Goblin Packs focus on gold with the occasional jewelry find. Rare packs are groups of bonus mobs marked ★ that drop extra loot.</p>
 
-    <div style="font-size:12px;color:#c8a84b;text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid #c8a84b33;padding-bottom:3px;margin-bottom:8px;">Bounty Board</div>
-    <p style="font-size:12px;color:#a09080;line-height:1.7;margin-bottom:12px;">After killing a boss, the Act Shop may show a <span style="color:#c8a0ff;">📋 Bounty Board</span> with a contract — a named miniboss scaled to your power level, with a reward stated upfront (gold or an item). Click <span style="color:#c8a0ff;">Hunt</span> to begin a 10-second search, then face the target in combat. Bounty targets are not bosses — killing one won't trigger the shop or advance the act. Rewards are delivered immediately on kill. If you die during the hunt the bounty is lost. Rangers can <span style="color:#7aaa5a;">Scout</span> (reroll the bounty for 100g) and <span style="color:#c85a5a;">may encounter wild creatures during the search that can be tamed as companions.</span></p>
+    <div style="font-size:14px;color:#c8a84b;text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid #c8a84b33;padding-bottom:4px;margin-bottom:10px;">Bounty Board</div>
+    <p style="font-size:14px;color:#a09080;line-height:1.7;margin-bottom:14px;">After killing a boss, the Act Shop may show a <span style="color:#c8a0ff;">📋 Bounty Board</span> with a contract — a named miniboss scaled to your power level, with a reward stated upfront (gold or an item). Click <span style="color:#c8a0ff;">Hunt</span> to begin a 10-second search, then face the target in combat. Bounty targets are not bosses — killing one won't trigger the shop or advance the act. Rewards are delivered immediately on kill. If you die during the hunt the bounty is lost. Rangers can <span style="color:#7aaa5a;">Scout</span> (reroll the bounty for 100g) and <span style="color:#c85a5a;">may encounter wild creatures during the search that can be tamed as companions.</span></p>
 
-    <div style="font-size:12px;color:#c8a84b;text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid #c8a84b33;padding-bottom:3px;margin-bottom:8px;">Animal Companions (Ranger)</div>
-    <p style="font-size:12px;color:#a09080;line-height:1.7;margin-bottom:12px;">Rangers bond with an Animal Companion that fights alongside them and provides a permanent passive bonus. Each companion's strength varies — some you find will be stronger than others. New companions are discovered through Bounty hunts and kept by choosing to tame them. Once tamed a companion is yours permanently. You can rename any companion from the companion panel. The Wolf starts as your default companion; others are unlocked through play.</p>
+    <div style="font-size:14px;color:#c8a84b;text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid #c8a84b33;padding-bottom:4px;margin-bottom:10px;">Animal Companions (Ranger)</div>
+    <p style="font-size:14px;color:#a09080;line-height:1.7;margin-bottom:14px;">Rangers bond with an Animal Companion that fights alongside them and provides a permanent passive bonus. Each companion's strength varies — some you find will be stronger than others. New companions are discovered through Bounty hunts and kept by choosing to tame them. Once tamed a companion is yours permanently. You can rename any companion from the companion panel. The Wolf starts as your default companion; others are unlocked through play.</p>
 
-    <div style="font-size:12px;color:#c8a84b;text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid #c8a84b33;padding-bottom:3px;margin-bottom:8px;">Build Priority</div>
-    <p style="font-size:12px;color:#a09080;line-height:1.7;margin-bottom:20px;">In the left panel under Build Priority, you can flag up to a few stats as important. The scoring system will weight those stats heavily when deciding whether to auto-equip or vault an item, making sure gear that matches your build gets prioritised. Click the ▾ button next to the Hero panel title to collapse secondary stats and save screen space.</p>
+    <div style="font-size:14px;color:#c8a84b;text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid #c8a84b33;padding-bottom:4px;margin-bottom:10px;">Build Priority</div>
+    <p style="font-size:14px;color:#a09080;line-height:1.7;margin-bottom:24px;">In the left panel under Build Priority, you can flag up to a few stats as important. The scoring system will weight those stats heavily when deciding whether to auto-equip or vault an item, making sure gear that matches your build gets prioritised. Click the ▾ button next to the Hero panel title to collapse secondary stats and save screen space.</p>
 
     <div id="help-relic-section" style="display:none;">
-      <div style="font-size:12px;color:#c8a84b;text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid #c8a84b33;padding-bottom:3px;margin-bottom:8px;">Relics</div>
-      <p style="font-size:12px;color:#a09080;line-height:1.7;margin-bottom:12px;">Relics are special items that charge from the deaths around you — mob kills grant one charge, boss kills refill all charges. When enough charges are stored, the relic activates and releases its power. The relic frame sits below the combat log; click Use to activate manually, or choose an automatic trigger mode: <span style="color:#d4c9a8;">When Full</span> (fires the moment charges max out), <span style="color:#d4c9a8;">On Boss</span> (fires when a boss spawns), or <span style="color:#d4c9a8;">On Expiry</span> (refires automatically when the previous use ends).</p>
+      <div style="font-size:14px;color:#c8a84b;text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid #c8a84b33;padding-bottom:4px;margin-bottom:10px;">Relics</div>
+      <p style="font-size:14px;color:#a09080;line-height:1.7;margin-bottom:14px;">Relics are special items that charge from the deaths around you — mob kills grant one charge, boss kills refill all charges. When enough charges are stored, the relic activates and releases its power. The relic frame sits below the combat log; click Use to activate manually, or choose an automatic trigger mode: <span style="color:#d4c9a8;">When Full</span> (fires the moment charges max out), <span style="color:#d4c9a8;">On Boss</span> (fires when a boss spawns), or <span style="color:#d4c9a8;">On Expiry</span> (refires automatically when the previous use ends).</p>
     </div>
 
-    <button onclick="closeHelp()" style="width:100%;padding:7px;border:1px solid #c8a84b44;background:#1a1510;color:#c8a84b;font-family:Georgia,serif;font-size:12px;cursor:pointer;border-radius:2px;">Close</button>
+    <button onclick="closeHelp()" style="width:100%;padding:10px;border:1px solid #c8a84b44;background:#1a1510;color:#c8a84b;font-family:Georgia,serif;font-size:14px;cursor:pointer;border-radius:2px;">Close</button>
   </div>
 </div>
 
@@ -1074,43 +1074,107 @@
 
 <!-- Loop Feature Introduction Overlay (shown after first boss kill) -->
 <div id="loop-intro-overlay" style="display:none;position:fixed;inset:0;background:#000000cc;z-index:250;align-items:center;justify-content:center;">
-  <div style="background:#0d0d18;border:1px solid #c8a84b66;border-radius:4px;padding:28px 32px;max-width:460px;width:90%;font-family:Georgia,serif;color:#d4c9a8;text-align:center;">
-    <div id="loop-intro-title" style="font-size:18px;color:#c8a84b;margin-bottom:4px;letter-spacing:2px;">THE HUNT DEEPENS</div>
-    <div id="loop-intro-sub" style="font-size:11px;color:#5a5a6a;font-style:italic;margin-bottom:18px;letter-spacing:1px;"></div>
-    <div style="text-align:left;margin-bottom:16px;">
-      <div style="display:flex;align-items:flex-start;gap:10px;background:#0a0a14;border:1px solid #5a4a2a;border-radius:3px;padding:10px 12px;margin-bottom:10px;">
-        <span style="font-size:18px;flex-shrink:0;">🎯</span>
+  <div style="background:#0d0d18;border:1px solid #c8a84b66;border-radius:4px;padding:35px 40px;max-width:575px;width:90%;font-family:Georgia,serif;color:#d4c9a8;text-align:center;">
+    <div id="loop-intro-title" style="font-size:22px;color:#c8a84b;margin-bottom:6px;letter-spacing:2px;">THE HUNT DEEPENS</div>
+    <div id="loop-intro-sub" style="font-size:14px;color:#5a5a6a;font-style:italic;margin-bottom:22px;letter-spacing:1px;"></div>
+    <div style="text-align:left;margin-bottom:20px;">
+      <div style="display:flex;align-items:flex-start;gap:12px;background:#0a0a14;border:1px solid #5a4a2a;border-radius:3px;padding:13px 15px;margin-bottom:12px;">
+        <span style="font-size:22px;flex-shrink:0;">🎯</span>
         <div>
-          <div style="font-size:12px;color:#c8a84b;margin-bottom:3px;">Target Boss</div>
-          <div style="font-size:11px;color:#8a7a6a;line-height:1.6;">Lock onto any boss you've defeated and run it on repeat. Pay a small gold cost per loop — refundable if you cancel. Good for farming specific drops.</div>
+          <div style="font-size:15px;color:#c8a84b;margin-bottom:4px;">Target Boss</div>
+          <div style="font-size:14px;color:#8a7a6a;line-height:1.6;">Lock onto any boss you've defeated and run it on repeat. Pay a small gold cost per loop — refundable if you cancel. Good for farming specific drops.</div>
         </div>
       </div>
-      <div style="display:flex;align-items:flex-start;gap:10px;background:#0a0a14;border:1px solid #1a4a1a;border-radius:3px;padding:10px 12px;">
-        <span style="font-size:18px;flex-shrink:0;">🌾</span>
+      <div style="display:flex;align-items:flex-start;gap:12px;background:#0a0a14;border:1px solid #1a4a1a;border-radius:3px;padding:13px 15px;">
+        <span style="font-size:22px;flex-shrink:0;">🌾</span>
         <div>
-          <div style="font-size:12px;color:#7aaa5a;margin-bottom:3px;">Farm Zone</div>
-          <div style="font-size:11px;color:#8a7a6a;line-height:1.6;">Grind mobs in any unlocked zone without ever triggering a boss. Lower cost, higher rare pack chance. Use it to level up or gear up before a tough fight.</div>
+          <div style="font-size:15px;color:#7aaa5a;margin-bottom:4px;">Farm Zone</div>
+          <div style="font-size:14px;color:#8a7a6a;line-height:1.6;">Grind mobs in any unlocked zone without ever triggering a boss. Lower cost, higher rare pack chance. Use it to level up or gear up before a tough fight.</div>
         </div>
       </div>
     </div>
-    <div style="font-size:10px;color:#3a3a5a;margin-bottom:16px;font-style:italic;">Both buttons appear in the zone header at the top of the center panel.</div>
-    <button onclick="dismissLoopIntro()" style="width:100%;padding:9px;border:1px solid #c8a84b88;background:#131008;color:#c8a84b;font-family:Georgia,serif;font-size:12px;cursor:pointer;border-radius:2px;letter-spacing:1px;transition:all 0.2s;" onmouseover="this.style.background='#1e1a0c'" onmouseout="this.style.background='#131008'">Got it</button>
+    <div style="font-size:13px;color:#3a3a5a;margin-bottom:20px;font-style:italic;">Both buttons appear in the zone header at the top of the center panel.</div>
+    <button onclick="dismissLoopIntro()" style="width:100%;padding:11px;border:1px solid #c8a84b88;background:#131008;color:#c8a84b;font-family:Georgia,serif;font-size:15px;cursor:pointer;border-radius:2px;letter-spacing:1px;transition:all 0.2s;" onmouseover="this.style.background='#1e1a0c'" onmouseout="this.style.background='#131008'">Got it</button>
+  </div>
+</div>
+
+<!-- Gem Introduction Overlay (shown on first gem drop) -->
+<div id="gem-intro-overlay" style="display:none;position:fixed;inset:0;background:#000000cc;z-index:250;align-items:center;justify-content:center;">
+  <div style="background:#0d0d18;border:1px solid #5a9a6a66;border-radius:4px;padding:35px 40px;max-width:550px;width:90%;font-family:Georgia,serif;color:#d4c9a8;text-align:center;">
+    <div style="font-size:22px;color:#6aaa7a;margin-bottom:6px;letter-spacing:2px;">💎 GEM FRAGMENT</div>
+    <div style="font-size:14px;color:#5a5a6a;font-style:italic;margin-bottom:22px;letter-spacing:1px;">A rare material has dropped.</div>
+    <div style="text-align:left;margin-bottom:20px;background:#0a0a14;border:1px solid #2a4a3a;border-radius:3px;padding:15px 17px;">
+      <div style="font-size:14px;color:#90b098;line-height:1.8;">
+        <div style="margin-bottom:8px;">Gems are used in the <span style="color:#6aaa7a;">Reforging tab</span> (top right) to reroll the stats on any Magic or Rare item in your vault. Each reroll costs gold and one gem.</div>
+        <div style="margin-bottom:8px;">Different gem types favor different stat pools — <span style="color:#c8a84b;">Fortune</span> for Magic Find &amp; Gold, <span style="color:#c85a5a;">Ruin</span> for Damage, <span style="color:#7ab8d4;">Tempest</span> for Attack Speed, <span style="color:#d47a4a;">Ember</span> for Elemental.</div>
+        <div style="font-size:13px;color:#5a5a7a;font-style:italic;">The Reforging tab blinks gold when you have gems waiting to be spent.</div>
+      </div>
+    </div>
+    <button onclick="dismissGemIntro()" style="width:100%;padding:11px;border:1px solid #6aaa7a88;background:#0a140c;color:#6aaa7a;font-family:Georgia,serif;font-size:15px;cursor:pointer;border-radius:2px;letter-spacing:1px;transition:all 0.2s;" onmouseover="this.style.background='#0f1f12'" onmouseout="this.style.background='#0a140c'">Got it</button>
+  </div>
+</div>
+
+<!-- Item Priority Introduction Overlay (shown on 2nd boss kill shop) -->
+<div id="priority-intro-overlay" style="display:none;position:fixed;inset:0;background:#000000cc;z-index:250;align-items:center;justify-content:center;">
+  <div style="background:#0d0d18;border:1px solid #8a6a4a66;border-radius:4px;padding:35px 40px;max-width:550px;width:90%;font-family:Georgia,serif;color:#d4c9a8;text-align:center;">
+    <div style="font-size:22px;color:#c8a060;margin-bottom:6px;letter-spacing:2px;">🗂 ITEM PRIORITY</div>
+    <div style="font-size:14px;color:#5a5a6a;font-style:italic;margin-bottom:22px;letter-spacing:1px;">Tell the game what gear you actually want.</div>
+    <div style="text-align:left;margin-bottom:20px;background:#0a0a14;border:1px solid #3a2a1a;border-radius:3px;padding:15px 17px;">
+      <div style="font-size:14px;color:#b09878;line-height:1.8;">
+        <div style="margin-bottom:8px;">The <span style="color:#c8a060;">Item Priority</span> panel lives in the bottom-left, below the combat log. Expand it and pick up to 3 stats that matter to your build.</div>
+        <div style="margin-bottom:8px;">Items matching your priority stats score higher and are more likely to land in your vault or get equipped over weaker pieces.</div>
+        <div style="font-size:13px;color:#5a5a7a;font-style:italic;">You can also enable Auto-Discard in Settings to silently drop Normal or Magic items that aren't upgrades — keeping your vault clean automatically.</div>
+      </div>
+    </div>
+    <button onclick="dismissPriorityIntro()" style="width:100%;padding:11px;border:1px solid #c8a06088;background:#140e08;color:#c8a060;font-family:Georgia,serif;font-size:15px;cursor:pointer;border-radius:2px;letter-spacing:1px;transition:all 0.2s;" onmouseover="this.style.background='#1f160c'" onmouseout="this.style.background='#140e08'">Got it</button>
+  </div>
+</div>
+
+<!-- Skill Loadout Introduction Overlay (shown on Nightmare unlock if loadout never opened) -->
+<div id="loadout-intro-overlay" style="display:none;position:fixed;inset:0;background:#000000cc;z-index:250;align-items:center;justify-content:center;">
+  <div style="background:#0d0d18;border:1px solid #4a7aaa66;border-radius:4px;padding:35px 40px;max-width:550px;width:90%;font-family:Georgia,serif;color:#d4c9a8;text-align:center;">
+    <div style="font-size:22px;color:#6a9aca;margin-bottom:6px;letter-spacing:2px;">⚙ SKILL LOADOUT</div>
+    <div style="font-size:14px;color:#5a5a6a;font-style:italic;margin-bottom:22px;letter-spacing:1px;">Different fights, different tools.</div>
+    <div style="text-align:left;margin-bottom:20px;background:#0a0a14;border:1px solid #1a3a5a;border-radius:3px;padding:15px 17px;">
+      <div style="font-size:14px;color:#8098b8;line-height:1.8;">
+        <div style="margin-bottom:8px;">The <span style="color:#6a9aca;">Skill Loadout</span> panel sits just below the skill tree in the right panel. It lets you pin one skill for mob farming and a different one for boss fights.</div>
+        <div style="margin-bottom:8px;">The game swaps your active skill <span style="color:#6a9aca;">automatically</span> — to your boss skill when a boss spawns, and back to your farm skill when mobs resume. No manual switching needed.</div>
+        <div style="font-size:13px;color:#5a5a7a;font-style:italic;">Nightmare and Hell hit harder. Getting this set up now will make a real difference.</div>
+      </div>
+    </div>
+    <button onclick="dismissLoadoutIntro()" style="width:100%;padding:11px;border:1px solid #6a9aca88;background:#080e14;color:#6a9aca;font-family:Georgia,serif;font-size:15px;cursor:pointer;border-radius:2px;letter-spacing:1px;transition:all 0.2s;" onmouseover="this.style.background='#0c1520'" onmouseout="this.style.background='#080e14'">Got it</button>
   </div>
 </div>
 
 <!-- Bounty Board Introduction Overlay (shown on 3rd boss kill) -->
 <div id="bounty-intro-overlay" style="display:none;position:fixed;inset:0;background:#000000cc;z-index:250;align-items:center;justify-content:center;">
-  <div style="background:#0d0d18;border:1px solid #c8a0ff66;border-radius:4px;padding:28px 32px;max-width:460px;width:90%;font-family:Georgia,serif;color:#d4c9a8;text-align:center;">
-    <div style="font-size:18px;color:#c8a0ff;margin-bottom:4px;letter-spacing:2px;">📋 BOUNTY BOARD</div>
-    <div style="font-size:11px;color:#5a5a6a;font-style:italic;margin-bottom:18px;letter-spacing:1px;">A contract awaits you in the shop.</div>
-    <div style="text-align:left;margin-bottom:16px;background:#0a0a14;border:1px solid #3a2a5a;border-radius:3px;padding:12px 14px;">
-      <div style="font-size:11px;color:#a090c0;line-height:1.8;">
-        <div style="margin-bottom:6px;">The board offers a contract against a <span style="color:#c8a0ff;">named miniboss</span> scaled to your current power. The reward — gold or an item — is shown upfront before you commit.</div>
-        <div style="margin-bottom:6px;">Hit <span style="color:#c8a0ff;">Hunt</span> to begin a 10-second search, then face the target. Killing it delivers the reward immediately. Dying loses the bounty.</div>
-        <div style="color:#5a5a7a;font-size:10px;font-style:italic;">Bounty targets are not bosses — they won't advance the act or open the shop.</div>
+  <div style="background:#0d0d18;border:1px solid #c8a0ff66;border-radius:4px;padding:35px 40px;max-width:575px;width:90%;font-family:Georgia,serif;color:#d4c9a8;text-align:center;">
+    <div style="font-size:22px;color:#c8a0ff;margin-bottom:6px;letter-spacing:2px;">📋 BOUNTY BOARD</div>
+    <div style="font-size:14px;color:#5a5a6a;font-style:italic;margin-bottom:22px;letter-spacing:1px;">A contract awaits you in the shop.</div>
+    <div style="text-align:left;margin-bottom:20px;background:#0a0a14;border:1px solid #3a2a5a;border-radius:3px;padding:15px 17px;">
+      <div style="font-size:14px;color:#a090c0;line-height:1.8;">
+        <div style="margin-bottom:8px;">The board offers a contract against a <span style="color:#c8a0ff;">named miniboss</span> scaled to your current power. The reward — gold or an item — is shown upfront before you commit.</div>
+        <div style="margin-bottom:8px;">Hit <span style="color:#c8a0ff;">Hunt</span> to begin a 10-second search, then face the target. Killing it delivers the reward immediately. Dying loses the bounty.</div>
+        <div style="color:#5a5a7a;font-size:13px;font-style:italic;">Bounty targets are not bosses — they won't advance the act or open the shop.</div>
       </div>
     </div>
-    <button onclick="dismissBountyIntro()" style="width:100%;padding:9px;border:1px solid #c8a0ff88;background:#0e0818;color:#c8a0ff;font-family:Georgia,serif;font-size:12px;cursor:pointer;border-radius:2px;letter-spacing:1px;transition:all 0.2s;" onmouseover="this.style.background='#180e24'" onmouseout="this.style.background='#0e0818'">Got it</button>
+    <button onclick="dismissBountyIntro()" style="width:100%;padding:11px;border:1px solid #c8a0ff88;background:#0e0818;color:#c8a0ff;font-family:Georgia,serif;font-size:15px;cursor:pointer;border-radius:2px;letter-spacing:1px;transition:all 0.2s;" onmouseover="this.style.background='#180e24'" onmouseout="this.style.background='#0e0818'">Got it</button>
+  </div>
+</div>
+
+<!-- Vault & Equip Introduction Overlay (shown on first item drop) -->
+<div id="vault-intro-overlay" style="display:none;position:fixed;inset:0;background:#000000cc;z-index:250;align-items:center;justify-content:center;">
+  <div style="background:#0d0d18;border:1px solid #7a6aaa66;border-radius:4px;padding:35px 40px;max-width:550px;width:90%;font-family:Georgia,serif;color:#d4c9a8;text-align:center;">
+    <div style="font-size:22px;color:#a08ad4;margin-bottom:6px;letter-spacing:2px;">⚔ GEAR UP</div>
+    <div style="font-size:14px;color:#5a5a6a;font-style:italic;margin-bottom:22px;letter-spacing:1px;">Your first item has dropped.</div>
+    <div style="text-align:left;margin-bottom:20px;background:#0a0a14;border:1px solid #2a2a4a;border-radius:3px;padding:15px 17px;">
+      <div style="font-size:14px;color:#9080b8;line-height:1.8;">
+        <div style="margin-bottom:8px;">Items land in your <span style="color:#a08ad4;">Vault</span> — the grid below the combat zone, center panel. Each slot holds up to 3 items, one per gear type.</div>
+        <div style="margin-bottom:8px;">To equip an item, <span style="color:#a08ad4;">drag it from the vault</span> onto the matching slot in the equipped panel above, or drag it directly onto <span style="color:#a08ad4;">your character portrait</span> in the combat scene.</div>
+        <div style="font-size:13px;color:#5a5a7a;font-style:italic;">The game auto-equips upgrades by default — but you can manually override any slot at any time.</div>
+      </div>
+    </div>
+    <button onclick="dismissVaultIntro()" style="width:100%;padding:11px;border:1px solid #a08ad488;background:#0c0814;color:#a08ad4;font-family:Georgia,serif;font-size:15px;cursor:pointer;border-radius:2px;letter-spacing:1px;transition:all 0.2s;" onmouseover="this.style.background='#160f20'" onmouseout="this.style.background='#0c0814'">Got it</button>
   </div>
 </div>
 
@@ -1127,6 +1191,16 @@
       <div style="font-size:10px;color:#5a5a6a;letter-spacing:1px;">— Nevin</div>
     </div>
     <button onclick="confirmRelicIntro()" style="width:100%;padding:10px;border:1px solid #c8a84b;background:#1a1510;color:#c8a84b;font-family:Georgia,serif;font-size:13px;cursor:pointer;border-radius:2px;letter-spacing:1px;transition:all 0.2s;" onmouseover="this.style.background='#2a2010'" onmouseout="this.style.background='#1a1510'">Take the Relic</button>
+  </div>
+</div>
+
+<!-- Shop Timer Float Panel (left side, visible while shop is open) -->
+<div id="shop-timer-panel" style="display:none;position:fixed;left:14px;top:50%;transform:translateY(-50%);z-index:190;background:#0d0d18;border:1px solid #5a4a8a88;border-radius:4px;padding:18px 20px;font-family:Georgia,serif;text-align:center;min-width:110px;box-shadow:0 0 24px #5a4a8a44;">
+  <div style="font-size:11px;color:#5a5a7a;letter-spacing:1px;text-transform:uppercase;margin-bottom:6px;">Shop closes in</div>
+  <div id="shop-timer-panel-sec" style="font-size:64px;font-weight:bold;color:#c8a0ff;line-height:1;">--</div>
+  <div style="font-size:11px;color:#3a3a5a;margin-top:4px;">seconds</div>
+  <div style="margin-top:12px;border-top:1px solid #2a2a4a;padding-top:10px;">
+    <button onclick="toggleShopPause()" style="width:100%;padding:5px 0;border:1px solid #5a4a8a;background:#0e0a1a;color:#c8a0ff;font-family:Georgia,serif;font-size:11px;cursor:pointer;border-radius:2px;letter-spacing:1px;" id="shop-timer-pause-btn">⏸ Pause</button>
   </div>
 </div>
 
@@ -1160,10 +1234,6 @@
   <button class="diff-btn locked" id="btn-hell"      onclick="selectDifficulty('hell')">Hell</button>
   <span id="act-label"></span>
   <span id="diff-unlock-msg"></span>
-  <button id="boss-loop-btn" onclick="openBossLoopMenu()" style="margin-left:auto;padding:3px 10px;border:1px solid #3a2a1a;background:#0f0a06;color:#c8a84b88;font-family:Georgia,serif;font-size:11px;cursor:pointer;border-radius:2px;transition:all 0.15s;">🎯 Target Boss</button>
-  <button id="farm-loop-btn" onclick="openFarmLoopMenu()" style="padding:3px 10px;border:1px solid #1a3a1a;background:#060f06;color:#7aaa5a88;font-family:Georgia,serif;font-size:11px;cursor:pointer;border-radius:2px;transition:all 0.15s;">🌾 Farm Zone</button>
-  <button id="topoff-btn" onclick="doTopOff()" style="padding:3px 10px;border:1px solid #1a2a3a;background:#060a0f;color:#5a9aca88;font-family:Georgia,serif;font-size:11px;cursor:pointer;border-radius:2px;transition:all 0.15s;" title="Heal to full (25g, once per act)">💊 Top Off</button>
-  <label id="topoff-auto-label" style="font-size:10px;color:#5a7a9a;cursor:pointer;white-space:nowrap;" title="Auto-heal to full before boss spawns"><input type="checkbox" id="topoff-auto" onchange="hero.autoTopOff=this.checked" style="margin-right:3px;">Auto</label>
 </div>
 
 <!-- Main layout -->
@@ -1272,6 +1342,34 @@
     <!-- Combat scene — Phaser canvas -->
     <div id="combat-scene" style="position:relative;height:480px;width:100%;background:transparent;border-bottom:2px solid #c8a84b44;box-shadow:0 4px 16px #00000088;overflow:hidden;flex-shrink:0;">
       <div id="phaser-container" style="width:100%;height:100%;position:absolute;top:0;left:0;"></div>
+      <!-- Combat HUD: gold | loop buttons | top-off overlay -->
+      <div id="combat-hud-top" style="position:absolute;top:8px;left:8px;right:8px;z-index:15;display:flex;align-items:center;justify-content:space-between;pointer-events:none;">
+        <div style="background:#00000099;border:1px solid #c8a84b44;border-radius:3px;padding:5px 12px;display:flex;align-items:center;gap:6px;pointer-events:auto;">
+          <span style="font-size:15px;color:#c8a84b;letter-spacing:1px;">⬡</span>
+          <span id="combat-gold-display" style="font-size:15px;color:#c8a84b;font-family:Georgia,serif;font-weight:bold;">0</span>
+          <span style="font-size:11px;color:#8a7a4a;">gold</span>
+        </div>
+        <div style="background:#00000099;border:1px solid #2a2a2a44;border-radius:3px;padding:5px 8px;display:flex;align-items:center;gap:6px;pointer-events:auto;">
+          <button id="boss-loop-btn" onclick="openBossLoopMenu()" style="padding:5px 13px;border:1px solid #3a2a1a;background:#0f0a06;color:#c8a84b88;font-family:Georgia,serif;font-size:12px;cursor:pointer;border-radius:2px;transition:all 0.15s;">🎯 Target Boss</button>
+          <button id="farm-loop-btn" onclick="openFarmLoopMenu()" style="padding:5px 13px;border:1px solid #1a3a1a;background:#060f06;color:#7aaa5a88;font-family:Georgia,serif;font-size:12px;cursor:pointer;border-radius:2px;transition:all 0.15s;">🌾 Farm Zone</button>
+        </div>
+        <div style="background:#00000099;border:1px solid #1a2a3a;border-radius:3px;padding:5px 10px;display:flex;align-items:center;gap:8px;pointer-events:auto;">
+          <button id="topoff-btn" onclick="doTopOff()" style="padding:4px 12px;border:1px solid #1a2a3a;background:#060a0f;color:#5a9aca88;font-family:Georgia,serif;font-size:12px;cursor:pointer;border-radius:2px;transition:all 0.15s;" title="Heal to full (25g, once per act)">💊 Top Off</button>
+          <label id="topoff-auto-label" style="font-size:11px;color:#5a7a9a;cursor:pointer;white-space:nowrap;display:flex;align-items:center;gap:4px;" title="Auto-heal to full before boss spawns"><input type="checkbox" id="topoff-auto" onchange="hero.autoTopOff=this.checked" style="margin:0;cursor:pointer;">Auto</label>
+        </div>
+      </div>
+      <!-- Death overlay -->
+      <div id="death-overlay" style="display:none;position:absolute;inset:0;z-index:20;align-items:center;justify-content:center;background:#00000088;backdrop-filter:blur(2px);">
+        <div style="text-align:center;font-family:Georgia,serif;">
+          <div id="death-overlay-title" style="font-size:38px;color:#c85a5a;letter-spacing:4px;text-shadow:0 0 24px #c85a5a88;margin-bottom:8px;">You Died</div>
+          <div id="death-overlay-sub" style="font-size:13px;color:#8a5a5a;letter-spacing:1px;margin-bottom:24px;font-style:italic;"></div>
+          <div style="font-size:13px;color:#5a4a4a;margin-bottom:8px;letter-spacing:1px;text-transform:uppercase;">Respawning in</div>
+          <div id="death-overlay-countdown" style="font-size:72px;font-weight:bold;color:#c85a5a88;line-height:1;text-shadow:0 0 32px #c85a5a44;">5</div>
+          <div style="margin-top:20px;">
+            <button onclick="respawnNow()" style="padding:8px 28px;border:1px solid #c85a5a66;background:#1a0808;color:#c85a5a;font-family:Georgia,serif;font-size:13px;cursor:pointer;border-radius:2px;letter-spacing:1px;transition:all 0.2s;" onmouseover="this.style.background='#2a0c0c'" onmouseout="this.style.background='#1a0808'">Respawn Now</button>
+          </div>
+        </div>
+      </div>
       <div id="bounty-hunt-overlay">
         <div id="bounty-hunt-timer">🏹 Hunting… <span id="bounty-hunt-countdown">10</span>s</div>
       </div>
@@ -2933,7 +3031,7 @@ var MOB_MS        = 3500;
 var BOSS_MS       = 2160;
 var FREEZE_MS     = 6000;
 var AOE_BASE_CHANCE = 6;
-var RESPAWN_MS    = 7000;
+var RESPAWN_MS    = 5000;
 
 // ═══════════════════════════════════════════════════
 // GAME STATE
@@ -3183,6 +3281,12 @@ var _showLoopIntroAfterRespawn = false; // set to context string ('boss-death'|'
 var _showLoopIntroCtx = '';
 var bountyIntroSeen = false;            // true once the bounty board intro popup has been shown
 var _bountyIntroPendingShop = false;    // true while the bounty intro popup is blocking the shop from opening
+var gemIntroSeen = false;               // true once the gem drop intro popup has been shown
+var itemPriorityIntroSeen = false;      // true once the item priority intro popup has been shown
+var _priorityIntroPendingShop = false;  // true while the priority intro popup is blocking the shop from opening
+var skillLoadoutIntroSeen = false;      // true once the skill loadout intro popup has been shown
+var loadoutEverOpened = false;          // true if the player has ever expanded the Skill Loadout panel
+var vaultIntroSeen = false;             // true once the vault/equip drag intro popup has been shown
 var equippedRelic = null;         // { name, effect, maxCharges, chargeCost, duration, charges, triggerMode, activeUntil }
 var relicTriggerMode = 'full';    // 'full' | 'boss' | 'expiry'
 var relicActiveUntil = 0;         // timestamp when current relic effect expires
@@ -3922,6 +4026,10 @@ function processLoot(item, fromShop) {
   }
   // Track kept drops during active sessions
   if ((farmLoop || bossLoop) && !fromShop) _trackSessionDrop(item, score, false);
+  // Vault/equip intro — fire once on first real item drop (not from shop)
+  if (!fromShop && !vaultIntroSeen && (_lootResult === 'vaulted' || _lootResult === 'equipped')) {
+    setTimeout(showVaultIntro, 800);
+  }
   return _lootResult;
 }
 
@@ -4118,6 +4226,12 @@ function spawnNextEnemy(simNow) {
     if (!loopIntroSeen && getTotalBossKills() === 1) {
       _loopIntroPendingShop = true;
       showLoopIntro();
+      return;
+    }
+    if (_priorityIntroPendingShop) return; // priority intro popup is open, waiting for dismissal
+    if (!itemPriorityIntroSeen && getTotalBossKills() === 2) {
+      _priorityIntroPendingShop = true;
+      showPriorityIntro();
       return;
     }
     if (_bountyIntroPendingShop) return; // bounty intro popup is open, waiting for dismissal
@@ -5682,6 +5796,8 @@ function unlockRelicSystem() {
   if (overlay) overlay.style.display = 'flex';
 }
 
+var _loopIntroTimer = null;
+var _loopIntroPausedCombat = false;
 function showLoopIntro(context) {
   // context: 'kill' | 'boss-death' | 'mob-death'
   if (loopIntroSeen) return;
@@ -5700,16 +5816,72 @@ function showLoopIntro(context) {
   }
   var overlay = document.getElementById('loop-intro-overlay');
   if (overlay) overlay.style.display = 'flex';
+  // Pause combat while popup is visible (death variants only — kill variant already blocked by shop intercept)
+  if (context === 'boss-death' || context === 'mob-death') {
+    if (!gamePaused) { gamePaused = true; _loopIntroPausedCombat = true; }
+  }
+  _loopIntroTimer = setTimeout(dismissLoopIntro, 20000);
   saveGame();
 }
 
 function dismissLoopIntro() {
+  if (_loopIntroTimer) { clearTimeout(_loopIntroTimer); _loopIntroTimer = null; }
   var overlay = document.getElementById('loop-intro-overlay');
   if (overlay) overlay.style.display = 'none';
+  if (_loopIntroPausedCombat) { _loopIntroPausedCombat = false; gamePaused = false; }
   if (_loopIntroPendingShop) {
     _loopIntroPendingShop = false;
     openShop();
   }
+}
+
+var _gemIntroTimer = null;
+function showGemIntro() {
+  if (gemIntroSeen) return;
+  gemIntroSeen = true;
+  var overlay = document.getElementById('gem-intro-overlay');
+  if (overlay) overlay.style.display = 'flex';
+  _gemIntroTimer = setTimeout(dismissGemIntro, 20000);
+  saveGame();
+}
+
+function dismissGemIntro() {
+  if (_gemIntroTimer) { clearTimeout(_gemIntroTimer); _gemIntroTimer = null; }
+  var overlay = document.getElementById('gem-intro-overlay');
+  if (overlay) overlay.style.display = 'none';
+}
+
+var _priorityIntroTimer = null;
+function showPriorityIntro() {
+  if (itemPriorityIntroSeen) return;
+  itemPriorityIntroSeen = true;
+  var overlay = document.getElementById('priority-intro-overlay');
+  if (overlay) overlay.style.display = 'flex';
+  _priorityIntroTimer = setTimeout(dismissPriorityIntro, 20000);
+  saveGame();
+}
+
+function dismissPriorityIntro() {
+  if (_priorityIntroTimer) { clearTimeout(_priorityIntroTimer); _priorityIntroTimer = null; }
+  var overlay = document.getElementById('priority-intro-overlay');
+  if (overlay) overlay.style.display = 'none';
+  if (_priorityIntroPendingShop) {
+    _priorityIntroPendingShop = false;
+    openShop();
+  }
+}
+
+function showLoadoutIntro() {
+  if (skillLoadoutIntroSeen) return;
+  skillLoadoutIntroSeen = true;
+  var overlay = document.getElementById('loadout-intro-overlay');
+  if (overlay) overlay.style.display = 'flex';
+  saveGame();
+}
+
+function dismissLoadoutIntro() {
+  var overlay = document.getElementById('loadout-intro-overlay');
+  if (overlay) overlay.style.display = 'none';
 }
 
 function showBountyIntro() {
@@ -5727,6 +5899,25 @@ function dismissBountyIntro() {
     _bountyIntroPendingShop = false;
     openShop();
   }
+}
+
+var _vaultIntroTimer = null;
+var _vaultIntroPausedCombat = false;
+function showVaultIntro() {
+  if (vaultIntroSeen) return;
+  vaultIntroSeen = true;
+  var overlay = document.getElementById('vault-intro-overlay');
+  if (overlay) overlay.style.display = 'flex';
+  if (!gamePaused) { gamePaused = true; _vaultIntroPausedCombat = true; }
+  _vaultIntroTimer = setTimeout(dismissVaultIntro, 20000);
+  saveGame();
+}
+
+function dismissVaultIntro() {
+  if (_vaultIntroTimer) { clearTimeout(_vaultIntroTimer); _vaultIntroTimer = null; }
+  var overlay = document.getElementById('vault-intro-overlay');
+  if (overlay) overlay.style.display = 'none';
+  if (_vaultIntroPausedCombat) { _vaultIntroPausedCombat = false; gamePaused = false; }
 }
 
 function confirmRelicIntro() {
@@ -5917,6 +6108,7 @@ function gainKill(isBoss, isAoe, simNow) {
           addLog('💎 '+bossGem.name+' dropped!', 'level');
           triggerGemDropAnim(bossGem.id);
           gearDirty = true;
+          if (!gemIntroSeen) setTimeout(showGemIntro, 800);
         }
         // Hell boss relic drop — ~4% chance, always goes to pending review
         if (difficulty === 'hell' && relicSystemUnlocked && Math.random() < 0.04) {
@@ -5973,6 +6165,9 @@ function gainKill(isBoss, isAoe, simNow) {
             addLog('↑ Ascending to '+DIFFICULTY[nextDiff].label+' after the shop…', 'zone');
             if (nextDiff === 'nightmare') {
               addLog('🏦 Bank unlocked — share items between characters from the left panel.', 'info');
+              if (!loadoutEverOpened && !skillLoadoutIntroSeen) {
+                setTimeout(showLoadoutIntro, 1500);
+              }
             }
             // Relic system unlock — triggers when Hell difficulty is first unlocked
             if (nextDiff === 'hell' && !relicSystemUnlocked) {
@@ -6006,6 +6201,7 @@ function gainKill(isBoss, isAoe, simNow) {
           addLog('💎 '+mobGem.name+' dropped!', 'level');
           triggerGemDropAnim(mobGem.id);
           gearDirty = true;
+          if (!gemIntroSeen) setTimeout(showGemIntro, 800);
         }
         triggerDeathAnim();
         addLog('Mob slain. +'+xpGain+' xp, +'+goldGain+' gold', 'info');
@@ -6127,7 +6323,21 @@ function triggerDeath() {
   hero.hp = 0;
   hero.rage = 0;
   respawnAt = Date.now() + Math.round(RESPAWN_MS / gameSpeed);
-  // document.getElementById('respawn-bar').classList.add('active'); // respawn bar removed
+  // Show death overlay
+  var _dov = document.getElementById('death-overlay');
+  if (_dov) {
+    var _dsub = document.getElementById('death-overlay-sub');
+    if (_dsub) {
+      if (bossSpawned) {
+        _dsub.textContent = 'Slain by the boss — restarting ' + DIFFICULTY[difficulty].label + ' Act ' + (actIdx + 1);
+      } else if (bountyActive) {
+        _dsub.textContent = 'Bounty lost — the target escaped';
+      } else {
+        _dsub.textContent = 'Restarting ' + DIFFICULTY[difficulty].label + ' Act ' + (actIdx + 1);
+      }
+    }
+    _dov.style.display = 'flex';
+  }
 }
 
 // Resume at furthest reached act/difficulty after a loop ends or is cancelled
@@ -6146,6 +6356,8 @@ function respawnNow() {
 function doRespawn() {
   dead = false;
   hero.hp = hero.maxHp;
+  var _dov = document.getElementById('death-overlay');
+  if (_dov) _dov.style.display = 'none';
   killCount = 0;
   bossSpawned = false;
   rarePack = false;
@@ -6212,6 +6424,8 @@ function openShop() {
   shopOpen = true;
   shopPaused = false;
   shopAutoCloseAt = Date.now() + (settingsShopTimer || 15) * 1000;
+  var stp = document.getElementById('shop-timer-panel');
+  if (stp) stp.style.display = 'block';
   shopRerollCount = 0;
   shopStolen = false;
   // Generate 3 purchasable items for the act shop (same as merchant)
@@ -6389,9 +6603,12 @@ function renderShop() {
           + (!canAffordReroll ? 'disabled style="opacity:0.4;cursor:not-allowed;border-color:#8b3a3a;color:#c85a3a;"' : '')
           + '>Reroll Shop</button></div>';
       })() : '')
-    + '<div style="display:flex;align-items:center;justify-content:space-between;margin-top:10px;">'
-    + '<div style="font-size:11px;color:#5a5a6a;">Auto-advancing in <span id="shop-countdown">'+secsLeft+'</span>s…</div>'
-    + '<button class="shop-pause-btn" onclick="toggleShopPause()" style="padding:3px 12px;border:1px solid #5a4a8a;background:#0e0a1a;color:#c8a0ff;font-family:Georgia,serif;font-size:11px;cursor:pointer;border-radius:2px;animation:pausePulse 2s ease-in-out infinite;">&#x23F8; Pause</button>'
+    + '<div style="display:flex;align-items:center;justify-content:space-between;margin-top:14px;padding:10px 14px;background:#0a0a14;border:1px solid #5a4a8a44;border-radius:3px;">'
+    + '<div style="display:flex;align-items:center;gap:10px;">'
+    +   '<div style="font-size:36px;font-weight:bold;color:#c8a0ff;font-family:Georgia,serif;min-width:48px;text-align:center;line-height:1;" id="shop-countdown">'+secsLeft+'</div>'
+    +   '<div style="font-size:12px;color:#5a5a7a;line-height:1.4;">seconds until<br>next act begins</div>'
+    + '</div>'
+    + '<button class="shop-pause-btn" onclick="toggleShopPause()" style="padding:6px 16px;border:1px solid #5a4a8a;background:#0e0a1a;color:#c8a0ff;font-family:Georgia,serif;font-size:13px;cursor:pointer;border-radius:2px;animation:pausePulse 2s ease-in-out infinite;">&#x23F8; Pause</button>'
     + '</div>';
 
   box.innerHTML = html;
@@ -6528,6 +6745,8 @@ function closeShop() {
   shopOpen = false;
   shopPaused = false;
   document.getElementById('overlay').classList.remove('active');
+  var stp = document.getElementById('shop-timer-panel');
+  if (stp) stp.style.display = 'none';
   // If bounty hunt was in progress when shop closed, cancel it
   if (bountySearchTimer) { clearTimeout(bountySearchTimer); bountySearchTimer = null; bountyActive = false; _stopBountyFootsteps(); }
 
@@ -7291,6 +7510,7 @@ function acceptBounty() {
   shopOpen = false;
   shopPaused = false;
   document.getElementById('overlay').classList.remove('active');
+  var _stpA = document.getElementById('shop-timer-panel'); if (_stpA) _stpA.style.display = 'none';
   addLog('🏹 Searching for target… (10s)', 'zone');
   if (currentBounty.petEncounter && classKey === 'ranger') {
     addLog('🐾 Something stirs in the wilds…', 'zone');
@@ -7460,6 +7680,7 @@ function _startBountyFight() {
   bossSpawned = false;  // bounty fight must not be treated as a boss kill sequence
   _stopBountyFootsteps();
   document.getElementById('overlay').classList.remove('active');
+  var _stpB = document.getElementById('shop-timer-panel'); if (_stpB) _stpB.style.display = 'none';
   addLog('⚔ '+b.label+' appears! [Bounty · '+b.tier+']', 'death');
   recalcStats();
   var _now = Date.now();
@@ -8020,6 +8241,7 @@ function renderUI(now) {
   document.getElementById('xp-bar').style.width = xpPct + '%';
   document.getElementById('xp-label').textContent = hero.xp + ' / ' + hero.xpNext + ' XP (' + xpPct + '%)';
   document.getElementById('gold-display').textContent = hero.gold;
+  var cgd = document.getElementById('combat-gold-display'); if (cgd) cgd.textContent = hero.gold;
   var xpWrap = document.getElementById('xp-strip-bar-wrap');
   if (xpWrap) xpWrap.classList.toggle('xp-near-max', xpPct >= 85);
 
@@ -8295,8 +8517,13 @@ function renderUI(now) {
     diffMsg.textContent = '';
   }
 
-  // Respawn bar removed — auto-respawn only, no UI
-  if (dead && !shopOpen && now >= respawnAt) doRespawn();
+  // Death overlay countdown
+  if (dead) {
+    var _secsLeft = Math.max(0, Math.ceil((respawnAt - now) / 1000));
+    var _dovcd = document.getElementById('death-overlay-countdown');
+    if (_dovcd) _dovcd.textContent = _secsLeft;
+    if (!shopOpen && now >= respawnAt) doRespawn();
+  }
 
   // Skill pts
   var _skillPtsEl = document.getElementById('skill-pts-label');
@@ -9891,6 +10118,7 @@ function toggleLeftSection(id) {
   var collapsed = section.style.display === 'none';
   section.style.display  = collapsed ? '' : 'none';
   if (chevron) chevron.textContent = collapsed ? '▾' : '▸';
+  if (id === 'loadout' && collapsed) loadoutEverOpened = true; // track first open
 }
 
 // ═══════════════════════════════════════════════════
@@ -12358,7 +12586,12 @@ function saveGame() {
       // Relic system
       relicSystemUnlocked: relicSystemUnlocked,
       loopIntroSeen:       loopIntroSeen,
-      bountyIntroSeen:     bountyIntroSeen,
+      bountyIntroSeen:        bountyIntroSeen,
+      gemIntroSeen:           gemIntroSeen,
+      itemPriorityIntroSeen:  itemPriorityIntroSeen,
+      skillLoadoutIntroSeen:  skillLoadoutIntroSeen,
+      loadoutEverOpened:      loadoutEverOpened,
+      vaultIntroSeen:         vaultIntroSeen,
       equippedRelic:       equippedRelic,
       relicTriggerMode:    relicTriggerMode,
       relicActiveUntil:    relicActiveUntil,
@@ -12483,7 +12716,12 @@ function loadGame() {
     // Relic system
     relicSystemUnlocked = state.relicSystemUnlocked || false;
     loopIntroSeen       = state.loopIntroSeen       || false;
-    bountyIntroSeen     = state.bountyIntroSeen     || false;
+    bountyIntroSeen        = state.bountyIntroSeen        || false;
+    gemIntroSeen           = state.gemIntroSeen           || false;
+    itemPriorityIntroSeen  = state.itemPriorityIntroSeen  || false;
+    skillLoadoutIntroSeen  = state.skillLoadoutIntroSeen  || false;
+    loadoutEverOpened      = state.loadoutEverOpened      || false;
+    vaultIntroSeen         = state.vaultIntroSeen         || false;
     equippedRelic       = state.equippedRelic       || null;
     relicTriggerMode    = state.relicTriggerMode    || 'full';
     relicActiveUntil    = state.relicActiveUntil    || 0;
@@ -13504,8 +13742,17 @@ function _gameTick() {
     // Shop auto-close
     if (shopOpen) {
       if (shopPaused || bountyActive) shopAutoCloseAt += Math.round(TICK_BASE / gameSpeed);
+      var _shopCdVal = (shopPaused || bountyActive) ? (bountyActive ? '🏹' : '⏸') : Math.max(0, Math.ceil((shopAutoCloseAt - now) / 1000));
       var cd = document.getElementById('shop-countdown');
-      if (cd) cd.textContent = (shopPaused || bountyActive) ? (bountyActive ? '🏹' : '⏸') : Math.max(0, Math.ceil((shopAutoCloseAt - now) / 1000));
+      if (cd) cd.textContent = _shopCdVal;
+      var stpSec = document.getElementById('shop-timer-panel-sec');
+      if (stpSec) stpSec.textContent = _shopCdVal;
+      var stpBtn = document.getElementById('shop-timer-pause-btn');
+      if (stpBtn) {
+        stpBtn.textContent   = shopPaused ? '▶ Resume' : '⏸ Pause';
+        stpBtn.style.borderColor = shopPaused ? '#c8a84b' : '#5a4a8a';
+        stpBtn.style.color       = shopPaused ? '#c8a84b' : '#c8a0ff';
+      }
       if (!shopPaused && !bountyActive && now >= shopAutoCloseAt) {
         if (bountyAutoAccept && currentBounty && !bountyActive) {
           _maybeBountyAutoAccept();
