@@ -1289,7 +1289,7 @@
 </div>
 
 
-  <span class="game-title">IDLE DEPTHS <span style="font-size:13px;letter-spacing:1px;opacity:0.6;">v1.16</span></span>
+  <span class="game-title">IDLE DEPTHS <span style="font-size:13px;letter-spacing:1px;opacity:0.6;">v1.17</span></span>
 </div>
 
 <!-- Difficulty / act bar -->
@@ -1749,6 +1749,13 @@ var HERO_SPRITES = {
   rogue:     _REPO + 'rogue-class.png',
   ranger:    _REPO + 'Hero_Ranger.png'
 };
+// Warrior swing spritesheet — 228x128 frames, 7 cols × 6 rows grid (39 frames total)
+var WAR_SWING_SHEET  = _REPO + 'warrior-down-attack-1.png';
+var WAR_SWING_FRAMES = 39;
+var WAR_FRAME_W = 228, WAR_FRAME_H = 128;
+// Ranger shoot spritesheet — horizontal strip, frame 0 = idle
+var RANGER_SHOOT_SHEET  = _REPO + 'ranger_shoot_animation.png';
+var RANGER_SHOOT_FRAMES = 6;
 
 // ═══════════════════════════════════════════════════
 // DATA
@@ -2540,10 +2547,10 @@ var PASSIVE_DEFS = {
   fc_recover: {
     getStats: function(pts) { return {}; },
     rows: function(pts) { return [
-      { label:'Recover chance',  upgraded:true,  value:(10 + pts*0.5).toFixed(1)+'% on mob kill' },
+      { label:'Recover chance',  upgraded:true,  value:(10 + pts*1.0).toFixed(0)+'% on mob kill' },
       { label:'Stored crits',    upgraded:true,  value:'2× dmg, up to 5 stored' },
       { label:'Persists',        upgraded:true,  value:'Quiver carries between fights' },
-      { label:'Per point',       upgraded:pts>0, value:'+0.5% chance' },
+      { label:'Per point',       upgraded:pts>0, value:'+1% chance' },
     ]; },
   },
 };
@@ -3285,6 +3292,8 @@ var hero = {
   activePetSlot: 0,         // index into petRoster (null = no active companion)
   petRoster: [{ id:'wolf', roll:10, name:'' }], // up to 6 companions; wolf always starts
   companionStance: 'aggressive', // 'aggressive' | 'defensive' | 'utility'
+  farmStance: null,  // loadout: companion stance for farming (null = don't auto-swap)
+  bossStance: null,  // loadout: companion stance for bosses
   _overloadCharge: 0,      // Overload Shot charge counter (0-3)
   _longShotMode: true,     // true = Long Shot available, false = caught up (Basic Shot)
   _markPreyActive: false,  // true when Mark Prey is active skill and ranger is hunter
@@ -3511,6 +3520,12 @@ var respawnAt   = 0;
 var shopOpen    = false;
 var gamePaused  = false;
 
+// Enchanting
+var enchantOverlayOpen = false;
+var _enchantSelSlot    = null;
+var _enchantSelIdx     = null;
+var _enchantLockedStat = null;
+
 // Traveling merchant
 var merchantOpen       = false;
 var merchantAutoCloseAt = 0;
@@ -3548,6 +3563,7 @@ var statsData = {
   totalDeaths:    0,    // total deaths across all runs (for feature unlocks)
 };
 var _bossSpawnRealTime = 0;  // real Date.now() when boss was spawned
+var _trapEntryFiring = false; // guard: prevents recursive entry-trap chain when trap kill spawns next mob
 var MERCHANT_DEATH_THRESHOLD = 5; // nightmare/hell; normal uses 3
 var MERCHANT_GOLD_PER_SCORE  = 3;
 
@@ -4507,6 +4523,10 @@ function spawnNextEnemy(simNow) {
         hero.activeTechnique = hero.bossTechnique;
         recalcStats();
       }
+      if (classKey === 'ranger' && hero.bossStance) {
+        hero.companionStance = hero.bossStance;
+        renderPetPanel();
+      }
       addLog('⚔ '+act.bossName+' appears!', 'death');
       _bossSpawnRealTime = Date.now();  // track real time for TTK stats
       // Relic: trigger 'On Boss' mode
@@ -4603,6 +4623,10 @@ function spawnNextEnemy(simNow) {
       hero.activeTechnique = hero.farmTechnique;
       recalcStats();
     }
+    if (classKey === 'ranger' && hero.farmStance) {
+      hero.companionStance = hero.farmStance;
+      renderPetPanel();
+    }
   }
 
   var spawnTime = simNow || Date.now();
@@ -4650,7 +4674,10 @@ function spawnNextEnemy(simNow) {
   // (enemy object is new so _arcaneVuln starts at undefined — no explicit clear needed)
 
   // Trapper: fire active trap skill on mob entry (up to 3 times with re-trigger rolls)
-  if (classKey === 'ranger' && hero.rangerDiscipline === 'trapper') {
+  // Guard: skip if we're already inside an entry trap (prevents chain where trap kill
+  // spawns next mob, which immediately gets another entry trap, killing all mobs to boss).
+  // Also skip on boss — boss is not a mob and shouldn't get trapped on entry.
+  if (classKey === 'ranger' && hero.rangerDiscipline === 'trapper' && !enemy.isBoss && !_trapEntryFiring) {
     var _trapSkill = cls.skills[hero.activeSkillIdx];
     var _trapIds = ['chain_trap', 'freezing_trap', 'explosive_trap'];
     if (_trapSkill && _trapIds.indexOf(_trapSkill.id) >= 0) {
@@ -4662,11 +4689,14 @@ function spawnNextEnemy(simNow) {
         if (Math.random() < _retriggerChance) _trapFires++;
         else break;
       }
-      if (_trapFires > 1) addLog('🪤 Trap carried over! ('+_trapFires+'× entry)', 'crit');
+      if (_trapFires > 1) { addLog('🪤 Trap carried over! ('+_trapFires+'× entry)', 'crit'); triggerStatusFlash('#c8843a'); }
+      var _trapTargetEnemy = enemy;
+      _trapEntryFiring = true;
       for (var _tf = 0; _tf < _trapFires; _tf++) {
-        if (!enemy || enemy.hp <= 0) break;
+        if (!enemy || enemy.hp <= 0 || enemy !== _trapTargetEnemy) break;
         heroAttack(spawnTime);
       }
+      _trapEntryFiring = false;
       // Delay first normal attack since traps already fired
       heroNextAtk = spawnTime + heroAttackInterval();
     }
@@ -5360,11 +5390,12 @@ function heroAttack(now) {
     var coldMlt = 1 + (hero._coldDmg || 0) / 100;
     var trapMult = 1 + trapPts * 0.02 + trapperPts * 0.03;
     var dmg = Math.round(base * rangPhysMult * trapMult * coldMlt);
+    if (_isCrit) dmg = Math.round(dmg * rangerCritMult);
     var _ftFirstHit = !enemy._freezingTrapHit; // first hit this enemy
     enemy._freezingTrapHit = true;
     if (_ftFirstHit) {
       // Entry hit — always freezes
-      addLog('❄ Freezing Trap: '+dmg+' — trap detonates!', 'chill');
+      addLog('❄ Freezing Trap: '+dmg+(_isCrit?' (crit!)':'')+' — trap detonates!', 'chill');
       enemy.hp = Math.max(0, enemy.hp - dmg);
       var froze = tryFreeze();
       if (froze) { addLog('  ↳ Frozen! ('+froze+'s)', 'chill'); triggerStatusFlash('#55aaff'); }
@@ -5373,14 +5404,14 @@ function heroAttack(now) {
       var freezeChance = (10 + trapPts * 0.5) / 100;
       var canFreeze = !(enemy.frozenUntil && now < enemy.frozenUntil) && !(enemy.stunCooldownUntil && now < enemy.stunCooldownUntil);
       if (canFreeze && Math.random() < freezeChance) {
-        addLog('❄ Freezing Trap: '+dmg+' — refreezes!', 'chill');
+        addLog('❄ Freezing Trap: '+dmg+(_isCrit?' (crit!)':'')+' — refreezes!', 'chill');
         enemy.hp = Math.max(0, enemy.hp - dmg);
         var froze = tryFreeze();
         if (froze) { addLog('  ↳ Frozen! ('+froze+'s)', 'chill'); triggerStatusFlash('#55aaff'); }
       } else {
         // Shatter — +20% damage against frozen/resistant target
         var shatterDmg = Math.round(dmg * 1.20);
-        addLog('❄ Shatter: '+shatterDmg+(enemy.frozenUntil && now < enemy.frozenUntil ? ' [frozen — shatters!]' : ' [on resistant target]'), 'chill');
+        addLog('❄ Shatter: '+shatterDmg+(_isCrit?' (crit!)':''+(enemy.frozenUntil && now < enemy.frozenUntil ? ' [frozen — shatters!]' : ' [on resistant target]')), 'chill');
         enemy.hp = Math.max(0, enemy.hp - shatterDmg);
       }
     }
@@ -5391,18 +5422,15 @@ function heroAttack(now) {
     var trapMult = 1 + trapPts * 0.02 + trapperPts * 0.03;
     var fireMlt = 1 + (hero._fireDmg || 0) / 100;
     var dmg = Math.round(base * fireMlt * trapMult * stunBonusMult); // fire only, not rangPhysMult
-    addLog('💥 Explosive Trap: '+dmg+' — BOOM!', 'fire');
+    if (_isCrit) dmg = Math.round(dmg * rangerCritMult);
+    addLog('💥 Explosive Trap: '+dmg+(_isCrit?' (crit!)':'')+' — BOOM!', 'fire');
     enemy.hp = Math.max(0, enemy.hp - dmg);
-    // Always burns — bypass random chance
+    // Always burns — escalating: each tick 15% stronger than the last
     var seMult = 1 + ((hero._statusEffect || 0) + (hero._relicStatusBoost || 0)) / 100;
-    var tickDmg = Math.max(1, Math.round(dmg * 0.10 / 10 * seMult));
+    var tickDmg = Math.max(1, Math.round(dmg * 0.15 / 10 * seMult));
     var ticks = Math.round(10 * seMult);
-    if (!enemy._burn || tickDmg > enemy._burn.tickDmg) {
-      enemy._burn = { tickDmg: tickDmg, ticksLeft: ticks, nextTick: Date.now() + 1000 };
-    } else {
-      enemy._burn.ticksLeft = ticks;
-    }
-    addLog('  ↳ 🔥 Burning! ('+tickDmg+'/s)', 'fire');
+    enemy._burn = { tickDmg: tickDmg, ticksLeft: ticks, nextTick: Date.now() + 1000, tickGrowth: 1.15 };
+    addLog('  ↳ 🔥 Burning! ('+tickDmg+'/s ↑ intensifying)', 'fire');
 
   }
 
@@ -6593,7 +6621,7 @@ function gainKill(isBoss, isAoe, simNow) {
     }
     // Recover: chance to store a quiver crit
     var recPts = hero.skillTree['fc_recover'] || 0;
-    var recChance = (10 + recPts * 0.5) / 100;
+    var recChance = (10 + recPts * 1.0) / 100;
     if (hero.quiver < 5 && Math.random() < recChance) {
       hero.quiver++;
       var isTrapper = hero.rangerDiscipline === 'trapper';
@@ -6977,6 +7005,10 @@ function doRespawn() {
     hero.activeTechnique = hero.farmTechnique;
     recalcStats();
   }
+  if (classKey === 'ranger' && hero.farmStance) {
+    hero.companionStance = hero.farmStance;
+    renderPetPanel();
+  }
 
   // If a loop is still active, restart at the loop's target
   if (bossLoop) {
@@ -7048,10 +7080,10 @@ function openShop() {
     }
   }
   for (var i = shopItems.length; i < 3; i++) {
-    var item = generateItem(false, null, 0, true); // ignoreMf=true for fair pricing
+    var item = generateItem(true, null, 0, true); // ignoreMf=true for fair pricing; boss odds for quality
     // Hell shops: lucky roll — generate twice and keep the better item
     if (difficulty === 'hell') {
-      var item2 = generateItem(false, null, 0, true);
+      var item2 = generateItem(true, null, 0, true);
       if (item2.score > item.score) item = item2;
     }
     // Excavation scheme: push shop item stats toward max
@@ -7204,6 +7236,9 @@ function renderShop() {
     + '<br><button class="overlay-btn" onclick="buyShardFromShop()" '+((!canAffordShard)?'disabled style="opacity:0.4;cursor:not-allowed"':'')+'>'
     + 'Buy Shard'
     + '</button></div>'
+    + '<div class="shop-item"><div class="shop-item-name">✦ Enchant Item</div>'
+    + '<div class="shop-item-desc">Lock one stat on a magic or rare item — reroll the rest. Magic: 300g · Rare: 800g.</div>'
+    + '<br><button class="overlay-btn" onclick="openEnchantOverlay()">Open Enchanter</button></div>'
     + '<button class="overlay-btn sec" onclick="closeShop()">Leave shop → Next Act</button>'
     // Hell-only reroll button
     + (difficulty === 'hell' ? (function() {
@@ -7430,6 +7465,10 @@ function closeShop() {
   if (classKey === 'warrior' && hero.farmTechnique) {
     hero.activeTechnique = hero.farmTechnique;
     recalcStats();
+  }
+  if (classKey === 'ranger' && hero.farmStance) {
+    hero.companionStance = hero.farmStance;
+    renderPetPanel();
   }
   saveGame();
   addLog((bossLoop ? '🔁 Looping ' : 'Entering ') + ACTS[actIdx].name + '...', 'zone');
@@ -7721,7 +7760,7 @@ function renderBossLoopMenu() {
     var diffColor = (ngPlusUnlocked && diff === 'hell') ? '#cc44ff' : '#c8a84b';
     var diffHtml = '<div style="margin-top:8px;font-size:10px;color:'+diffColor+';letter-spacing:1px;text-transform:uppercase;border-bottom:1px solid '+diffColor+'33;padding-bottom:3px;margin-bottom:5px;">'+diffLabel+'</div>';
     for (var ai = 0; ai < ACTS.length; ai++) {
-      if (!unlockedBosses[diff+'-'+ai]) continue;
+      if (!unlockedBosses[diff+'-'+ai] && !(diff===difficulty && ai===actIdx)) continue;
       diffHasAny = true; anyUnlocked = true;
       var isActive = bossLoop && bossLoop.difficulty===diff && bossLoop.actIdx===ai;
       var canAfford = hero.gold >= cost;
@@ -7850,7 +7889,7 @@ function renderFarmLoopMenu() {
     var diffColor = (ngPlusUnlocked && diff === 'hell') ? '#cc44ff' : '#c8a84b';
     var diffHtml = '<div style="margin-top:8px;font-size:10px;color:'+diffColor+';letter-spacing:1px;text-transform:uppercase;border-bottom:1px solid '+diffColor+'33;padding-bottom:3px;margin-bottom:5px;">'+diffLabel+'</div>';
     for (var ai = 0; ai < ACTS.length; ai++) {
-      var alwaysAvail = (ai === 0);
+      var alwaysAvail = (ai === 0) || (diff===difficulty && ai===actIdx);
       if (!alwaysAvail && !unlockedBosses[diff+'-'+ai]) continue;
       diffHasAny = true; anyUnlocked = true;
       var isActive = farmLoop && farmLoop.difficulty===diff && farmLoop.actIdx===ai;
@@ -9569,6 +9608,199 @@ function rerollVaultItem(slot, idx) {
   if (rightPanelTab === 'crafting') renderGemPanel();
 }
 
+// ─── Enchanting ───────────────────────────────────────────────────────────────
+
+var ENCHANT_COSTS = { magic: 300, rare: 800 };
+
+function statLineForStat(k, v) {
+  var dmgL = cls ? cls.dmgLabel : 'Dmg';
+  var spdL = cls ? cls.spdLabel : 'Spd';
+  switch (k) {
+    case 'mainDmg':      return '+'+v+' '+dmgL;
+    case 'mainSpd':      return '+'+v+' '+spdL;
+    case 'hp':           return '+'+v+' HP';
+    case 'mf':           return '+'+v+'% MF';
+    case 'hpRegen':      return '+'+v+' regen/s';
+    case 'reducedDmg':   return '-'+v+' dmg taken';
+    case 'fireDmg':      return '+'+v+'% Fire Dmg';
+    case 'lightDmg':     return '+'+v+'% Lightning Dmg';
+    case 'coldDmg':      return '+'+v+'% Cold Dmg';
+    case 'magicDmg':     return '+'+v+'% Magic Dmg';
+    case 'critChance':   return '+'+v+'% Crit Chance';
+    case 'aoeChance':    return '+'+v+'% AoE Chance';
+    case 'statusEffect': return '+'+v+'% Status Effect';
+    case 'blockChance':  return '+'+v+'% Block';
+    case 'spellShield':  return '+'+v+' Spell Shield';
+    case 'xpGain':       return '+'+v+'% XP Gain';
+    case 'goldFind':     return '+'+v+'% Gold Find';
+    case 'castCooldown': return '-'+v+'ms Cooldown';
+    case 'resist':       return '+'+v+'% Resist All';
+    case 'thorns':       return '+'+v+'% Thorns';
+    case 'critMulti':    return '+'+(v/100).toFixed(2)+'× Crit Multi';
+    case 'sunder':       return '+'+v+'% Sunder';
+    default:             return '+'+v+' '+k;
+  }
+}
+
+function openEnchantOverlay() {
+  enchantOverlayOpen = true;
+  _enchantSelSlot = null;
+  _enchantSelIdx  = null;
+  _enchantLockedStat = null;
+  var el = document.getElementById('enchant-overlay');
+  if (el) { el.style.display = 'flex'; renderEnchantOverlay(); }
+}
+
+function closeEnchantOverlay() {
+  enchantOverlayOpen = false;
+  var el = document.getElementById('enchant-overlay');
+  if (el) el.style.display = 'none';
+  if (shopOpen) renderShop();
+}
+
+function selectEnchantItem(slot, idx) {
+  _enchantSelSlot    = slot;
+  _enchantSelIdx     = idx;
+  _enchantLockedStat = null;
+  renderEnchantOverlay();
+}
+
+function selectEnchantStat(statKey) {
+  _enchantLockedStat = (_enchantLockedStat === statKey) ? null : statKey;
+  renderEnchantOverlay();
+}
+
+function renderEnchantOverlay() {
+  var box = document.getElementById('enchant-overlay-box');
+  if (!box) return;
+  var rarityColors = { magic:'#6fa3ef', rare:'#ffd700' };
+
+  // Gather enchantable vault items (magic + rare only)
+  var enchantable = [];
+  var slotKeys = Object.keys(hero.vault);
+  for (var si = 0; si < slotKeys.length; si++) {
+    var s = slotKeys[si];
+    var items = hero.vault[s];
+    if (!items) continue;
+    for (var ii = 0; ii < items.length; ii++) {
+      var it = items[ii];
+      if (it.rarity === 'magic' || it.rarity === 'rare') {
+        enchantable.push({ slot: s, idx: ii, item: it });
+      }
+    }
+  }
+
+  var html = '<div style="font-size:17px;color:#c8a84b;letter-spacing:1px;margin-bottom:3px;">✦ Enchant Item</div>'
+    + '<div style="font-size:11px;color:#5a5a7a;font-style:italic;margin-bottom:14px;">Lock one stat. Reroll the rest. One shot.</div>';
+
+  // Item list
+  if (enchantable.length === 0) {
+    html += '<div style="color:#4a4a6a;font-size:12px;padding:10px 0;">No magic or rare items in vault.</div>';
+  } else {
+    html += '<div style="font-size:10px;color:#4a4a6a;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">Choose an item</div>';
+    for (var i = 0; i < enchantable.length; i++) {
+      var e = enchantable[i];
+      var isSel = (_enchantSelSlot === e.slot && _enchantSelIdx === e.idx);
+      var col = rarityColors[e.item.rarity] || '#d4c9a8';
+      html += '<div onclick="selectEnchantItem(\''+e.slot+'\','+e.idx+')" style="cursor:pointer;padding:7px 9px;margin-bottom:4px;border:1px solid '+(isSel?col:'#2a2a3a')+';border-radius:3px;background:'+(isSel?'#0d0d20':'#0a0a14')+';transition:border-color 0.1s;">'
+        + '<div style="color:'+col+';font-size:12px;font-weight:bold;">'+e.item.name+(e.item.enchanted?' <span style="color:#c8a84b;font-size:9px;">✦</span>':'')+'</div>'
+        + '<div style="color:#4a4a6a;font-size:10px;margin:1px 0;">'+e.item.slot+' · '+e.item.rarity+' · '+ENCHANT_COSTS[e.item.rarity]+'g</div>'
+        + '<div style="color:#7a7a8a;font-size:10px;">'+statLine(e.item.stats)+'</div>'
+      + '</div>';
+    }
+  }
+
+  // Stat selector — shown after item pick
+  if (_enchantSelSlot !== null && _enchantSelIdx !== null) {
+    var selItem = hero.vault[_enchantSelSlot] && hero.vault[_enchantSelSlot][_enchantSelIdx];
+    if (selItem) {
+      var cost = ENCHANT_COSTS[selItem.rarity];
+      var canAfford = hero.gold >= cost;
+      var statKeys = Object.keys(selItem.stats).filter(function(k) { return selItem.stats[k] > 0; });
+      html += '<div style="margin-top:12px;border-top:1px solid #2a2a3a;padding-top:12px;">'
+        + '<div style="font-size:10px;color:#4a4a6a;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">Lock one stat — others reroll</div>';
+      for (var si2 = 0; si2 < statKeys.length; si2++) {
+        var sk = statKeys[si2];
+        var sv = selItem.stats[sk];
+        var isLocked = (_enchantLockedStat === sk);
+        html += '<div onclick="selectEnchantStat(\''+sk+'\')" style="cursor:pointer;padding:6px 10px;margin-bottom:3px;border:1px solid '+(isLocked?'#c8a84b':'#2a2a3a')+';border-radius:3px;background:'+(isLocked?'#1a140a':'#0a0a12')+';">'
+          + '<span style="color:'+(isLocked?'#c8a84b':'#9a9aaa')+';font-size:12px;">'+(isLocked?'🔒 ':'')+statLineForStat(sk, sv)+'</span>'
+        + '</div>';
+      }
+      var btnLabel = _enchantLockedStat ? ('Enchant — '+(canAfford ? cost+'g' : 'need '+cost+'g (have '+hero.gold+'g)')) : 'Pick a stat to lock';
+      html += '<div style="color:#4a4a5a;font-size:10px;margin-top:8px;">One chance · Cannot be undone · Item marked Enchanted</div>'
+        + '<button class="overlay-btn" onclick="doEnchant()" style="margin-top:6px;width:100%;'+((!_enchantLockedStat||!canAfford)?'opacity:0.4;cursor:not-allowed;':'')+'" '+(!_enchantLockedStat||!canAfford?'disabled':'')+'>'+btnLabel+'</button>'
+        + '</div>';
+    }
+  }
+
+  html += '<button class="overlay-btn sec" onclick="closeEnchantOverlay()" style="margin-top:10px;width:100%;">Close</button>';
+  box.innerHTML = html;
+}
+
+function doEnchant() {
+  if (!_enchantSelSlot || _enchantSelIdx === null || !_enchantLockedStat) return;
+  var item = hero.vault[_enchantSelSlot] && hero.vault[_enchantSelSlot][_enchantSelIdx];
+  if (!item) return;
+  var cost = ENCHANT_COSTS[item.rarity];
+  if (!cost || hero.gold < cost) return;
+
+  hero.gold -= cost;
+
+  var lockedVal = item.stats[_enchantLockedStat];
+  var existingStatKeys = Object.keys(item.stats).filter(function(k) { return item.stats[k] > 0; });
+  var rerollCount = existingStatKeys.length - 1;
+
+  // Build pool: slot stats minus locked stat
+  var pool = SLOT_STAT_POOLS[_enchantSelSlot].slice();
+  if (ngPlusUnlocked && difficulty === 'hell') {
+    if (_enchantSelSlot !== 'weapon') { pool.push('resist'); pool.push('thorns'); }
+    if (_enchantSelSlot !== 'armor' && _enchantSelSlot !== 'boots') { pool.push('critMulti'); pool.push('sunder'); }
+  }
+  var lockedI = pool.indexOf(_enchantLockedStat);
+  if (lockedI > -1) pool.splice(lockedI, 1);
+
+  // Respect MF inclusion chance
+  var mfChance = item.rarity === 'rare' ? LOOT_ODDS.mfOnRare : LOOT_ODDS.mfOnMagic;
+  if (Math.random() > mfChance) {
+    var mfI = pool.indexOf('mf');
+    if (mfI > -1) pool.splice(mfI, 1);
+  }
+
+  var ranges    = item.rarity === 'magic' ? MAGIC_RANGES : RARE_RANGES;
+  var diffScale = DIFF_ITEM_SCALE[difficulty] || 1.0;
+  var act       = actIdx;
+  var newStats  = {};
+  newStats[_enchantLockedStat] = lockedVal;
+
+  for (var i = 0; i < rerollCount && pool.length > 0; i++) {
+    var idx = ri(0, pool.length - 1);
+    var stat = pool.splice(idx, 1)[0];
+    var r = ranges[stat];
+    if (r) {
+      var actBonus  = (ACT_STAT_BONUS[stat] || 0) * act;
+      var scaledMax = Math.round((r.max + actBonus) * diffScale);
+      var scaledMin = Math.max(r.min, Math.round(r.min * diffScale * 0.5));
+      newStats[stat] = ri(scaledMin, Math.max(scaledMin, scaledMax));
+    }
+  }
+
+  item.stats     = newStats;
+  item.score     = Math.round(itemScore(item.stats, item.skillBonus, item.allSkills));
+  item.enchanted = true;
+
+  hero.vault[_enchantSelSlot] = sortAndTrim(hero.vault[_enchantSelSlot], _enchantSelSlot);
+  gearDirty = true;
+  saveGame();
+
+  addLog('✦ Enchanted! Kept: '+statLineForStat(_enchantLockedStat, lockedVal)+'. New stats: '+statLine(newStats), 'level');
+
+  _enchantSelSlot = null; _enchantSelIdx = null; _enchantLockedStat = null;
+  closeEnchantOverlay();
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+
 function discardVaultItem(slot, idx) {
   var v = hero.vault[slot];
   if (!v || !v[idx]) return;
@@ -9735,7 +9967,7 @@ function renderVault() {
           ? '<button onclick="event.stopPropagation();rerollVaultItem(\''+slot+'\','+j+')" title="Reforge with selected gem (50g)" class="vault-reroll-btn" '+(hasGem?'':'disabled')+'>↻</button>'
           : '<span style="width:20px;flex-shrink:0;"></span>')
         + '<div class="gr-body" style="text-align:right;">'
-          + '<div class="gr-name '+v.rarity+'" style="text-align:right;">'+v.name+'</div>'
+          + '<div class="gr-name '+v.rarity+'" style="text-align:right;">'+v.name+(v.enchanted?' <span style="color:#c8a84b;font-size:9px;letter-spacing:0.5px;">✦</span>':'')+'</div>'
           + (extra ? '<div class="gr-stat" style="text-align:right;">'+extra+'</div>' : '')
         + '</div>'
         + '<button onclick="event.stopPropagation();discardVaultItem(\''+slot+'\','+j+')" title="Discard" class="discard-btn">✕</button>'
@@ -10240,8 +10472,8 @@ function renderSkillPicker() {
       })
     : allTabSkills;
 
-  var _schemesLocked  = classKey === 'rogue' && hero.level < 5;
-  var _schemeNeedsPick = classKey === 'rogue' && !_schemesLocked && !hero.activeScheme;
+  var _schemesLocked  = false;
+  var _schemeNeedsPick = classKey === 'rogue' && !hero.activeScheme;
   var tab2Label = classKey === 'rogue'
     ? (_schemesLocked ? 'Schemes 🔒' : _schemeNeedsPick ? 'Pick One' : 'Schemes')
     : classKey === 'ranger' ? 'Discipline' : 'Tier 2';
@@ -10264,12 +10496,10 @@ function renderSkillPicker() {
   // Rogue Schemes tab (T2) — Use button only, no leveling (that's in Skill Tree)
   if (classKey === 'rogue' && tab === 2) {
     var schemes = cls.skills.filter(function(s) { return s.tier === 2; });
-    var schemesLocked = hero.level < 5;
-    var needsPick = !schemesLocked && !hero.activeScheme;
+    var schemesLocked = false;
+    var needsPick = !hero.activeScheme;
     var sh = tabHtml;
-    if (schemesLocked) {
-      sh += '<div style="font-size:10px;color:#5a5a6a;margin-bottom:8px;text-align:center;padding:12px;border:1px solid #2a2a3a;border-radius:3px;background:#0a0a14;">🔒 Schemes unlock at <span style="color:#c8a84b;">Level 5</span>.<br><span style="font-size:9px;">Current level: '+hero.level+'</span></div>';
-    } else {
+    if (false) {
       sh += '<div style="font-size:9px;color:'+(needsPick?'#c8843a':'#5a5a6a')+';margin-bottom:6px;font-style:italic;">'+(needsPick?'⚠ Choose an active scheme — it will persist until changed.':'Pick one active scheme. Level them in the Skill Tree.')+'</div>';
     }
     for (var si = 0; si < schemes.length; si++) {
@@ -10279,7 +10509,7 @@ function renderSkillPicker() {
       var pdef = PASSIVE_DEFS[sc.id];
       var _ab = getAmuletBonusForSkill(sc);
       var rows = pdef ? pdef.rows(sPts, _ab) : [];
-      var cardOpacity = schemesLocked ? 'opacity:0.4;pointer-events:none;' : '';
+      var cardOpacity = '';
       sh += '<div style="'+cardOpacity+'border:1px solid '+(isActive?'#c8843a':'#2a2a3a')+';border-radius:3px;padding:8px 10px;margin-bottom:6px;background:'+(isActive?'#100800':'#0a0a14')+'">';
       sh += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px;">';
       sh += '<span style="font-size:12px;color:'+(isActive?'#c8843a':'#c8a84b')+';">' + (isActive?'● ':'')+sc.name+' (<span style="color:'+(sPts>0?'#7ab8f5':'#5a5a6a')+';">'+sPts+'</span>/'+SKILL_MAX+')</span>';
@@ -10622,7 +10852,7 @@ function renderSkillTree() {
                     isScheme? (hero.activeScheme === s.id) :
                     (isTech && hero.activeTechnique === s.id);
     var isPassive = s.passive && !isTech;
-    var t2Max     = s.tier === 2 ? Math.max(0, Math.min(SKILL_MAX, hero.level - SKILL_T2_LEVEL_REQ + 1)) : SKILL_MAX;
+    var t2Max     = (s.tier === 2 && !isScheme) ? Math.max(0, Math.min(SKILL_MAX, hero.level - SKILL_T2_LEVEL_REQ + 1)) : SKILL_MAX;
     var maxPts    = locked ? SKILL_MAX : (s.tier === 2 ? t2Max : SKILL_MAX);
     var canAdd    = !locked && hero.skillPts > 0 && pts < maxPts;
 
@@ -10836,6 +11066,12 @@ function setLoadoutTechnique(slot, id) {
   renderLoadoutPanel();
 }
 
+function setLoadoutStance(slot, stance) {
+  if (slot === 'farm') hero.farmStance = (hero.farmStance === stance) ? null : stance;
+  else                 hero.bossStance = (hero.bossStance === stance) ? null : stance;
+  renderLoadoutPanel();
+}
+
 function renderLoadoutPanel() {
   var panel = document.getElementById('loadout-panel');
   if (!panel) return;
@@ -10926,6 +11162,37 @@ function renderLoadoutPanel() {
       var t = techniques[i];
       var isSel = hero.bossTechnique === t.id;
       html += '<button onclick="setLoadoutTechnique(\'boss\',\''+t.id+'\')" style="padding:2px 6px;border:1px solid '+(isSel?'#c85a5a':'#2a2a3a')+';background:'+(isSel?'#1f0a0a':'#0a0a14')+';color:'+(isSel?'#c85a5a':'#5a5a6a')+';font-family:Georgia,serif;font-size:10px;cursor:pointer;border-radius:2px;">'+t.name+'</button>';
+    }
+    html += '</div></div>';
+  }
+
+  // Companion stance loadout (Ranger only)
+  if (classKey === 'ranger') {
+    var stances = [
+      { id: 'aggressive', label: 'Aggressive' },
+      { id: 'defensive',  label: 'Defensive'  },
+      { id: 'utility',    label: 'Utility'     }
+    ];
+    function stanceLabel(id) {
+      if (!id) return '<span style="color:#4a4a5a;font-style:italic;">None</span>';
+      return '<span style="color:#c8a84b;">'+id.charAt(0).toUpperCase()+id.slice(1)+'</span>';
+    }
+    function stanceBtn(st, slot, isSel, activeColor) {
+      return '<button onclick="setLoadoutStance(\''+slot+'\',\''+st.id+'\')" style="padding:2px 6px;border:1px solid '+(isSel?activeColor:'#2a2a3a')+';background:'+(isSel?(activeColor==='#7aaa5a'?'#0a1f0a':'#1f0a0a'):'#0a0a14')+';color:'+(isSel?activeColor:'#5a5a6a')+';font-family:Georgia,serif;font-size:10px;cursor:pointer;border-radius:2px;">'+st.label+'</button>';
+    }
+    html += '<div style="margin-bottom:6px;">';
+    html += '<div style="font-size:10px;color:#7aaa5a;margin-bottom:3px;">🌾 Farm Stance — '+stanceLabel(hero.farmStance)+'</div>';
+    html += '<div style="display:flex;flex-wrap:wrap;gap:3px;">';
+    for (var si = 0; si < stances.length; si++) {
+      html += stanceBtn(stances[si], 'farm', hero.farmStance === stances[si].id, '#7aaa5a');
+    }
+    html += '</div></div>';
+
+    html += '<div style="margin-bottom:6px;">';
+    html += '<div style="font-size:10px;color:#c85a5a;margin-bottom:3px;">⚔ Boss Stance — '+stanceLabel(hero.bossStance)+'</div>';
+    html += '<div style="display:flex;flex-wrap:wrap;gap:3px;">';
+    for (var si = 0; si < stances.length; si++) {
+      html += stanceBtn(stances[si], 'boss', hero.bossStance === stances[si].id, '#c85a5a');
     }
     html += '</div></div>';
   }
@@ -11710,7 +11977,7 @@ var CombatScene = new Phaser.Class({
       if (_pScene.bg)     _pScene.bg.setPosition(W/2, H/2).setSize(W, H);
       if (_pScene.bgDark) _pScene.bgDark.setPosition(W/2, H/2).setSize(W, H);
 
-      if (_pScene.heroImg)  _pScene.heroImg.setPosition(HERO_X, GROUND_Y + (classKey === 'ranger' ? 120 : 0));
+      if (_pScene.heroImg)  _pScene.heroImg.setPosition(HERO_X, GROUND_Y + (_pScene._heroYOff || 0));
       if (_pScene.enemyImg) _pScene.enemyImg.setPosition(ENEMY_X, GROUND_Y + (_pScene._enemyYOff||0));
 
       if (_pScene._groundGfx) {
@@ -11825,9 +12092,45 @@ var CombatScene = new Phaser.Class({
     var url = HERO_SPRITES[classKey];
     if (!url) { this._drawHeroFallback(); return; }
     var key = 'hero-' + classKey;
+
+    if (classKey === 'warrior' || classKey === 'ranger') {
+      if (self.heroImg) { self.heroImg.destroy(); self.heroImg = null; }
+      var isRanger = classKey === 'ranger';
+      var sheetUrl   = isRanger ? RANGER_SHOOT_SHEET : WAR_SWING_SHEET;
+      var frameCount = isRanger ? RANGER_SHOOT_FRAMES : WAR_SWING_FRAMES;
+      var animKey    = isRanger ? 'ranger-shoot' : 'war-swing';
+      var targetH    = isRanger ? 217 : 234;
+      var heroYOff   = isRanger ? 0 : 0;
+      var img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = function() {
+        // Warrior: use manifest-specified frame dimensions (grid sheet, not a strip)
+        // Ranger: auto-detect from naturalWidth (horizontal strip)
+        var fw = isRanger ? Math.round(img.naturalWidth / frameCount) : WAR_FRAME_W;
+        var fh = isRanger ? img.naturalHeight : WAR_FRAME_H;
+        var fps = isRanger ? 12 : 30;
+        if (!self.textures.exists(key)) {
+          self.textures.addSpriteSheet(key, img, { frameWidth: fw, frameHeight: fh });
+        }
+        if (!self.anims.exists(animKey)) {
+          self.anims.create({ key: animKey, frames: self.anims.generateFrameNumbers(key, { start: 0, end: frameCount - 1 }), frameRate: fps, repeat: 0 });
+        }
+        self.heroGfx.clear();
+        var scale = targetH / fh;
+        self._heroYOff = heroYOff;
+        self.heroImg = self.add.sprite(HERO_X, GROUND_Y + heroYOff, key)
+          .setOrigin(0.5, 1).setScale(scale).setDepth(3).setAlpha(0);
+        self.heroImg.setFrame(0);
+        self.tweens.add({ targets: self.heroImg, alpha: 1, duration: 300 });
+      };
+      img.onerror = function() { self._drawHeroFallback(); };
+      img.src = sheetUrl;
+      return;
+    }
+
     this._loadTexture(key, url, function() {
       if (!self.textures.exists(key)) { self._drawHeroFallback(); return; }
-      self.heroGfx.clear(); // hide shape fallback
+      self.heroGfx.clear();
       var tex = self.textures.get(key).getSourceImage();
       var targetH = classKey === 'ranger' ? 430 : 180;
       var scale = targetH / (tex.height || targetH);
@@ -11839,6 +12142,29 @@ var CombatScene = new Phaser.Class({
           .setOrigin(0.5, 1).setScale(scale).setDepth(3).setAlpha(0);
         self.tweens.add({ targets: self.heroImg, alpha: 1, duration: 300 });
       }
+    });
+  },
+
+  playWarriorSwing: function(intervalMs) {
+    var self = this;
+    if (!this.heroImg || !this.anims.exists('war-swing')) return;
+    var fps = Math.round(WAR_SWING_FRAMES * 1000 / Math.max(intervalMs, 100));
+    fps = Math.max(fps, 30); // honour manifest minimum of 30fps
+    this.heroImg.off('animationcomplete');
+    this.heroImg.play({ key: 'war-swing', frameRate: fps });
+    this.heroImg.once('animationcomplete', function() {
+      if (self.heroImg) self.heroImg.setFrame(0);
+    });
+  },
+
+  playRangerShoot: function(intervalMs) {
+    var self = this;
+    if (!this.heroImg || !this.anims.exists('ranger-shoot')) return;
+    var fps = Math.round(RANGER_SHOOT_FRAMES * 1000 / Math.max(intervalMs, 100));
+    this.heroImg.off('animationcomplete');
+    this.heroImg.play({ key: 'ranger-shoot', frameRate: fps });
+    this.heroImg.once('animationcomplete', function() {
+      if (self.heroImg) self.heroImg.setFrame(0);
     });
   },
 
@@ -13591,6 +13917,8 @@ function updateSceneBackground() {
 
 function triggerAttackAnim(skillId, isCrit) {
   if (!_pScene || settingsReduceAnims) return;
+  if (classKey === 'warrior') _pScene.playWarriorSwing(heroAttackInterval());
+  else if (classKey === 'ranger') _pScene.playRangerShoot(heroAttackInterval());
   _pScene.fireProjectile(skillId, isCrit);
 }
 
@@ -13768,6 +14096,8 @@ function saveGame() {
         bossSkillIdx:  hero.bossSkillIdx !== undefined ? hero.bossSkillIdx : null,
         farmTechnique: hero.farmTechnique || null,
         bossTechnique: hero.bossTechnique || null,
+        farmStance:    hero.farmStance    || null,
+        bossStance:    hero.bossStance    || null,
         equipped:      hero.equipped,
         vault:         hero.vault,
         mfBuff:        hero.mfBuff,
@@ -13874,6 +14204,8 @@ function loadGame() {
     hero.bossSkillIdx   = h.bossSkillIdx !== undefined ? h.bossSkillIdx : null;
     hero.farmTechnique  = h.farmTechnique || null;
     hero.bossTechnique  = h.bossTechnique || null;
+    hero.farmStance     = h.farmStance    || null;
+    hero.bossStance     = h.bossStance    || null;
     hero.equipped       = h.equipped       || hero.equipped;
     if (hero.equipped.boots  === undefined) hero.equipped.boots  = null;
     if (hero.equipped.ring2  === undefined) hero.equipped.ring2  = null;
@@ -15064,8 +15396,8 @@ function _gameTick() {
 
     // Shop auto-close
     if (shopOpen) {
-      if (shopPaused || bountyActive) shopAutoCloseAt += Math.round(TICK_BASE / gameSpeed);
-      var _shopCdVal = (shopPaused || bountyActive) ? (bountyActive ? '🏹' : '⏸') : Math.max(0, Math.ceil((shopAutoCloseAt - now) / 1000));
+      if (shopPaused || bountyActive || enchantOverlayOpen) shopAutoCloseAt += Math.round(TICK_BASE / gameSpeed);
+      var _shopCdVal = (shopPaused || bountyActive || enchantOverlayOpen) ? (bountyActive ? '🏹' : (enchantOverlayOpen ? '🔮' : '⏸')) : Math.max(0, Math.ceil((shopAutoCloseAt - now) / 1000));
       var cd = document.getElementById('shop-countdown');
       if (cd) cd.textContent = _shopCdVal;
       var stpSec = document.getElementById('shop-timer-panel-sec');
@@ -15115,7 +15447,7 @@ function _gameTick() {
         addLog('🔥 Burn: '+bd.tickDmg+' ('+(bd.ticksLeft-1)+' ticks left)', 'burn');
         bd.ticksLeft--;
         if (bd.ticksLeft <= 0) { enemy._burn = null; }
-        else { bd.nextTick = now + 1000; }
+        else { bd.nextTick = now + 1000; if (bd.tickGrowth) bd.tickDmg = Math.max(1, Math.round(bd.tickDmg * bd.tickGrowth)); }
         if (enemy.hp <= 0) { gainKill(enemy.isBoss, false, now); }
       }
       // Bleed stacks + Poison stacks — tick damage every 1s, log combined every 3s
@@ -15546,6 +15878,12 @@ init();
 
 
   <!-- Class select overlay -->
+
+<div id="enchant-overlay" style="display:none;position:fixed;inset:0;background:#00000099;z-index:300;align-items:flex-start;justify-content:center;overflow-y:auto;padding:20px 0;" onclick="if(event.target===this)closeEnchantOverlay()">
+  <div id="enchant-overlay-box" class="overlay-box" style="max-width:400px;width:92%;margin:auto;font-family:Georgia,serif;color:#d4c9a8;position:relative;">
+  </div>
+</div>
+
 </body>
 </html>
 
