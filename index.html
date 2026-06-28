@@ -885,6 +885,40 @@
     0%, 100% { opacity: 1; text-shadow: 0 0 8px #cc44ff, 0 0 18px #8800cc; }
     50%       { opacity: 0.7; text-shadow: 0 0 4px #aa22dd, 0 0 8px #660099; }
   }
+  @keyframes desoFlash {
+    0%, 100% { opacity: 1; text-shadow: 0 0 12px #ee66ff, 0 0 28px #cc00ff, 0 0 48px #8800cc; background: rgba(136,0,204,0.18); border-radius: 3px; }
+    50%       { opacity: 0.4; text-shadow: none; background: transparent; }
+  }
+  #deso-help-modal {
+    display: none; position: fixed; inset: 0; z-index: 9000;
+    background: rgba(0,0,0,0.82); align-items: center; justify-content: center;
+  }
+  #deso-help-modal.open { display: flex; }
+  #deso-help-box {
+    background: #0d0010; border: 1px solid #cc44ff; border-radius: 6px;
+    max-width: 480px; width: 92%; max-height: 80vh; overflow-y: auto;
+    padding: 20px 22px; box-shadow: 0 0 40px #cc44ff55, 0 0 80px #8800cc33;
+    font-family: Georgia, serif; color: #d8c8e8;
+  }
+  #deso-help-box h2 {
+    font-size: 15px; letter-spacing: 3px; text-transform: uppercase;
+    color: #cc44ff; text-shadow: 0 0 10px #cc44ff; margin: 0 0 14px; text-align: center;
+  }
+  .deso-section { margin-bottom: 14px; }
+  .deso-section-title {
+    font-size: 10px; letter-spacing: 2px; text-transform: uppercase;
+    color: #aa88cc; border-bottom: 1px solid #330044; padding-bottom: 4px; margin-bottom: 7px;
+  }
+  .deso-row { font-size: 12px; line-height: 1.7; color: #c8b8d8; padding-left: 8px; }
+  .deso-row span { color: #ee88ff; font-weight: bold; }
+  .deso-row .neg { color: #ff5566; }
+  #deso-help-close {
+    display: block; margin: 16px auto 0; padding: 6px 28px;
+    background: #1a0030; border: 1px solid #cc44ff; color: #cc44ff;
+    font-family: Georgia, serif; font-size: 12px; letter-spacing: 2px;
+    cursor: pointer; border-radius: 3px; text-transform: uppercase;
+  }
+  #deso-help-close:hover { background: #2a0050; }
     0%,100% { color: #7aff7a; text-shadow: 0 0 8px #7aff7a99; }
     50%      { color: #3acc3a; text-shadow: none; }
   }
@@ -1416,7 +1450,7 @@
   <div id="center-panel">
     <div id="zone-header" style="display:flex;justify-content:space-between;align-items:flex-start;">
       <div>
-        <div id="desolation-banner" style="display:none;font-size:11px;font-family:'Courier New',monospace;letter-spacing:3px;text-transform:uppercase;color:#cc44ff;text-shadow:0 0 8px #cc44ff,0 0 16px #8800cc;margin-bottom:4px;animation:desoPulse 2.5s ease-in-out infinite;">⚡ DESOLATION ⚡</div>
+        <div id="desolation-banner" onclick="openDesoHelp()" style="display:none;cursor:pointer;font-size:11px;font-family:'Courier New',monospace;letter-spacing:3px;text-transform:uppercase;color:#cc44ff;text-shadow:0 0 8px #cc44ff,0 0 16px #8800cc;margin-bottom:4px;animation:desoFlash 0.9s ease-in-out infinite;">⚡ DESOLATION ⚡</div>
         <div class="zone-name" id="zone-name">Rogue Encampment</div>
         <div class="zone-flavor" id="zone-flavor">The Blood Moor reeks of corruption.</div>
         <div class="zone-progress" id="zone-progress">Mob 0/10</div>
@@ -3170,6 +3204,8 @@ var SCORE_WEIGHTS  = {
   blockChance:1.0, spellShield:1.5,
   xpGain:1.0, goldFind:1.0, castCooldown:3.5,
   statusEffect:2.0,
+  // Desolation-only stats
+  resist:2.8, thorns:1.8, critMulti:2.5, sunder:2.5,
 };
 var SKILL_BONUS_SCORES = { 1:18, 2:40, 3:75 };
 var ALL_SKILLS_SCORES  = { 1:30, 2:65, 3:120 };
@@ -3190,7 +3226,7 @@ var ACT_STAT_BONUS  = {
 var SLOTS = ['weapon','armor','ring','amulet','trinket','boots'];
 var VAULT_SIZE = 3;
 var VAULT_SIZE_RING = 6; // ring pool is shared across both ring slots (Desolation only)
-function ringVaultCap() { return ngPlusUnlocked ? ringVaultCap() : VAULT_SIZE; }
+function ringVaultCap() { return ngPlusUnlocked ? VAULT_SIZE_RING : VAULT_SIZE; }
 
 // ── Relic Definitions ─────────────────────────────────────
 var RELICS = {
@@ -4052,6 +4088,10 @@ function itemScore(stats, skillBonus, allSkills) {
          (stats.goldFind        ||0)*SCORE_WEIGHTS.goldFind +
          (stats.castCooldown    ||0)*SCORE_WEIGHTS.castCooldown +
          (stats.statusEffect    ||0)*SCORE_WEIGHTS.statusEffect +
+         (stats.resist          ||0)*SCORE_WEIGHTS.resist +
+         (stats.thorns          ||0)*SCORE_WEIGHTS.thorns +
+         (stats.critMulti       ||0)*SCORE_WEIGHTS.critMulti +
+         (stats.sunder          ||0)*SCORE_WEIGHTS.sunder +
          (skillBonus ? (SKILL_BONUS_SCORES[skillBonus]||0) : 0) +
          (allSkills  ? (ALL_SKILLS_SCORES[allSkills]  ||0) : 0);
 }
@@ -7352,8 +7392,10 @@ function renderShop() {
     + '<br><button class="overlay-btn" onclick="buyShardFromShop()" '+((!canAffordShard)?'disabled style="opacity:0.4;cursor:not-allowed"':'')+'>'
     + 'Buy Shard'
     + '</button></div>'
-    + '<div class="shop-item"><div class="shop-item-name">✦ Enchant Item</div>'
-    + '<div class="shop-item-desc">Lock one stat on a magic or rare item — reroll the rest. Magic: 300g · Rare: 800g.</div>'
+    + '<div class="shop-item" style="border-color:#5a4a8a44;background:#0a0814;">'
+    + '<div class="shop-item-name" style="color:#c8a0ff;">⚗ Reforging &amp; Enchanting</div>'
+    + '<div class="shop-item-desc" style="color:#8a7aaa;">Gem shards can be applied to vault items in the <strong style="color:#c8a0ff;">Crafting</strong> tab. Lock a stat with enchanting, then reforge the rest.</div>'
+    + '<br><button class="overlay-btn" style="border-color:#5a4a8a;color:#c8a0ff;" onclick="closeShop();setRightTab(\'crafting\');setCraftingSubTab(\'reforging\');">Go to Crafting →</button>'
     + '</div>'
     + '<button class="overlay-btn sec" onclick="closeShop()">Leave shop → Next Act</button>'
     // Hell-only reroll button
@@ -9331,7 +9373,14 @@ function renderUI(now) {
   // Zone
   var act = ACTS[actIdx];
   var _desoBanner = document.getElementById('desolation-banner');
-  if (_desoBanner) _desoBanner.style.display = ngPlusUnlocked ? '' : 'none';
+  if (_desoBanner) {
+    _desoBanner.style.display = ngPlusUnlocked ? '' : 'none';
+    if (ngPlusUnlocked) {
+      var _desoSeen = false;
+      try { _desoSeen = !!localStorage.getItem('idledepths_deso_seen'); } catch(e) {}
+      _desoBanner.style.animation = _desoSeen ? 'desoPulse 2.5s ease-in-out infinite' : 'desoFlash 0.9s ease-in-out infinite';
+    }
+  }
   document.getElementById('zone-name').textContent = DIFFICULTY[difficulty].label + ' — ' + act.name;
   document.getElementById('zone-flavor').textContent = act.flavor;
 
@@ -10231,6 +10280,11 @@ var PRIORITY_STATS = [
   { key:'xpGain',          label:'XP Gain'          },
   { key:'goldFind',        label:'Gold Find'        },
   { key:'castCooldown',    label:'Cooldown Recovery'},
+  // Desolation-only stats — shown only when ngPlusUnlocked
+  { key:'resist',          label:'Resist',           desoOnly:true },
+  { key:'thorns',          label:'Thorns',           desoOnly:true },
+  { key:'critMulti',       label:'Crit Multiplier',  desoOnly:true },
+  { key:'sunder',          label:'Sunder',           desoOnly:true },
 ];
 
 function renderBuildPriority() {
@@ -10238,8 +10292,9 @@ function renderBuildPriority() {
   if (!panel) return;
   var html = '';
   var atMax = buildPriority.length >= 3;
-  for (var i = 0; i < PRIORITY_STATS.length; i++) {
-    var ps = PRIORITY_STATS[i];
+  var _visibleStats = PRIORITY_STATS.filter(function(ps) { return !ps.desoOnly || ngPlusUnlocked; });
+  for (var i = 0; i < _visibleStats.length; i++) {
+    var ps = _visibleStats[i];
     var active = buildPriority.indexOf(ps.key) > -1;
     var disabled = !active && atMax;
     html += '<label style="display:flex;align-items:center;gap:6px;margin-bottom:3px;cursor:'+(disabled?'not-allowed':'pointer')+';opacity:'+(disabled?'0.4':'1')+'">'
@@ -11032,6 +11087,15 @@ function renderSkillTree() {
     ? hero.skillPts + ' skill point'+(hero.skillPts>1?'s':'')+' to spend'+(t2bonus>0?' · T2 backflow: +'+t2bonus+'%':'')+specHint
     : (t2bonus > 0 ? 'T2 backflow: +'+t2bonus+'% to all T1 skills' : 'All points spent'+specHint);
 
+  var _nextCost = respecGoldCost * Math.pow(2, respecPaidCount);
+  var _costLabel = respecFreeCharges > 0 ? 'Free ('+respecFreeCharges+' remaining)' : _nextCost+'g';
+  var _canAffordRespec = respecFreeCharges > 0 || hero.gold >= _nextCost;
+  var respecTopHtml = '<div style="margin-bottom:10px;text-align:right;">'
+    + '<button onclick="doRespec()" style="padding:4px 16px;border:1px solid '+(_canAffordRespec?'#5a3a1a':'#2a2a2a')+';background:'+(_canAffordRespec?'#120a04':'#0a0a0a')+';color:'+(_canAffordRespec?'#c8843a':'#4a4a4a')+';font-family:Georgia,serif;font-size:11px;cursor:'+(_canAffordRespec?'pointer':'not-allowed')+';border-radius:2px;" '
+    + (!_canAffordRespec ? 'disabled' : '')+'>'
+    + '↺ Respec — '+_costLabel+'</button></div>';
+  var html = respecTopHtml + '<div class="stree-pyramid">';
+
   function buildSkillCard(s, locked) {
     var pts = hero.skillTree[s.id] || 0;
     var isTech    = !!s.technique;
@@ -11116,8 +11180,6 @@ function renderSkillTree() {
     html += '</div>';
     return html;
   }
-
-  var html = '<div class="stree-pyramid">';
 
   if (classKey === 'sorceress') {
     // ── Branch columns: each T1 is a column, T2 children stack below it ──
@@ -11223,14 +11285,8 @@ function renderSkillTree() {
 
   html += '</div>';  // end pyramid
 
-  // ── Respec ──
-  var nextCost = respecGoldCost * Math.pow(2, respecPaidCount);
-  var costLabel = respecFreeCharges > 0 ? 'Free ('+respecFreeCharges+' remaining)' : nextCost+'g';
-  var canAffordRespec = respecFreeCharges > 0 || hero.gold >= nextCost;
   html += '<div style="margin-top:12px;padding-top:10px;border-top:1px solid #1e1e2a;text-align:center;">'
-    + '<button onclick="doRespec()" style="padding:4px 20px;border:1px solid '+(canAffordRespec?'#5a3a1a':'#2a2a2a')+';background:'+(canAffordRespec?'#120a04':'#0a0a0a')+';color:'+(canAffordRespec?'#c8843a':'#4a4a4a')+';font-family:Georgia,serif;font-size:11px;cursor:'+(canAffordRespec?'pointer':'not-allowed')+';border-radius:2px;" '
-    + (!canAffordRespec ? 'disabled' : '')+'>'
-    + '↺ Respec — '+costLabel+'</button></div>';
+    + '<button onclick="toggleSkillTree()" style="padding:4px 20px;border:1px solid #2a2a3a;background:#0a0a14;color:#5a5a7a;font-family:Georgia,serif;font-size:11px;cursor:pointer;border-radius:2px;">✕ Close</button></div>';
 
   panel.innerHTML = html;
 }
@@ -14358,6 +14414,17 @@ function triggerHeroDeathAnim() {
 function triggerGemDropAnim() { /* handled by Phaser burst */ }
 
 // ── Bounty Complete float ──
+function openDesoHelp() {
+  document.getElementById('deso-help-modal').classList.add('open');
+  // Switch to subtle pulse and stop flashing once acknowledged
+  var banner = document.getElementById('desolation-banner');
+  if (banner) banner.style.animation = 'desoPulse 2.5s ease-in-out infinite';
+  try { localStorage.setItem('idledepths_deso_seen', '1'); } catch(e) {}
+}
+function closeDesoHelp() {
+  document.getElementById('deso-help-modal').classList.remove('open');
+}
+
 function triggerBountyCompleteAnim() {
   var scene = document.getElementById('combat-scene');
   if (!scene) return;
@@ -15368,7 +15435,8 @@ function init() {
   });
 
   // Paperdoll slots as individual drop targets (visual highlight for matching slot)
-  SLOTS.forEach(function(slot) {
+  var _pdDropSlots = SLOTS.concat(['ring2']);
+  _pdDropSlots.forEach(function(slot) {
     var pdSlot = document.getElementById('pd-slot-' + slot);
     if (!pdSlot) return;
     pdSlot.addEventListener('dragover', function(e) {
@@ -16226,6 +16294,60 @@ init();
 <div id="ngplus-whisper-overlay" style="display:none;position:fixed;inset:0;background:#000000ee;z-index:501;align-items:center;justify-content:center;">
   <div style="background:#0a0a0f;border:1px solid #1a1a2a;border-radius:4px;padding:48px 56px;text-align:center;font-family:Georgia,serif;max-width:480px;">
     <div id="ngplus-whisper-text" style="font-size:15px;color:#6a6a8a;letter-spacing:2px;font-style:italic;line-height:1.8;opacity:0;transition:opacity 1.8s ease;"></div>
+  </div>
+</div>
+
+<!-- Desolation Help Modal -->
+<div id="deso-help-modal">
+  <div id="deso-help-box">
+    <h2>⚡ Desolation ⚡</h2>
+
+    <div class="deso-section">
+      <div class="deso-section-title">What is Desolation?</div>
+      <div class="deso-row">You have cleared Hell and chosen to go deeper. Desolation is a permanent new game plus layered on top of Hell — enemies are deadlier, but so are you. All your gear, gold, skills, and relics carry over.</div>
+    </div>
+
+    <div class="deso-section">
+      <div class="deso-section-title">Enemy Threats</div>
+      <div class="deso-row"><span class="neg">+40% Enemy HP</span> — all mobs and bosses are significantly tankier.</div>
+      <div class="deso-row"><span class="neg">+100% Enemy Damage</span> — incoming hits deal twice as much.</div>
+      <div class="deso-row"><span class="neg">Physical &amp; Elemental Resist</span> — mobs spawn with resistances (10–25% normals, 20–35% bosses).</div>
+      <div class="deso-row"><span class="neg">Zone Elemental Damage</span> — mobs deal bonus elemental damage based on act:</div>
+      <div class="deso-row" style="padding-left:18px;font-size:11px;margin-top:2px;">
+        Act 1 — <span style="color:#ff7733">Fire +15%</span> &nbsp;·&nbsp;
+        Act 2 — <span style="color:#ffe060">Lightning +25%</span> &nbsp;·&nbsp;
+        Act 3 — <span style="color:#7dd4fc">Cold +35%</span><br>
+        Act 4 — <span style="color:#88ff88">Poison +50%</span> &nbsp;·&nbsp;
+        Act 5 — <span style="color:#cc44ff">Mixed +65%</span>
+      </div>
+      <div class="deso-row"><span class="neg">Boss Enrage</span> — bosses now enrage on all difficulties (+10% damage per 30s).</div>
+    </div>
+
+    <div class="deso-section">
+      <div class="deso-section-title">New Gear Stats (Hell Only)</div>
+      <div class="deso-row"><span>Resist</span> — reduces all incoming damage by up to 75%.</div>
+      <div class="deso-row"><span>Thorns</span> — reflects a % of enemy physical damage back at them.</div>
+      <div class="deso-row"><span>Crit Multiplier</span> — increases crit damage up to +200% (4× total max).</div>
+      <div class="deso-row"><span>Sunder</span> — your first hit each fight shreds the mob's resistances.</div>
+    </div>
+
+    <div class="deso-section">
+      <div class="deso-section-title">New Slots &amp; Rewards</div>
+      <div class="deso-row"><span>Boots slot</span> — a new gear slot unlocked in Hell.</div>
+      <div class="deso-row"><span>Second Ring slot</span> — a sixth shared ring pool across both ring slots.</div>
+      <div class="deso-row"><span>Desolation rarity items</span> — a new item tier above Unique, found via Desolation bounties.</div>
+      <div class="deso-row"><span>2× XP</span> — all experience gain is doubled.</div>
+      <div class="deso-row"><span>Levels 30–50</span> — the level cap extends with a new XP curve.</div>
+    </div>
+
+    <div class="deso-section">
+      <div class="deso-section-title">Tips</div>
+      <div class="deso-row">Stack <span>Resist</span> first — it directly cuts the doubled mob damage back down.</div>
+      <div class="deso-row"><span>Sunder</span> synergises with elemental skills since mobs now have elemental resist.</div>
+      <div class="deso-row">Use the <span>⚡ Desolation filter</span> in Target Boss and Farm Zone to restrict loops to Hell acts.</div>
+    </div>
+
+    <button id="deso-help-close" onclick="closeDesoHelp()">Got it</button>
   </div>
 </div>
 
