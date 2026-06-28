@@ -1838,7 +1838,7 @@ var WAR_LEAP_FRAMES    = 23; var WAR_LEAP_FRAME_W = 228, WAR_LEAP_FRAME_H = 128;
 var WAR_DEATH_SHEET    = _REPO + 'warrior%20animations/warrior_death.png';
 var WAR_DEATH_FRAMES   = 23; var WAR_DEATH_FRAME_W = 228, WAR_DEATH_FRAME_H = 128;
 var WAR_GREET_SHEET    = _REPO + 'warrior%20animations/warrior_greet.png';
-var WAR_GREET_FRAMES   = 7;  var WAR_GREET_FRAME_W = 1368, WAR_GREET_FRAME_H = 128;
+var WAR_GREET_FRAMES   = 32; var WAR_GREET_FRAME_W = 228,  WAR_GREET_FRAME_H = 128;
 // Ranger shoot spritesheet — horizontal strip, frame 0 = idle
 var RANGER_SHOOT_SHEET  = _REPO + 'ranger_shoot_animation.png';
 var RANGER_SHOOT_FRAMES = 6;
@@ -4934,6 +4934,8 @@ function getMageHunterElement() {
 }
 
 function heroAttack(now) {
+  if (_warriorGreeting) { heroNextAtk = now + heroAttackInterval(); return; }
+
   // Compute hit-frame visual delay for warrior animations
   // Scale to actual animation duration so alignment holds at any attack speed
   if (classKey === 'warrior') {
@@ -12281,104 +12283,138 @@ var CombatScene = new Phaser.Class({
     if (!url) { this._drawHeroFallback(); return; }
     var key = 'hero-' + classKey;
 
-    if (classKey === 'warrior' || classKey === 'ranger') {
+    if (classKey === 'ranger') {
       if (self.heroImg) { self.heroImg.destroy(); self.heroImg = null; }
-      var isRanger = classKey === 'ranger';
-      var sheetUrl   = isRanger ? RANGER_SHOOT_SHEET : WAR_SWING_SHEET;
-      var frameCount = isRanger ? RANGER_SHOOT_FRAMES : WAR_SWING_FRAMES;
-      var animKey    = isRanger ? 'ranger-shoot' : 'war-swing';
-      var targetH    = isRanger ? 217 : 234;
-      var heroYOff   = isRanger ? 0 : 0;
       var img = new Image();
       img.crossOrigin = 'anonymous';
       img.onload = function() {
-        // Warrior: use manifest-specified frame dimensions (grid sheet, not a strip)
-        // Ranger: auto-detect from naturalWidth (horizontal strip)
-        var fw = isRanger ? Math.round(img.naturalWidth / frameCount) : WAR_FRAME_W;
-        var fh = isRanger ? img.naturalHeight : WAR_FRAME_H;
-        var fps = isRanger ? 12 : 30;
+        var fw = Math.round(img.naturalWidth / RANGER_SHOOT_FRAMES);
+        var fh = img.naturalHeight;
         if (!self.textures.exists(key)) {
           self.textures.addSpriteSheet(key, img, { frameWidth: fw, frameHeight: fh });
         }
-        if (!self.anims.exists(animKey)) {
-          if (isRanger) {
-            self.anims.create({ key: animKey, frames: self.anims.generateFrameNumbers(key, { start: 0, end: frameCount - 1 }), frameRate: fps, repeat: 0 });
-          } else {
-            // Warrior: windup (0→35) plays between attacks; impact (36→37) fires with particles
-            self.anims.create({ key: 'war-windup', frames: self.anims.generateFrameNumbers(key, { start: 0,  end: 18 }), frameRate: 30, repeat: 0 });
-            self.anims.create({ key: 'war-swing',  frames: self.anims.generateFrameNumbers(key, { start: 19, end: 37 }), frameRate: 30, repeat: 0 });
-          }
+        if (!self.anims.exists('ranger-shoot')) {
+          self.anims.create({ key: 'ranger-shoot', frames: self.anims.generateFrameNumbers(key, { start: 0, end: RANGER_SHOOT_FRAMES - 1 }), frameRate: 12, repeat: 0 });
         }
         self.heroGfx.clear();
-        var scale = targetH / fh;
+        var scale = 217 / fh;
         self._heroScale = scale;
-        self._heroYOff = heroYOff;
-        self.heroImg = self.add.sprite(HERO_X, GROUND_Y + heroYOff, key)
+        self._heroYOff = 0;
+        self.heroImg = self.add.sprite(HERO_X, GROUND_Y, key)
           .setOrigin(0.5, 1).setScale(scale).setDepth(3).setAlpha(0);
         self.heroImg.setFrame(0);
         self.tweens.add({ targets: self.heroImg, alpha: 1, duration: 300 });
-
-        // Load whirlwind and idle sheets for warrior
-        if (!isRanger) {
-          var whirlKey = 'hero-warrior-whirl';
-          if (!self.textures.exists(whirlKey)) {
-            var whirlImg = new Image();
-            whirlImg.crossOrigin = 'anonymous';
-            whirlImg.onload = function() {
-              if (!self.textures.exists(whirlKey)) {
-                self.textures.addSpriteSheet(whirlKey, whirlImg, { frameWidth: WAR_WHIRL_FRAME_W, frameHeight: WAR_WHIRL_FRAME_H });
-              }
-              if (!self.anims.exists('war-whirl')) {
-                self.anims.create({ key: 'war-whirl', frames: self.anims.generateFrameNumbers(whirlKey, { start: 0, end: WAR_WHIRL_FRAMES - 1 }), frameRate: 30, repeat: -1 });
-              }
-            };
-            whirlImg.src = WAR_WHIRL_SHEET;
-          }
-          var idleKey = 'hero-warrior-idle';
-          if (!self.textures.exists(idleKey)) {
-            var idleImg = new Image();
-            idleImg.crossOrigin = 'anonymous';
-            idleImg.onload = function() {
-              if (!self.textures.exists(idleKey)) {
-                self.textures.addSpriteSheet(idleKey, idleImg, { frameWidth: WAR_IDLE_FRAME_W, frameHeight: WAR_IDLE_FRAME_H });
-              }
-              if (!self.anims.exists('war-idle')) {
-                self.anims.create({ key: 'war-idle', frames: self.anims.generateFrameNumbers(idleKey, { start: 0, end: WAR_IDLE_FRAMES - 1 }), frameRate: 12, repeat: -1 });
-              }
-            };
-            idleImg.src = WAR_IDLE_SHEET;
-          }
-          // Load all skill-specific warrior sheets
-          var _warSkillSheets = [
-            { key: 'hero-warrior-consec',  src: WAR_CONSEC_SHEET,  fw: WAR_CONSEC_FRAME_W,  fh: WAR_CONSEC_FRAME_H,  n: WAR_CONSEC_FRAMES,  anim: 'war-consec'  },
-            { key: 'hero-warrior-infused', src: WAR_INFUSED_SHEET, fw: WAR_INFUSED_FRAME_W, fh: WAR_INFUSED_FRAME_H, n: WAR_INFUSED_FRAMES, anim: 'war-infused' },
-            { key: 'hero-warrior-mortal',  src: WAR_MORTAL_SHEET,  fw: WAR_MORTAL_FRAME_W,  fh: WAR_MORTAL_FRAME_H,  n: WAR_MORTAL_FRAMES,  anim: 'war-mortal'  },
-            { key: 'hero-warrior-thrust',  src: WAR_THRUST_SHEET,  fw: WAR_THRUST_FRAME_W,  fh: WAR_THRUST_FRAME_H,  n: WAR_THRUST_FRAMES,  anim: 'war-thrust'  },
-            { key: 'hero-warrior-bash',    src: WAR_BASH_SHEET,    fw: WAR_BASH_FRAME_W,    fh: WAR_BASH_FRAME_H,    n: WAR_BASH_FRAMES,    anim: 'war-bash'    },
-            { key: 'hero-warrior-leap',    src: WAR_LEAP_SHEET,    fw: WAR_LEAP_FRAME_W,    fh: WAR_LEAP_FRAME_H,    n: WAR_LEAP_FRAMES,    anim: 'war-leap'    },
-            { key: 'hero-warrior-death',   src: WAR_DEATH_SHEET,   fw: WAR_DEATH_FRAME_W,   fh: WAR_DEATH_FRAME_H,   n: WAR_DEATH_FRAMES,   anim: 'war-death'   },
-            { key: 'hero-warrior-greet',   src: WAR_GREET_SHEET,   fw: WAR_GREET_FRAME_W,   fh: WAR_GREET_FRAME_H,   n: WAR_GREET_FRAMES,   anim: 'war-greet'   }
-          ];
-          _warSkillSheets.forEach(function(cfg) {
-            if (self.textures.exists(cfg.key)) return;
-            (function(c) {
-              var si = new Image();
-              si.crossOrigin = 'anonymous';
-              si.onload = function() {
-                if (!self.textures.exists(c.key)) {
-                  self.textures.addSpriteSheet(c.key, si, { frameWidth: c.fw, frameHeight: c.fh });
-                }
-                if (!self.anims.exists(c.anim)) {
-                  self.anims.create({ key: c.anim, frames: self.anims.generateFrameNumbers(c.key, { start: 0, end: c.n - 1 }), frameRate: 30, repeat: 0 });
-                }
-              };
-              si.src = c.src;
-            })(cfg);
-          });
-        }
       };
       img.onerror = function() { self._drawHeroFallback(); };
-      img.src = sheetUrl;
+      img.src = RANGER_SHOOT_SHEET;
+      return;
+    }
+
+    if (classKey === 'warrior') {
+      if (self.heroImg) { self.heroImg.destroy(); self.heroImg = null; }
+
+      // Creates heroImg from idle sheet — called once idle texture is ready
+      var _initWarriorHero = function() {
+        if (self.heroImg) return;
+        self.heroGfx.clear();
+        var baseScale = 234 / WAR_FRAME_H;
+        self._heroScale = baseScale;
+        self._heroYOff = 0;
+        var idleScale = baseScale * (WAR_FRAME_H / WAR_IDLE_FRAME_H);
+        self.heroImg = self.add.sprite(HERO_X, GROUND_Y, 'hero-warrior-idle')
+          .setOrigin(0.5, 1).setScale(idleScale).setDepth(3).setAlpha(0);
+        self.heroImg.setFrame(0);
+        self.tweens.add({ targets: self.heroImg, alpha: 1, duration: 300 });
+        if (self.anims.exists('war-idle')) self.heroImg.play({ key: 'war-idle', frameRate: 12 });
+        if (self.textures.exists('hero-warrior-greet') && self.anims.exists('war-greet')) {
+          self.playWarriorGreet();
+        }
+      };
+
+      // 1. Load idle sheet first — this is what creates heroImg
+      var idleKey = 'hero-warrior-idle';
+      if (self.textures.exists(idleKey)) {
+        _initWarriorHero();
+      } else {
+        var idleImg = new Image();
+        idleImg.crossOrigin = 'anonymous';
+        idleImg.onload = function() {
+          if (!self.textures.exists(idleKey)) {
+            self.textures.addSpriteSheet(idleKey, idleImg, { frameWidth: WAR_IDLE_FRAME_W, frameHeight: WAR_IDLE_FRAME_H });
+          }
+          if (!self.anims.exists('war-idle')) {
+            self.anims.create({ key: 'war-idle', frames: self.anims.generateFrameNumbers(idleKey, { start: 0, end: WAR_IDLE_FRAMES - 1 }), frameRate: 12, repeat: -1 });
+          }
+          _initWarriorHero();
+        };
+        idleImg.onerror = function() { self._drawHeroFallback(); };
+        idleImg.src = WAR_IDLE_SHEET;
+      }
+
+      // 2. Load swing sheet in parallel — optional, only adds war-swing/war-windup fallback anim
+      var swingKey = 'hero-warrior';
+      if (!self.textures.exists(swingKey)) {
+        var swingImg = new Image();
+        swingImg.crossOrigin = 'anonymous';
+        swingImg.onload = function() {
+          if (!self.textures.exists(swingKey)) {
+            self.textures.addSpriteSheet(swingKey, swingImg, { frameWidth: WAR_FRAME_W, frameHeight: WAR_FRAME_H });
+          }
+          if (!self.anims.exists('war-swing')) {
+            self.anims.create({ key: 'war-windup', frames: self.anims.generateFrameNumbers(swingKey, { start: 0,  end: 18 }), frameRate: 30, repeat: 0 });
+            self.anims.create({ key: 'war-swing',  frames: self.anims.generateFrameNumbers(swingKey, { start: 19, end: 37 }), frameRate: 30, repeat: 0 });
+          }
+        };
+        // onerror intentionally omitted — swing is non-critical
+        swingImg.src = WAR_SWING_SHEET;
+      }
+
+      // 3. Load whirlwind sheet in parallel
+      var whirlKey = 'hero-warrior-whirl';
+      if (!self.textures.exists(whirlKey)) {
+        var whirlImg = new Image();
+        whirlImg.crossOrigin = 'anonymous';
+        whirlImg.onload = function() {
+          if (!self.textures.exists(whirlKey)) {
+            self.textures.addSpriteSheet(whirlKey, whirlImg, { frameWidth: WAR_WHIRL_FRAME_W, frameHeight: WAR_WHIRL_FRAME_H });
+          }
+          if (!self.anims.exists('war-whirl')) {
+            self.anims.create({ key: 'war-whirl', frames: self.anims.generateFrameNumbers(whirlKey, { start: 0, end: WAR_WHIRL_FRAMES - 1 }), frameRate: 30, repeat: -1 });
+          }
+        };
+        whirlImg.src = WAR_WHIRL_SHEET;
+      }
+
+      // 4. Load all skill-specific warrior sheets in parallel
+      var _warSkillSheets = [
+        { key: 'hero-warrior-consec',  src: WAR_CONSEC_SHEET,  fw: WAR_CONSEC_FRAME_W,  fh: WAR_CONSEC_FRAME_H,  n: WAR_CONSEC_FRAMES,  anim: 'war-consec'  },
+        { key: 'hero-warrior-infused', src: WAR_INFUSED_SHEET, fw: WAR_INFUSED_FRAME_W, fh: WAR_INFUSED_FRAME_H, n: WAR_INFUSED_FRAMES, anim: 'war-infused' },
+        { key: 'hero-warrior-mortal',  src: WAR_MORTAL_SHEET,  fw: WAR_MORTAL_FRAME_W,  fh: WAR_MORTAL_FRAME_H,  n: WAR_MORTAL_FRAMES,  anim: 'war-mortal'  },
+        { key: 'hero-warrior-thrust',  src: WAR_THRUST_SHEET,  fw: WAR_THRUST_FRAME_W,  fh: WAR_THRUST_FRAME_H,  n: WAR_THRUST_FRAMES,  anim: 'war-thrust'  },
+        { key: 'hero-warrior-bash',    src: WAR_BASH_SHEET,    fw: WAR_BASH_FRAME_W,    fh: WAR_BASH_FRAME_H,    n: WAR_BASH_FRAMES,    anim: 'war-bash'    },
+        { key: 'hero-warrior-leap',    src: WAR_LEAP_SHEET,    fw: WAR_LEAP_FRAME_W,    fh: WAR_LEAP_FRAME_H,    n: WAR_LEAP_FRAMES,    anim: 'war-leap'    },
+        { key: 'hero-warrior-death',   src: WAR_DEATH_SHEET,   fw: WAR_DEATH_FRAME_W,   fh: WAR_DEATH_FRAME_H,   n: WAR_DEATH_FRAMES,   anim: 'war-death'   },
+        { key: 'hero-warrior-greet',   src: WAR_GREET_SHEET,   fw: WAR_GREET_FRAME_W,   fh: WAR_GREET_FRAME_H,   n: WAR_GREET_FRAMES,   anim: 'war-greet'   }
+      ];
+      _warSkillSheets.forEach(function(cfg) {
+        if (self.textures.exists(cfg.key)) return;
+        (function(c) {
+          var si = new Image();
+          si.crossOrigin = 'anonymous';
+          si.onload = function() {
+            if (!self.textures.exists(c.key)) {
+              self.textures.addSpriteSheet(c.key, si, { frameWidth: c.fw, frameHeight: c.fh });
+            }
+            if (!self.anims.exists(c.anim)) {
+              self.anims.create({ key: c.anim, frames: self.anims.generateFrameNumbers(c.key, { start: 0, end: c.n - 1 }), frameRate: 30, repeat: 0 });
+            }
+            if (c.key === 'hero-warrior-greet' && self.heroImg) {
+              self.playWarriorGreet();
+            }
+          };
+          si.src = c.src;
+        })(cfg);
+      });
       return;
     }
 
@@ -12415,6 +12451,23 @@ var CombatScene = new Phaser.Class({
       // Already spinning — update speed in place without restarting
       this.heroImg.anims.msPerFrame = 1000 / fps;
     }
+  },
+
+  playWarriorGreet: function() {
+    var self = this;
+    if (!this.heroImg || !this.textures.exists('hero-warrior-greet') || !this.anims.exists('war-greet')) return;
+    _warriorGreeting = true;
+    var scale = (this._heroScale || 1) * (WAR_FRAME_H / WAR_GREET_FRAME_H);
+    this.heroImg.off('animationcomplete');
+    this.heroImg.setTexture('hero-warrior-greet', 0).setScale(scale);
+    this.heroImg.play({ key: 'war-greet', frameRate: 10 });
+    this.heroImg.once('animationcomplete', function() {
+      _warriorGreeting = false;
+      if (!self.heroImg || !self.textures.exists('hero-warrior-idle') || !self.anims.exists('war-idle')) return;
+      var idleScale = (self._heroScale || 1) * (WAR_FRAME_H / WAR_IDLE_FRAME_H);
+      self.heroImg.setTexture('hero-warrior-idle', 0).setScale(idleScale);
+      self.heroImg.play({ key: 'war-idle', frameRate: 12 });
+    });
   },
 
   playWarriorDeath: function() {
@@ -14252,6 +14305,7 @@ function updateSceneBackground() {
 function triggerAttackAnim(skillId, isCrit) {
   if (!_pScene || settingsReduceAnims) return;
   if (bountySearchTimer) return;
+  if (_warriorGreeting) return;
   if (classKey === 'warrior') {
     var _wsk = getActiveSkill();
     var _wsid = _wsk ? _wsk.id : '';
@@ -14735,6 +14789,7 @@ var _hitFrameMap = {
 };
 var _hitVisualDelayMs = 0;
 var _enemyHpShowAt    = 0;
+var _warriorGreeting  = false;
 function _updateGhostBar(ghostId, barId, newPct, prevPct, timerRef, setTimer) {
   var ghost = document.getElementById(ghostId);
   var bar   = document.getElementById(barId);
