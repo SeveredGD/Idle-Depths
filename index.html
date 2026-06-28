@@ -1751,7 +1751,7 @@ var HERO_SPRITES = {
 };
 // Warrior swing spritesheet — 228x128 frames, 7 cols × 6 rows grid (39 frames total)
 var WAR_SWING_SHEET  = _REPO + 'warrior-down-attack-1.png';
-var WAR_SWING_FRAMES = 39;
+var WAR_SWING_FRAMES = 38;
 var WAR_FRAME_W = 228, WAR_FRAME_H = 128;
 // Ranger shoot spritesheet — horizontal strip, frame 0 = idle
 var RANGER_SHOOT_SHEET  = _REPO + 'ranger_shoot_animation.png';
@@ -8855,6 +8855,31 @@ function addLog(msg, cls) {
     if (_cls === 'bleed' && msg.indexOf('Bleed!') === 0) return;
     if (_cls === 'shock' && msg.indexOf('Shock!') === 0) return;
   }
+  // Floating combat damage numbers
+  if (settingsFloatDmg && _pScene) {
+    var _fc = cls || '';
+    var _numMatch = msg.match(/[\d,]+/);
+    var _num = _numMatch ? parseInt(_numMatch[0].replace(/,/g, ''), 10) : 0;
+    if (_num > 0) {
+      var _isCritFloat = _fc === 'crit' || msg.indexOf('CRIT') !== -1 || msg.indexOf('crit') !== -1;
+      var _floatColor = '#ffffff';
+      var _overEnemy = true;
+      if      (_fc === 'crit')                    { _floatColor = '#ffe060'; }
+      else if (_fc === 'fire')                    { _floatColor = '#ff7733'; }
+      else if (_fc === 'cold' || _fc === 'freeze')  { _floatColor = '#7dd4fc'; }
+      else if (_fc === 'chill')                   { _floatColor = '#aaeeff'; }
+      else if (_fc === 'bleed')                   { _floatColor = '#ff4444'; }
+      else if (_fc === 'burn')                    { _floatColor = '#ff6600'; }
+      else if (_fc === 'shock')                   { _floatColor = '#c0d8ff'; }
+      else if (_fc === 'light')                   { _floatColor = '#e8f0ff'; }
+      else if (_fc === 'dmg')   { _floatColor = '#ff5555'; _overEnemy = false; }
+      else if (_fc === 'death') { _floatColor = '#ff3333'; _overEnemy = false; }
+      var _fx = _overEnemy ? ENEMY_X : HERO_X;
+      var _fy = GROUND_Y - 60;
+      _pScene.spawnFloatText(_fx, _fy, (_isCritFloat ? '★' : '') + _num, _floatColor, _isCritFloat);
+    }
+  }
+
   var el = document.createElement('div');
   el.className = 'log-entry' + (cls ? ' '+cls : '');
   el.textContent = msg;
@@ -11866,10 +11891,10 @@ var SKILL_SCENE = {
   blizzard:          { color:0xaaddff, hex:'#aaddff', glowColor:0xddeeff, type:'blizzard', speed:300 },
   iceshard:          { color:0x55ccff, hex:'#55ccff', glowColor:0xaaeeff, type:'shard',  speed:440 },
   slash:             { color:0xd4a84b, hex:'#d4a84b', glowColor:0xffe090, type:'slash',  speed:320 },
-  infusedstrike:     { color:0xe8a030, hex:'#e8a030', glowColor:0xffd060, type:'thrust', speed:460 },
+  infusedstrike:     { color:0xe8a030, hex:'#e8a030', glowColor:0xffd060, type:'slash',  speed:460 },
   leapslam:          { color:0xc84010, hex:'#c84010', glowColor:0xff8040, type:'leapslam', speed:280 },
-  consecutivestrike: { color:0xc8d8ff, hex:'#c8d8ff', glowColor:0xffffff, type:'thrust', speed:600 },
-  thrust:            { color:0xc8d8ff, hex:'#c8d8ff', glowColor:0xffffff, type:'thrust', speed:500 },
+  consecutivestrike: { color:0xc8d8ff, hex:'#c8d8ff', glowColor:0xffffff, type:'slash',  speed:600 },
+  thrust:            { color:0xc8d8ff, hex:'#c8d8ff', glowColor:0xffffff, type:'slash',  speed:500 },
   bash:              { color:0xaaddbb, hex:'#aaddbb', glowColor:0xccffdd, type:'bash',   speed:420 },
   mortalstrike:      { color:0x8b0000, hex:'#8b0000', glowColor:0xff2020, type:'slash',  speed:300 },
   // Rogue
@@ -12113,7 +12138,13 @@ var CombatScene = new Phaser.Class({
           self.textures.addSpriteSheet(key, img, { frameWidth: fw, frameHeight: fh });
         }
         if (!self.anims.exists(animKey)) {
-          self.anims.create({ key: animKey, frames: self.anims.generateFrameNumbers(key, { start: 0, end: frameCount - 1 }), frameRate: fps, repeat: 0 });
+          if (isRanger) {
+            self.anims.create({ key: animKey, frames: self.anims.generateFrameNumbers(key, { start: 0, end: frameCount - 1 }), frameRate: fps, repeat: 0 });
+          } else {
+            // Warrior: windup (0→35) plays between attacks; impact (36→37) fires with particles
+            self.anims.create({ key: 'war-windup', frames: self.anims.generateFrameNumbers(key, { start: 0,  end: 18 }), frameRate: 30, repeat: 0 });
+            self.anims.create({ key: 'war-swing',  frames: self.anims.generateFrameNumbers(key, { start: 19, end: 37 }), frameRate: 30, repeat: 0 });
+          }
         }
         self.heroGfx.clear();
         var scale = targetH / fh;
@@ -12148,12 +12179,15 @@ var CombatScene = new Phaser.Class({
   playWarriorSwing: function(intervalMs) {
     var self = this;
     if (!this.heroImg || !this.anims.exists('war-swing')) return;
-    var fps = Math.round(WAR_SWING_FRAMES * 1000 / Math.max(intervalMs, 100));
-    fps = Math.max(fps, 30); // honour manifest minimum of 30fps
     this.heroImg.off('animationcomplete');
-    this.heroImg.play({ key: 'war-swing', frameRate: fps });
+    // Impact frames (36→37) fire in sync with particles
+    this.heroImg.play({ key: 'war-swing', frameRate: 30 });
     this.heroImg.once('animationcomplete', function() {
-      if (self.heroImg) self.heroImg.setFrame(0);
+      if (!self.heroImg || !self.anims.exists('war-windup')) return;
+      // Windup (0→35) fills the remainder of the attack interval
+      var impactMs = 19 * (1000 / 30);
+      var windupFps = Math.round(19 * 1000 / Math.max(intervalMs - impactMs, 100));
+      self.heroImg.play({ key: 'war-windup', frameRate: windupFps });
     });
   },
 
@@ -12306,6 +12340,30 @@ var CombatScene = new Phaser.Class({
     var flash = this.add.circle(HERO_X, GROUND_Y-80, 40, c, 0.55).setDepth(10);
     this.tweens.add({ targets: flash, scaleX: 2, scaleY: 2, alpha: 0, duration: 220,
       ease: 'Quad.easeOut', onComplete: function() { flash.destroy(); } });
+  },
+
+  spawnFloatText: function(x, y, text, hexColor, isCrit) {
+    var self = this;
+    var fontSize = isCrit ? '36px' : '28px';
+    var style = {
+      fontFamily: 'Georgia, serif',
+      fontSize: fontSize,
+      color: hexColor,
+      stroke: '#000000',
+      strokeThickness: isCrit ? 6 : 5,
+      shadow: { offsetX: 0, offsetY: 1, color: '#000', blur: 6, fill: true }
+    };
+    var startY = y - 20;
+    var tx = this.add.text(x + (Math.random() - 0.5) * 40, startY, text, style)
+      .setOrigin(0.5, 1).setDepth(20).setAlpha(1);
+    this.tweens.add({
+      targets: tx,
+      y: startY - (isCrit ? 80 : 55),
+      alpha: 0,
+      duration: isCrit ? 1200 : 900,
+      ease: 'Quad.easeOut',
+      onComplete: function() { tx.destroy(); }
+    });
   },
 
   flashEnemy: function(color) {
@@ -14165,6 +14223,7 @@ function saveGame() {
       settingsAutoDiscardMag:  settingsAutoDiscardMag,
       settingsShopTimer:       settingsShopTimer,
       settingsReduceAnims:     settingsReduceAnims,
+      settingsFloatDmg:        settingsFloatDmg,
     };
     localStorage.setItem(SAVE_KEY, JSON.stringify(state));
   } catch(e) {
@@ -14316,6 +14375,7 @@ function loadGame() {
     settingsAutoDiscardMag  = state.settingsAutoDiscardMag  || false;
     settingsShopTimer       = state.settingsShopTimer       || 15;
     settingsReduceAnims     = state.settingsReduceAnims     || false;
+    settingsFloatDmg        = state.settingsFloatDmg        !== false;
 
     // Bounty board
     currentBounty    = state.currentBounty    || null;
@@ -14365,6 +14425,7 @@ var settingsAutoDiscardNorm = false;    // auto-discard normal rarity drops
 var settingsAutoDiscardMag  = false;    // auto-discard magic rarity drops
 var settingsShopTimer       = 15;       // shop auto-close seconds: 10|15|20|30
 var settingsReduceAnims     = false;    // reduce particle/shake animations
+var settingsFloatDmg        = true;     // floating combat damage numbers
 
 function openSettings() {
   var el = document.getElementById('settings-overlay');
@@ -14405,6 +14466,7 @@ function _updateSettingsUI() {
   _setToggle('settings-discard-norm',   settingsAutoDiscardNorm);
   _setToggle('settings-discard-mag',    settingsAutoDiscardMag);
   _setToggle('settings-reduce-anims',   settingsReduceAnims);
+  _setToggle('settings-float-dmg',      settingsFloatDmg);
 
   var moreBtn = document.getElementById('settings-more-btn');
   if (moreBtn) moreBtn.style.display = (ngPlusDismissed && !ngPlusUnlocked) ? 'flex' : 'none';
@@ -14436,6 +14498,7 @@ function toggleOfflineSetting() {
 function toggleDiscardNorm()    { settingsAutoDiscardNorm = !settingsAutoDiscardNorm; _updateSettingsUI(); saveGame(); }
 function toggleDiscardMag()     { settingsAutoDiscardMag = !settingsAutoDiscardMag; _updateSettingsUI(); saveGame(); }
 function toggleReduceAnims()    { settingsReduceAnims = !settingsReduceAnims; _updateSettingsUI(); saveGame(); }
+function toggleFloatDmg()       { settingsFloatDmg = !settingsFloatDmg; _updateSettingsUI(); saveGame(); }
 function toggleLogVerbosity()   { settingsLogVerbosity = settingsLogVerbosity === 'normal' ? 'minimal' : 'normal'; _updateSettingsUI(); saveGame(); }
 function setShopTimer(secs)     { settingsShopTimer = secs; _updateSettingsUI(); saveGame(); }
 
@@ -15708,6 +15771,13 @@ init();
         <div style="font-size:10px;color:#5a5a6a;">Disables particles, screen shake, and flash effects</div>
       </div>
       <button id="settings-reduce-anims" onclick="toggleReduceAnims()" style="padding:3px 14px;font-family:Georgia,serif;font-size:11px;cursor:pointer;border-radius:2px;min-width:44px;">OFF</button>
+    </div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+      <div>
+        <div style="font-size:12px;color:#d4c9a8;">Floating damage numbers</div>
+        <div style="font-size:10px;color:#5a5a6a;">Shows damage numbers over characters in combat</div>
+      </div>
+      <button id="settings-float-dmg" onclick="toggleFloatDmg()" style="padding:3px 14px;font-family:Georgia,serif;font-size:11px;cursor:pointer;border-radius:2px;min-width:44px;">ON</button>
     </div>
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
       <div>
