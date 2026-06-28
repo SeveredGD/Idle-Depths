@@ -173,13 +173,25 @@
     border: 1px solid #5a1a1a;
     border-radius: 2px;
     overflow: hidden;
+    position: relative;
     margin: 6px 0;
     box-shadow: inset 0 1px 4px #00000088, 0 0 8px #8b000033;
   }
+  .hp-bar-ghost {
+    position: absolute;
+    top: 0; left: 0;
+    height: 100%;
+    background: #ff9999;
+    opacity: 0.9;
+    width: 100%;
+    pointer-events: none;
+  }
   .hp-bar-inner {
+    position: relative;
+    z-index: 1;
     height: 100%;
     background: linear-gradient(90deg, #8b0000, #c0392b);
-    transition: width 0.2s;
+    transition: width 0.15s;
   }
 
   /* Class select */
@@ -350,6 +362,35 @@
     margin-top: 4px;
   }
 
+  #multikill-banner {
+    position: absolute;
+    top: 38%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 30;
+    pointer-events: none;
+    text-align: center;
+    opacity: 0;
+    transition: opacity 0.12s ease;
+  }
+  #multikill-banner.show { opacity: 1; }
+  #multikill-banner .mk-label {
+    font-family: Georgia, serif;
+    font-size: 26px;
+    font-weight: bold;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    text-shadow: 0 0 18px currentColor, 0 2px 4px #000;
+  }
+  #multikill-banner .mk-sub {
+    font-family: Georgia, serif;
+    font-size: 11px;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    opacity: 0.7;
+    margin-top: 2px;
+  }
+
   /* ── Center panel ── */
   #center-panel { border-right: 1px solid #c8a84b33; box-shadow: -1px 0 8px #c8a84b11, 1px 0 8px #c8a84b11; display: flex; flex-direction: column; height: 100%; overflow: hidden; background: rgba(6,6,12,0.55); padding: 0; }
 
@@ -387,10 +428,13 @@
     border: 1px solid #5a1010;
     border-radius: 2px;
     overflow: hidden;
+    position: relative;
     margin-bottom: 4px;
     box-shadow: inset 0 1px 4px #00000099, 0 0 10px #8b000044;
   }
   .enemy-hp-inner {
+    position: relative;
+    z-index: 1;
     height: 100%;
     background: linear-gradient(90deg, #4a0000, #8b0000);
     transition: width 0.15s;
@@ -1313,7 +1357,7 @@
     <div id="hero-pane" style="padding:10px;border-bottom:1px solid #2a2a3a;flex-shrink:0;">
       <div class="panel-title" style="display:flex;justify-content:space-between;align-items:center;">Hero <button id="stats-toggle-btn" onclick="toggleHeroStats()" style="font-size:9px;padding:1px 5px;border:1px solid #2a2a3a;background:#0a0a14;color:#5a5a6a;cursor:pointer;border-radius:2px;font-family:Georgia,serif;letter-spacing:0;">▾ less</button></div>
       <div class="stat-row"><span class="stat-label">HP</span><span class="stat-val" id="stat-hp">—</span></div>
-      <div class="hp-bar-outer"><div class="hp-bar-inner" id="hp-bar" style="width:100%"></div></div>
+      <div class="hp-bar-outer"><div class="hp-bar-ghost" id="hp-bar-ghost"></div><div class="hp-bar-inner" id="hp-bar" style="width:100%"></div></div>
       <div class="hp-text" id="hp-text">100 / 100</div>
       <div class="stat-row" id="rage-stat-row" style="display:none"><span class="stat-label" style="color:#c84010;">Rage</span><span class="stat-val" id="stat-rage" style="color:#c84010;">0</span></div>
       <div class="rage-bar-outer" id="rage-bar-outer"><div class="rage-bar-inner" id="rage-bar" style="width:0%"></div></div>
@@ -1376,6 +1420,7 @@
         <div class="zone-name" id="zone-name">Rogue Encampment</div>
         <div class="zone-flavor" id="zone-flavor">The Blood Moor reeks of corruption.</div>
         <div class="zone-progress" id="zone-progress">Mob 0/10</div>
+        <div class="zone-progress" id="zone-progress-sub" style="color:#4a4a5a;margin-top:1px;"></div>
         <button id="class-switch-btn" onclick="switchClass()" title="Switch class — choose a different hero"
           style="margin-top:6px;padding:3px 10px;border:1px solid #7a5ac8;background:#0d0520;color:#c8a8ff;font-family:Georgia,serif;font-size:11px;cursor:pointer;border-radius:3px;letter-spacing:0.5px;transition:all 0.15s;"
           onmouseover="this.style.borderColor='#c8a84b';this.style.color='#ffe8a0';"
@@ -1405,6 +1450,10 @@
         </div>
       </div>
       <div id="phaser-container" style="width:100%;height:100%;position:absolute;top:0;left:0;"></div>
+      <div id="multikill-banner">
+        <div class="mk-label" id="multikill-label"></div>
+        <div class="mk-sub" id="multikill-sub"></div>
+      </div>
       <!-- Combat HUD: enemy info row + gold/buttons row -->
       <div id="combat-hud-top" style="position:absolute;top:0;left:0;right:0;z-index:15;display:flex;flex-direction:column;pointer-events:none;">
         <!-- Row 1: enemy name + HP bar -->
@@ -1413,7 +1462,7 @@
             <div class="enemy-name" id="enemy-name" style="margin:0;">—</div>
             <div class="enemy-hp-text" id="enemy-hp-text" style="margin:0;">— / —</div>
           </div>
-          <div class="enemy-hp-outer" style="margin:0;"><div class="enemy-hp-inner" id="enemy-hp-bar" style="width:100%"></div></div>
+          <div class="enemy-hp-outer" style="margin:0;"><div class="hp-bar-ghost" id="enemy-hp-ghost"></div><div class="enemy-hp-inner" id="enemy-hp-bar" style="width:100%"></div></div>
           <div class="status-line" id="status-line" style="margin-top:2px;"></div>
         </div>
         <!-- Row 2: gold | loop buttons | top-off -->
@@ -1502,7 +1551,7 @@
   <div id="right-panel">
     <div class="rpanel-tabs">
       <button class="rpanel-tab active" id="rtab-skills"   onclick="setRightTab('skills')">Skills</button>
-      <button class="rpanel-tab"        id="rtab-crafting" onclick="setRightTab('crafting')">Reforging</button>
+      <button class="rpanel-tab"        id="rtab-crafting" onclick="setRightTab('crafting')">Crafting</button>
     </div>
 
     <!-- Skills tab -->
@@ -1525,13 +1574,25 @@
 
     <!-- Crafting tab -->
     <div id="rpanel-crafting" style="display:none;">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
-        <div class="panel-title" style="margin-bottom:0;">Gem Fragments</div>
-        <button onclick="toggleReforgeHelp()" style="padding:2px 8px;border:1px solid #2a3a4a;background:#050d14;color:#7ac8e8;font-family:Georgia,serif;font-size:10px;cursor:pointer;border-radius:2px;">? Affix Guide</button>
+      <!-- Sub-tabs -->
+      <div style="display:flex;gap:4px;margin-bottom:10px;border-bottom:1px solid #2a2a3a;padding-bottom:6px;">
+        <button id="cstab-reforging"  onclick="setCraftingSubTab('reforging')"  style="flex:1;padding:4px 0;font-family:Georgia,serif;font-size:11px;cursor:pointer;border-radius:2px;border:1px solid #3a2a1a;background:#1a1008;color:#c8a84b;letter-spacing:1px;">Reforging</button>
+        <button id="cstab-enchanting" onclick="setCraftingSubTab('enchanting')" style="flex:1;padding:4px 0;font-family:Georgia,serif;font-size:11px;cursor:pointer;border-radius:2px;border:1px solid #2a2a3a;background:#0a0a14;color:#5a5a7a;letter-spacing:1px;">Enchanting</button>
       </div>
-      <div id="reforge-help" style="display:none;margin-bottom:8px;padding:8px;border:1px solid #1a2a3a;border-radius:3px;background:#050d14;font-size:9px;color:#7a9aaa;line-height:1.6;"></div>
-      <div style="font-size:10px;color:#5a5a6a;margin-bottom:8px;font-style:italic;">Select a gem, then use ↻ on a vault item to reforge it. Costs 50g + 1 gem.</div>
-      <div id="gem-panel"></div>
+      <!-- Reforging sub-panel -->
+      <div id="crafting-sub-reforging">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+          <div class="panel-title" style="margin-bottom:0;">Gem Fragments</div>
+          <button onclick="toggleReforgeHelp()" style="padding:2px 8px;border:1px solid #2a3a4a;background:#050d14;color:#7ac8e8;font-family:Georgia,serif;font-size:10px;cursor:pointer;border-radius:2px;">? Affix Guide</button>
+        </div>
+        <div id="reforge-help" style="display:none;margin-bottom:8px;padding:8px;border:1px solid #1a2a3a;border-radius:3px;background:#050d14;font-size:9px;color:#7a9aaa;line-height:1.6;"></div>
+        <div style="font-size:10px;color:#5a5a6a;margin-bottom:8px;font-style:italic;">Select a gem, then use ↻ on a vault item to reforge it. Costs 50g + 1 gem.</div>
+        <div id="gem-panel"></div>
+      </div>
+      <!-- Enchanting sub-panel -->
+      <div id="crafting-sub-enchanting" style="display:none;">
+        <div id="crafting-enchanting-panel"></div>
+      </div>
     </div>
   </div>
 
@@ -1750,9 +1811,34 @@ var HERO_SPRITES = {
   ranger:    _REPO + 'Hero_Ranger.png'
 };
 // Warrior swing spritesheet — 228x128 frames, 7 cols × 6 rows grid (39 frames total)
-var WAR_SWING_SHEET  = _REPO + 'warrior-down-attack-1.png';
-var WAR_SWING_FRAMES = 38;
+var WAR_SWING_SHEET   = _REPO + 'warrior-down-attack-1.png';
+var WAR_SWING_FRAMES  = 38;
 var WAR_FRAME_W = 228, WAR_FRAME_H = 128;
+// Warrior whirlwind spritesheet — 228x127 frames, 6 cols × 6 rows grid (34 frames total)
+var WAR_WHIRL_SHEET   = _REPO + 'warrior%20animations/warrior_whirlwind_animation.png';
+var WAR_WHIRL_FRAMES  = 34;
+var WAR_WHIRL_FRAME_W = 228, WAR_WHIRL_FRAME_H = 127;
+// Warrior idle spritesheet — same frame dims as whirlwind, 16 frames
+var WAR_IDLE_SHEET    = _REPO + 'warrior%20animations/warrior_idle.png';
+var WAR_IDLE_FRAMES   = 16;
+var WAR_IDLE_FRAME_W  = 228, WAR_IDLE_FRAME_H  = 127;
+// Additional warrior skill animations
+var WAR_CONSEC_SHEET   = _REPO + 'warrior%20animations/warrior_consecutive_strike_animation.png';
+var WAR_CONSEC_FRAMES  = 24; var WAR_CONSEC_FRAME_W = 228, WAR_CONSEC_FRAME_H = 128;
+var WAR_INFUSED_SHEET  = _REPO + 'warrior%20animations/warrior_infused_strike_animation.png';
+var WAR_INFUSED_FRAMES = 24; var WAR_INFUSED_FRAME_W = 228, WAR_INFUSED_FRAME_H = 128;
+var WAR_MORTAL_SHEET   = _REPO + 'warrior%20animations/warrior_mortal_strike_2.png';
+var WAR_MORTAL_FRAMES  = 22; var WAR_MORTAL_FRAME_W = 228, WAR_MORTAL_FRAME_H = 128;
+var WAR_THRUST_SHEET   = _REPO + 'warrior%20animations/warrior_thrust_animation_2.png';
+var WAR_THRUST_FRAMES  = 24; var WAR_THRUST_FRAME_W = 228,  WAR_THRUST_FRAME_H = 128;
+var WAR_BASH_SHEET     = _REPO + 'warrior%20animations/warrior_shield_bash_3.png';
+var WAR_BASH_FRAMES    = 19; var WAR_BASH_FRAME_W = 228,  WAR_BASH_FRAME_H = 127;
+var WAR_LEAP_SHEET     = _REPO + 'warrior%20animations/warrior_leap_slam_animation.png';
+var WAR_LEAP_FRAMES    = 23; var WAR_LEAP_FRAME_W = 228, WAR_LEAP_FRAME_H = 128;
+var WAR_DEATH_SHEET    = _REPO + 'warrior%20animations/warrior_death.png';
+var WAR_DEATH_FRAMES   = 23; var WAR_DEATH_FRAME_W = 228, WAR_DEATH_FRAME_H = 128;
+var WAR_GREET_SHEET    = _REPO + 'warrior%20animations/warrior_greet.png';
+var WAR_GREET_FRAMES   = 7;  var WAR_GREET_FRAME_W = 1368, WAR_GREET_FRAME_H = 128;
 // Ranger shoot spritesheet — horizontal strip, frame 0 = idle
 var RANGER_SHOOT_SHEET  = _REPO + 'ranger_shoot_animation.png';
 var RANGER_SHOOT_FRAMES = 6;
@@ -4848,6 +4934,24 @@ function getMageHunterElement() {
 }
 
 function heroAttack(now) {
+  // Compute hit-frame visual delay for warrior animations
+  // Scale to actual animation duration so alignment holds at any attack speed
+  if (classKey === 'warrior') {
+    var _atkSk = getActiveSkill();
+    var _sid2  = _atkSk ? _atkSk.id : '';
+    var _hf    = _hitFrameMap[_sid2] || 0;
+    var _animFrameCounts = {
+      consecutivestrike: WAR_CONSEC_FRAMES, infusedstrike: WAR_INFUSED_FRAMES,
+      mortalstrike: WAR_MORTAL_FRAMES, thrust: WAR_THRUST_FRAMES,
+      bash: WAR_BASH_FRAMES, leapslam: WAR_LEAP_FRAMES
+    };
+    var _totalF = _animFrameCounts[_sid2] || 1;
+    _hitVisualDelayMs = _hf > 0 ? Math.round(_hf * heroAttackInterval() / _totalF) : 0;
+  } else {
+    _hitVisualDelayMs = 0;
+  }
+  _enemyHpShowAt = _hitVisualDelayMs > 0 ? Date.now() + _hitVisualDelayMs : 0;
+
   // Mark Prey (Hunter): hero doesn't attack — companion handles all damage
   // heroAttack still fires to advance the timer, but does nothing offensive
   if (classKey === 'ranger' && hero.rangerDiscipline === 'hunter') {
@@ -6548,6 +6652,16 @@ function tryBunnzEvent(simNow) {
 }
 
 function gainKill(isBoss, isAoe, simNow) {
+  _sessionKills++;
+  if (!isAoe) {
+    _bonusKillCount = 0;
+    clearTimeout(_bonusKillTimer);
+  } else {
+    _bonusKillCount++;
+    clearTimeout(_bonusKillTimer);
+    var _mkSnap = _bonusKillCount;
+    _bonusKillTimer = setTimeout(function() { showMultiKillBanner(_mkSnap); }, 30);
+  }
   var diff = DIFFICULTY[difficulty];
   // Act-based XP scaling: each act adds 15% more XP to push toward level 30 by Hell Act 1
   var actXpMult = 1 + actIdx * 0.15;
@@ -7238,7 +7352,7 @@ function renderShop() {
     + '</button></div>'
     + '<div class="shop-item"><div class="shop-item-name">✦ Enchant Item</div>'
     + '<div class="shop-item-desc">Lock one stat on a magic or rare item — reroll the rest. Magic: 300g · Rare: 800g.</div>'
-    + '<br><button class="overlay-btn" onclick="openEnchantOverlay()">Open Enchanter</button></div>'
+    + '</div>'
     + '<button class="overlay-btn sec" onclick="closeShop()">Leave shop → Next Act</button>'
     // Hell-only reroll button
     + (difficulty === 'hell' ? (function() {
@@ -8876,7 +8990,12 @@ function addLog(msg, cls) {
       else if (_fc === 'death') { _floatColor = '#ff3333'; _overEnemy = false; }
       var _fx = _overEnemy ? ENEMY_X : HERO_X;
       var _fy = GROUND_Y - 60;
-      _pScene.spawnFloatText(_fx, _fy, (_isCritFloat ? '★' : '') + _num, _floatColor, _isCritFloat);
+      var _floatDelay = (_hitVisualDelayMs > 0 && _overEnemy) ? _hitVisualDelayMs : 0;
+      if (_floatDelay > 0) {
+        (function(fx,fy,txt,col,crit){ setTimeout(function(){ if(_pScene) _pScene.spawnFloatText(fx,fy,txt,col,crit); }, _floatDelay); })(_fx,_fy,(_isCritFloat?'★':'')+_num,_floatColor,_isCritFloat);
+      } else {
+        _pScene.spawnFloatText(_fx, _fy, (_isCritFloat ? '★' : '') + _num, _floatColor, _isCritFloat);
+      }
     }
   }
 
@@ -9065,7 +9184,7 @@ function renderUI(now) {
 
   // HP
   var hpPct = hero.maxHp > 0 ? Math.max(0, Math.round(hero.hp / hero.maxHp * 100)) : 0;
-  document.getElementById('hp-bar').style.width = hpPct + '%';
+  _prevHeroHpPct = _updateGhostBar('hp-bar-ghost', 'hp-bar', hpPct, _prevHeroHpPct, _heroGhostTimer, function(t){ _heroGhostTimer = t; });
   document.getElementById('hp-text').textContent = hero.hp + ' / ' + hero.maxHp;
   // Rage (warrior only)
   if (classKey === 'warrior') {
@@ -9238,15 +9357,29 @@ function renderUI(now) {
     : (bossLoop ? '⚡ Guardian ' + killCount + ' / ' + mobsRequired
       : farmLoop ? '🌾 Mob ' + killCount + ' / ' + mobsRequired
       : 'Mob ' + killCount + ' / ' + mobsRequired);
+  var _subEl = document.getElementById('zone-progress-sub');
+  if (_subEl) {
+    if (bossLoop) {
+      var _blDone = (bossLoop.loopsTotal || 0) - (bossLoop.loopsRemaining || 0);
+      _subEl.textContent = 'Loop ' + _blDone + ' / ' + (bossLoop.loopsTotal || '?');
+    } else if (farmLoop) {
+      var _flDone = (farmLoop.loopsTotal || 0) - (farmLoop.loopsRemaining || 0);
+      _subEl.textContent = 'Loop ' + _flDone + ' / ' + (farmLoop.loopsTotal || '?');
+    } else {
+      _subEl.textContent = '⚔ ' + _sessionKills + ' kills this session';
+    }
+  }
 
   // Enemy
   if (enemy) {
     var nameEl = document.getElementById('enemy-name');
     nameEl.textContent = enemy.name;
     nameEl.className   = 'enemy-name' + (enemy.isBoss ? ' boss' : '');
-    var ePct = Math.max(0, Math.round(enemy.hp / enemy.maxHp * 100));
-    document.getElementById('enemy-hp-bar').style.width = ePct + '%';
-    document.getElementById('enemy-hp-text').textContent = enemy.hp + ' / ' + enemy.maxHp;
+    if (_enemyHpShowAt === 0 || Date.now() >= _enemyHpShowAt) {
+      var ePct = Math.max(0, Math.round(enemy.hp / enemy.maxHp * 100));
+      _prevEnemyHpPct = _updateGhostBar('enemy-hp-ghost', 'enemy-hp-bar', ePct, _prevEnemyHpPct, _enemyGhostTimer, function(t){ _enemyGhostTimer = t; });
+      document.getElementById('enemy-hp-text').textContent = enemy.hp + ' / ' + enemy.maxHp;
+    }
     var statusEl = document.getElementById('status-line');
     var statusTags = [];
     var overlayColor = null;
@@ -9297,6 +9430,8 @@ function renderUI(now) {
   } else {
     document.getElementById('enemy-name').textContent = '—';
     document.getElementById('enemy-hp-bar').style.width = '0%';
+    _prevEnemyHpPct = 100;
+    var _eg = document.getElementById('enemy-hp-ghost'); if (_eg) { _eg.style.transition = 'none'; _eg.style.width = '100%'; }
     document.getElementById('enemy-hp-text').textContent = '';
     document.getElementById('status-line').innerHTML = '';
   }
@@ -9456,7 +9591,7 @@ function setRightTab(tab) {
   document.getElementById('rpanel-crafting').style.display = tab === 'crafting' ? '' : 'none';
   document.getElementById('rtab-skills').className   = 'rpanel-tab' + (tab === 'skills'   ? ' active' : '');
   document.getElementById('rtab-crafting').className = 'rpanel-tab' + (tab === 'crafting' ? ' active' : '');
-  if (tab === 'crafting') renderGemPanel();
+  if (tab === 'crafting') setCraftingSubTab(craftingSubTab || 'reforging');
   updateTabBlinks();
 }
 
@@ -9667,6 +9802,24 @@ function statLineForStat(k, v) {
   }
 }
 
+var craftingSubTab = 'reforging';
+function setCraftingSubTab(tab) {
+  craftingSubTab = tab;
+  var isReforge = tab === 'reforging';
+  document.getElementById('crafting-sub-reforging').style.display  = isReforge ? '' : 'none';
+  document.getElementById('crafting-sub-enchanting').style.display = isReforge ? 'none' : '';
+  var rBtn = document.getElementById('cstab-reforging');
+  var eBtn = document.getElementById('cstab-enchanting');
+  if (rBtn) { rBtn.style.borderColor = isReforge ? '#3a2a1a' : '#2a2a3a'; rBtn.style.background = isReforge ? '#1a1008' : '#0a0a14'; rBtn.style.color = isReforge ? '#c8a84b' : '#5a5a7a'; }
+  if (eBtn) { eBtn.style.borderColor = isReforge ? '#2a2a3a' : '#3a2a4a'; eBtn.style.background = isReforge ? '#0a0a14' : '#100a1a'; eBtn.style.color = isReforge ? '#5a5a7a' : '#c8a84b'; }
+  if (isReforge) {
+    renderGemPanel();
+  } else {
+    _enchantSelSlot = null; _enchantSelIdx = null; _enchantLockedStat = null;
+    renderEnchantOverlay();
+  }
+}
+
 function openEnchantOverlay() {
   enchantOverlayOpen = true;
   _enchantSelSlot = null;
@@ -9696,7 +9849,9 @@ function selectEnchantStat(statKey) {
 }
 
 function renderEnchantOverlay() {
-  var box = document.getElementById('enchant-overlay-box');
+  var inCraftingTab = (rightPanelTab === 'crafting' && craftingSubTab === 'enchanting');
+  var boxId = inCraftingTab ? 'crafting-enchanting-panel' : 'enchant-overlay-box';
+  var box = document.getElementById(boxId);
   if (!box) return;
   var rarityColors = { magic:'#6fa3ef', rare:'#ffd700' };
 
@@ -9726,10 +9881,12 @@ function renderEnchantOverlay() {
     for (var i = 0; i < enchantable.length; i++) {
       var e = enchantable[i];
       var isSel = (_enchantSelSlot === e.slot && _enchantSelIdx === e.idx);
-      var col = rarityColors[e.item.rarity] || '#d4c9a8';
-      html += '<div onclick="selectEnchantItem(\''+e.slot+'\','+e.idx+')" style="cursor:pointer;padding:7px 9px;margin-bottom:4px;border:1px solid '+(isSel?col:'#2a2a3a')+';border-radius:3px;background:'+(isSel?'#0d0d20':'#0a0a14')+';transition:border-color 0.1s;">'
-        + '<div style="color:'+col+';font-size:12px;font-weight:bold;">'+e.item.name+(e.item.enchanted?' <span style="color:#c8a84b;font-size:9px;">✦</span>':'')+'</div>'
-        + '<div style="color:#4a4a6a;font-size:10px;margin:1px 0;">'+e.item.slot+' · '+e.item.rarity+' · '+ENCHANT_COSTS[e.item.rarity]+'g</div>'
+      var isEnchanted = !!e.item.enchanted;
+      var col = isEnchanted ? '#3a3a4a' : (rarityColors[e.item.rarity] || '#d4c9a8');
+      var clickAttr = isEnchanted ? '' : 'onclick="selectEnchantItem(\''+e.slot+'\','+e.idx+')"';
+      html += '<div '+clickAttr+' style="'+(isEnchanted?'opacity:0.4;cursor:not-allowed;':'cursor:pointer;')+'padding:7px 9px;margin-bottom:4px;border:1px solid '+(isSel?col:'#2a2a3a')+';border-radius:3px;background:'+(isSel?'#0d0d20':'#0a0a14')+';transition:border-color 0.1s;">'
+        + '<div style="color:'+col+';font-size:12px;font-weight:bold;">'+e.item.name+(isEnchanted?' <span style="color:#3a3a5a;font-size:9px;">✦ enchanted</span>':'')+'</div>'
+        + '<div style="color:#4a4a6a;font-size:10px;margin:1px 0;">'+e.item.slot+' · '+e.item.rarity+(isEnchanted?' · already enchanted':' · '+ENCHANT_COSTS[e.item.rarity]+'g')+'</div>'
         + '<div style="color:#7a7a8a;font-size:10px;">'+statLine(e.item.stats)+'</div>'
       + '</div>';
     }
@@ -9759,7 +9916,9 @@ function renderEnchantOverlay() {
     }
   }
 
-  html += '<button class="overlay-btn sec" onclick="closeEnchantOverlay()" style="margin-top:10px;width:100%;">Close</button>';
+  if (!inCraftingTab) {
+    html += '<button class="overlay-btn sec" onclick="closeEnchantOverlay()" style="margin-top:10px;width:100%;">Close</button>';
+  }
   box.innerHTML = html;
 }
 
@@ -9821,7 +9980,11 @@ function doEnchant() {
   addLog('✦ Enchanted! Kept: '+statLineForStat(_enchantLockedStat, lockedVal)+'. New stats: '+statLine(newStats), 'level');
 
   _enchantSelSlot = null; _enchantSelIdx = null; _enchantLockedStat = null;
-  closeEnchantOverlay();
+  if (rightPanelTab === 'crafting' && craftingSubTab === 'enchanting') {
+    renderEnchantOverlay();
+  } else {
+    closeEnchantOverlay();
+  }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -12148,11 +12311,71 @@ var CombatScene = new Phaser.Class({
         }
         self.heroGfx.clear();
         var scale = targetH / fh;
+        self._heroScale = scale;
         self._heroYOff = heroYOff;
         self.heroImg = self.add.sprite(HERO_X, GROUND_Y + heroYOff, key)
           .setOrigin(0.5, 1).setScale(scale).setDepth(3).setAlpha(0);
         self.heroImg.setFrame(0);
         self.tweens.add({ targets: self.heroImg, alpha: 1, duration: 300 });
+
+        // Load whirlwind and idle sheets for warrior
+        if (!isRanger) {
+          var whirlKey = 'hero-warrior-whirl';
+          if (!self.textures.exists(whirlKey)) {
+            var whirlImg = new Image();
+            whirlImg.crossOrigin = 'anonymous';
+            whirlImg.onload = function() {
+              if (!self.textures.exists(whirlKey)) {
+                self.textures.addSpriteSheet(whirlKey, whirlImg, { frameWidth: WAR_WHIRL_FRAME_W, frameHeight: WAR_WHIRL_FRAME_H });
+              }
+              if (!self.anims.exists('war-whirl')) {
+                self.anims.create({ key: 'war-whirl', frames: self.anims.generateFrameNumbers(whirlKey, { start: 0, end: WAR_WHIRL_FRAMES - 1 }), frameRate: 30, repeat: -1 });
+              }
+            };
+            whirlImg.src = WAR_WHIRL_SHEET;
+          }
+          var idleKey = 'hero-warrior-idle';
+          if (!self.textures.exists(idleKey)) {
+            var idleImg = new Image();
+            idleImg.crossOrigin = 'anonymous';
+            idleImg.onload = function() {
+              if (!self.textures.exists(idleKey)) {
+                self.textures.addSpriteSheet(idleKey, idleImg, { frameWidth: WAR_IDLE_FRAME_W, frameHeight: WAR_IDLE_FRAME_H });
+              }
+              if (!self.anims.exists('war-idle')) {
+                self.anims.create({ key: 'war-idle', frames: self.anims.generateFrameNumbers(idleKey, { start: 0, end: WAR_IDLE_FRAMES - 1 }), frameRate: 12, repeat: -1 });
+              }
+            };
+            idleImg.src = WAR_IDLE_SHEET;
+          }
+          // Load all skill-specific warrior sheets
+          var _warSkillSheets = [
+            { key: 'hero-warrior-consec',  src: WAR_CONSEC_SHEET,  fw: WAR_CONSEC_FRAME_W,  fh: WAR_CONSEC_FRAME_H,  n: WAR_CONSEC_FRAMES,  anim: 'war-consec'  },
+            { key: 'hero-warrior-infused', src: WAR_INFUSED_SHEET, fw: WAR_INFUSED_FRAME_W, fh: WAR_INFUSED_FRAME_H, n: WAR_INFUSED_FRAMES, anim: 'war-infused' },
+            { key: 'hero-warrior-mortal',  src: WAR_MORTAL_SHEET,  fw: WAR_MORTAL_FRAME_W,  fh: WAR_MORTAL_FRAME_H,  n: WAR_MORTAL_FRAMES,  anim: 'war-mortal'  },
+            { key: 'hero-warrior-thrust',  src: WAR_THRUST_SHEET,  fw: WAR_THRUST_FRAME_W,  fh: WAR_THRUST_FRAME_H,  n: WAR_THRUST_FRAMES,  anim: 'war-thrust'  },
+            { key: 'hero-warrior-bash',    src: WAR_BASH_SHEET,    fw: WAR_BASH_FRAME_W,    fh: WAR_BASH_FRAME_H,    n: WAR_BASH_FRAMES,    anim: 'war-bash'    },
+            { key: 'hero-warrior-leap',    src: WAR_LEAP_SHEET,    fw: WAR_LEAP_FRAME_W,    fh: WAR_LEAP_FRAME_H,    n: WAR_LEAP_FRAMES,    anim: 'war-leap'    },
+            { key: 'hero-warrior-death',   src: WAR_DEATH_SHEET,   fw: WAR_DEATH_FRAME_W,   fh: WAR_DEATH_FRAME_H,   n: WAR_DEATH_FRAMES,   anim: 'war-death'   },
+            { key: 'hero-warrior-greet',   src: WAR_GREET_SHEET,   fw: WAR_GREET_FRAME_W,   fh: WAR_GREET_FRAME_H,   n: WAR_GREET_FRAMES,   anim: 'war-greet'   }
+          ];
+          _warSkillSheets.forEach(function(cfg) {
+            if (self.textures.exists(cfg.key)) return;
+            (function(c) {
+              var si = new Image();
+              si.crossOrigin = 'anonymous';
+              si.onload = function() {
+                if (!self.textures.exists(c.key)) {
+                  self.textures.addSpriteSheet(c.key, si, { frameWidth: c.fw, frameHeight: c.fh });
+                }
+                if (!self.anims.exists(c.anim)) {
+                  self.anims.create({ key: c.anim, frames: self.anims.generateFrameNumbers(c.key, { start: 0, end: c.n - 1 }), frameRate: 30, repeat: 0 });
+                }
+              };
+              si.src = c.src;
+            })(cfg);
+          });
+        }
       };
       img.onerror = function() { self._drawHeroFallback(); };
       img.src = sheetUrl;
@@ -12176,9 +12399,57 @@ var CombatScene = new Phaser.Class({
     });
   },
 
+  playWarriorWhirlwind: function(intervalMs) {
+    var self = this;
+    if (!this.heroImg || !this.textures.exists('hero-warrior-whirl') || !this.anims.exists('war-whirl')) return;
+    // Swap to whirlwind sheet if not already on it
+    if (this.heroImg.texture.key !== 'hero-warrior-whirl') {
+      var whirlScale = (this._heroScale || 1) * (WAR_FRAME_H / WAR_WHIRL_FRAME_H);
+      this.heroImg.setTexture('hero-warrior-whirl', 0).setScale(whirlScale);
+    }
+    this.heroImg.off('animationcomplete');
+    var fps = Math.round(WAR_WHIRL_FRAMES * 1000 / Math.max(intervalMs, 200));
+    if (!this.heroImg.anims.isPlaying || this.heroImg.anims.currentAnim.key !== 'war-whirl') {
+      this.heroImg.play({ key: 'war-whirl', frameRate: fps });
+    } else {
+      // Already spinning — update speed in place without restarting
+      this.heroImg.anims.msPerFrame = 1000 / fps;
+    }
+  },
+
+  playWarriorDeath: function() {
+    if (!this.heroImg || !this.textures.exists('hero-warrior-death') || !this.anims.exists('war-death')) return;
+    var scale = (this._heroScale || 1) * (WAR_FRAME_H / WAR_DEATH_FRAME_H);
+    this.heroImg.off('animationcomplete');
+    this.heroImg.setTexture('hero-warrior-death', 0).setScale(scale);
+    this.heroImg.play({ key: 'war-death', frameRate: 18, repeat: 0 });
+  },
+
+  playWarriorOneShot: function(texKey, animKey, frameH, intervalMs) {
+    var self = this;
+    if (!this.heroImg || !this.textures.exists(texKey) || !this.anims.exists(animKey)) return;
+    var animObj = this.anims.get(animKey);
+    var frameCount = animObj ? animObj.frames.length : 1;
+    var fps = Math.round(frameCount * 1000 / Math.max(intervalMs, 200));
+    var scale = (this._heroScale || 1) * (WAR_FRAME_H / frameH);
+    this.heroImg.off('animationcomplete');
+    this.heroImg.setTexture(texKey, 0).setScale(scale);
+    this.heroImg.play({ key: animKey, frameRate: fps });
+    this.heroImg.once('animationcomplete', function() {
+      if (!self.heroImg || !self.textures.exists('hero-warrior-idle') || !self.anims.exists('war-idle')) return;
+      var idleScale = (self._heroScale || 1) * (WAR_FRAME_H / WAR_IDLE_FRAME_H);
+      self.heroImg.setTexture('hero-warrior-idle', 0).setScale(idleScale);
+      self.heroImg.play({ key: 'war-idle', frameRate: 12 });
+    });
+  },
+
   playWarriorSwing: function(intervalMs) {
     var self = this;
     if (!this.heroImg || !this.anims.exists('war-swing')) return;
+    // Swap back to regular warrior sheet if on any other warrior texture
+    if (this.heroImg.texture.key !== 'hero-warrior') {
+      this.heroImg.setTexture('hero-warrior', 0).setScale(this._heroScale || 1);
+    }
     this.heroImg.off('animationcomplete');
     // Impact frames (36→37) fire in sync with particles
     this.heroImg.play({ key: 'war-swing', frameRate: 30 });
@@ -12188,6 +12459,12 @@ var CombatScene = new Phaser.Class({
       var impactMs = 19 * (1000 / 30);
       var windupFps = Math.round(19 * 1000 / Math.max(intervalMs - impactMs, 100));
       self.heroImg.play({ key: 'war-windup', frameRate: windupFps });
+      self.heroImg.once('animationcomplete', function() {
+        if (!self.heroImg || !self.textures.exists('hero-warrior-idle') || !self.anims.exists('war-idle')) return;
+        var idleScale = (self._heroScale || 1) * (WAR_FRAME_H / WAR_IDLE_FRAME_H);
+        self.heroImg.setTexture('hero-warrior-idle', 0).setScale(idleScale);
+        self.heroImg.play({ key: 'war-idle', frameRate: 12 });
+      });
     });
   },
 
@@ -12291,7 +12568,6 @@ var CombatScene = new Phaser.Class({
           spriteUrl.indexOf('Spore') !== -1 ||
           spriteUrl.indexOf('Brimstone') !== -1 ||
           spriteUrl.indexOf('Pit') !== -1 ||
-          spriteUrl.indexOf('Wrath') !== -1 ||
           spriteUrl.indexOf('Plague') !== -1 ||
           spriteUrl.indexOf('Immolated') !== -1
         );
@@ -13975,9 +14251,22 @@ function updateSceneBackground() {
 
 function triggerAttackAnim(skillId, isCrit) {
   if (!_pScene || settingsReduceAnims) return;
-  if (classKey === 'warrior') _pScene.playWarriorSwing(heroAttackInterval());
+  if (bountySearchTimer) return;
+  if (classKey === 'warrior') {
+    var _wsk = getActiveSkill();
+    var _wsid = _wsk ? _wsk.id : '';
+    var _wint = heroAttackInterval();
+    if      (_wsid === 'slash')              _pScene.playWarriorWhirlwind(_wint);
+    else if (_wsid === 'consecutivestrike')  _pScene.playWarriorOneShot('hero-warrior-consec',  'war-consec',  WAR_CONSEC_FRAME_H,  _wint);
+    else if (_wsid === 'infusedstrike')      _pScene.playWarriorOneShot('hero-warrior-infused', 'war-infused', WAR_INFUSED_FRAME_H, _wint);
+    else if (_wsid === 'mortalstrike')       _pScene.playWarriorOneShot('hero-warrior-mortal',  'war-mortal',  WAR_MORTAL_FRAME_H,  _wint);
+    else if (_wsid === 'thrust')             _pScene.playWarriorOneShot('hero-warrior-thrust',  'war-thrust',  WAR_THRUST_FRAME_H,  _wint);
+    else if (_wsid === 'bash')               _pScene.playWarriorOneShot('hero-warrior-bash',    'war-bash',    WAR_BASH_FRAME_H,    _wint);
+    else if (_wsid === 'leapslam')           _pScene.playWarriorOneShot('hero-warrior-leap',    'war-leap',    WAR_LEAP_FRAME_H,    _wint);
+    else                                     _pScene.playWarriorSwing(_wint);
+  }
   else if (classKey === 'ranger') _pScene.playRangerShoot(heroAttackInterval());
-  _pScene.fireProjectile(skillId, isCrit);
+  if (skillId !== 'leapslam') _pScene.fireProjectile(skillId, isCrit);
 }
 
 function _flashEnemyHit(color) {
@@ -14008,6 +14297,7 @@ function triggerDeathAnim() {
 
 function triggerHeroDeathAnim() {
   if (!_pScene || settingsReduceAnims) return;
+  if (classKey === 'warrior') _pScene.playWarriorDeath();
   _pScene.deathBurst(true);
 }
 
@@ -14426,6 +14716,69 @@ var settingsAutoDiscardMag  = false;    // auto-discard magic rarity drops
 var settingsShopTimer       = 15;       // shop auto-close seconds: 10|15|20|30
 var settingsReduceAnims     = false;    // reduce particle/shake animations
 var settingsFloatDmg        = true;     // floating combat damage numbers
+
+var _sessionKills     = 0;
+var _bonusKillCount   = 0;
+var _prevHeroHpPct    = 100;
+var _prevEnemyHpPct   = 100;
+var _heroGhostTimer   = null;
+var _enemyGhostTimer  = null;
+// Hit-frame alignment: delay visual feedback to match animation
+var _hitFrameMap = {
+  slash:             0,   // whirlwind — fires continuously, no delay
+  consecutivestrike: 0,
+  infusedstrike:     0,
+  mortalstrike:      20,
+  thrust:            7,
+  bash:              9,
+  leapslam:          21
+};
+var _hitVisualDelayMs = 0;
+var _enemyHpShowAt    = 0;
+function _updateGhostBar(ghostId, barId, newPct, prevPct, timerRef, setTimer) {
+  var ghost = document.getElementById(ghostId);
+  var bar   = document.getElementById(barId);
+  if (!ghost || !bar) return prevPct;
+  bar.style.width = newPct + '%';
+  if (newPct === prevPct) return prevPct;
+  if (newPct < prevPct) {
+    // Snap ghost to old value, then drain after delay
+    ghost.style.transition = 'none';
+    ghost.style.width = prevPct + '%';
+    clearTimeout(timerRef);
+    var _target = newPct;
+    setTimer(setTimeout(function() {
+      ghost.style.transition = 'width 0.7s ease';
+      ghost.style.width = _target + '%';
+    }, 350));
+  } else {
+    // Healed — sync ghost up immediately
+    ghost.style.transition = 'width 0.3s ease';
+    ghost.style.width = newPct + '%';
+  }
+  return newPct;
+}
+var _bonusKillTimer   = null;
+var _mkHideTimer      = null;
+function showMultiKillBanner(count) {
+  var labels = ['', 'DOUBLE KILL', 'TRIPLE KILL', 'QUAD KILL', 'PENTA KILL'];
+  var colors = ['', '#e8c040', '#e87020', '#e83030', '#cc20cc'];
+  var label  = count >= 4 ? 'MULTI KILL' : (labels[count] || '');
+  var color  = count >= 4 ? '#cc20cc'    : (colors[count] || '#e8c040');
+  if (!label) return;
+  var banner = document.getElementById('multikill-banner');
+  var lbl    = document.getElementById('multikill-label');
+  var sub    = document.getElementById('multikill-sub');
+  if (!banner || !lbl || !sub) return;
+  lbl.textContent  = label;
+  lbl.style.color  = color;
+  sub.textContent  = count + 1 > 1 ? (count + 1) + ' KILLS' : '';
+  banner.classList.add('show');
+  clearTimeout(_mkHideTimer);
+  _mkHideTimer = setTimeout(function() {
+    banner.classList.remove('show');
+  }, 1400);
+}
 
 function openSettings() {
   var el = document.getElementById('settings-overlay');
