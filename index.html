@@ -1873,6 +1873,47 @@ var WAR_DEATH_SHEET    = _REPO + 'warrior%20animations/warrior_death.png';
 var WAR_DEATH_FRAMES   = 23; var WAR_DEATH_FRAME_W = 228, WAR_DEATH_FRAME_H = 128;
 var WAR_GREET_SHEET    = _REPO + 'warrior%20animations/warrior_greet.png';
 var WAR_GREET_FRAMES   = 32; var WAR_GREET_FRAME_W = 228,  WAR_GREET_FRAME_H = 128;
+// Rogue skill animations — all 228×128 frames
+var ROG_BLADEDANCE_SHEET    = _REPO + 'Rogue%20Animations/rogue_blade_dance_2.png';
+var ROG_BLADEDANCE_FRAMES   = 24; var ROG_BLADEDANCE_FRAME_W = 228, ROG_BLADEDANCE_FRAME_H = 128;
+var ROG_BACKSTAB_SHEET      = _REPO + 'Rogue%20Animations/rogue_backstab_2.png';
+var ROG_BACKSTAB_FRAMES     = 24; var ROG_BACKSTAB_FRAME_W = 228, ROG_BACKSTAB_FRAME_H = 128;
+var ROG_FLURRY_SHEET        = _REPO + 'Rogue%20Animations/rogue_flurry.png';
+var ROG_FLURRY_FRAMES       = 24; var ROG_FLURRY_FRAME_W = 228, ROG_FLURRY_FRAME_H = 128;
+var ROG_NEUROTOXIN_SHEET    = _REPO + 'Rogue%20Animations/rogue_neurotoxin.png';
+var ROG_NEUROTOXIN_FRAMES   = 19; var ROG_NEUROTOXIN_FRAME_W = 228, ROG_NEUROTOXIN_FRAME_H = 128;
+var ROG_CORROSIVE_SHEET     = _REPO + 'Rogue%20Animations/rogue_corrossive_compound.png';
+var ROG_CORROSIVE_FRAMES    = 25; var ROG_CORROSIVE_FRAME_W = 228, ROG_CORROSIVE_FRAME_H = 128;
+var ROG_TAINTBLOOD_SHEET    = _REPO + 'Rogue%20Animations/rogue_taint_blood.png';
+var ROG_TAINTBLOOD_FRAMES   = 25; var ROG_TAINTBLOOD_FRAME_W = 228, ROG_TAINTBLOOD_FRAME_H = 128;
+var ROG_NULLSTRIKE_SHEET    = _REPO + 'Rogue%20Animations/rogue_null_strike.png';
+var ROG_NULLSTRIKE_FRAMES   = 23; var ROG_NULLSTRIKE_FRAME_W = 228, ROG_NULLSTRIKE_FRAME_H = 128;
+var ROG_SPELLBREAKER_SHEET  = _REPO + 'Rogue%20Animations/rogue_spellbreaker.png';
+var ROG_SPELLBREAKER_FRAMES = 37; var ROG_SPELLBREAKER_FRAME_W = 228, ROG_SPELLBREAKER_FRAME_H = 128;
+var ROG_MANABURN_SHEET      = _REPO + 'Rogue%20Animations/rogue_mana_burn.png';
+var ROG_MANABURN_FRAMES     = 25; var ROG_MANABURN_FRAME_W = 228, ROG_MANABURN_FRAME_H = 128;
+var ROG_TOXGREET_SHEET      = _REPO + 'Rogue%20Animations/rogue_toxicologist_greeting.png';
+var ROG_TOXGREET_FRAMES     = 30; var ROG_TOXGREET_FRAME_W = 228, ROG_TOXGREET_FRAME_H = 128;
+var ROG_DEATH_SHEET         = _REPO + 'Rogue%20Animations/rogue_asssassin_magehunter_death.png';
+var ROG_DEATH_FRAMES        = 24; var ROG_DEATH_FRAME_W = 228, ROG_DEATH_FRAME_H = 128;
+var ROG_TOXDEATH_SHEET      = _REPO + 'Rogue%20Animations/toxicologist_death.png';
+var ROG_TOXDEATH_FRAMES     = 30; var ROG_TOXDEATH_FRAME_W = 228, ROG_TOXDEATH_FRAME_H = 111;
+var ROG_TOXIDLE_SHEET       = _REPO + 'Rogue%20Animations/rogue_toxicologist_idle.png';
+var ROG_TOXIDLE_FRAMES      = 1;  var ROG_TOXIDLE_FRAME_W  = 228, ROG_TOXIDLE_FRAME_H  = 128;
+// Sorceress skill animations — all 228×128
+var SORC_FRAME_W = 228, SORC_FRAME_H = 128;
+var SORC_FIRE_SHEET      = _REPO + 'Sorceress%20Animations/sorceress_fireball.png';
+var SORC_FIRE_FRAMES     = 34;
+var SORC_LIGHTNING_SHEET = _REPO + 'Sorceress%20Animations/sorceress_lightning.png';
+var SORC_LIGHTNING_FRAMES = 33;
+var SORC_ICE_SHEET       = _REPO + 'Sorceress%20Animations/sorceress_blizzard_ice_shard_frost_bolt.png';
+var SORC_ICE_FRAMES      = 34;
+var SORC_FROSTFIRE_SHEET = _REPO + 'Sorceress%20Animations/sorceress_frostfire_bolt.png';
+var SORC_FROSTFIRE_FRAMES = 31;
+var SORC_NOVA_SHEET      = _REPO + 'Sorceress%20Animations/sorceress_nova.png';
+var SORC_NOVA_FRAMES     = 36;
+var SORC_DEATH_SHEET     = _REPO + 'Sorceress%20Animations/sorceress_death.png';
+var SORC_DEATH_FRAMES    = 25;
 // Ranger shoot spritesheet — horizontal strip, frame 0 = idle
 var RANGER_SHOOT_SHEET  = _REPO + 'ranger_shoot_animation.png';
 var RANGER_SHOOT_FRAMES = 6;
@@ -4989,6 +5030,18 @@ function heroAttack(now) {
     };
     var _totalF = _animFrameCounts[_sid2] || 1;
     _hitVisualDelayMs = _hf > 0 ? Math.round(_hf * heroAttackInterval() / _totalF) : 0;
+  } else if (classKey === 'rogue') {
+    var _ratkSk = getActiveSkill();
+    var _rsid2  = _ratkSk ? _ratkSk.id : '';
+    var _rhf    = _hitFrameMap[_rsid2] || 0;
+    var _rogAnimFrameCounts = {
+      bladedance: ROG_BLADEDANCE_FRAMES, backstab: ROG_BACKSTAB_FRAMES, flurry: ROG_FLURRY_FRAMES,
+      neurotoxin: ROG_NEUROTOXIN_FRAMES, corrosive: ROG_CORROSIVE_FRAMES,
+      taintblood: ROG_TAINTBLOOD_FRAMES, nullstrike: ROG_NULLSTRIKE_FRAMES,
+      spellbreaker: ROG_SPELLBREAKER_FRAMES, manaburn: ROG_MANABURN_FRAMES
+    };
+    var _rtotalF = _rogAnimFrameCounts[_rsid2] || 1;
+    _hitVisualDelayMs = _rhf > 0 ? Math.round(_rhf * heroAttackInterval() / _rtotalF) : 0;
   } else {
     _hitVisualDelayMs = 0;
   }
@@ -5723,11 +5776,12 @@ function heroAttack(now) {
     if (pilferPts > 0 && hero.activeScheme === 'pilfer') { hero.gold += pilferPts * 5; addLog('💰 Pilfer: +'+(pilferPts*5)+'g', 'level'); }
     hero._rogueHasOpened = true;
     var swapIdx = enemy.isBoss ? hero.bossSkillIdx : hero.farmSkillIdx;
-    if (swapIdx !== null && swapIdx !== undefined && cls.skills[swapIdx]) {
+    var swapSkill = (swapIdx !== null && swapIdx !== undefined) ? cls.skills[swapIdx] : null;
+    if (swapSkill && swapSkill.id !== 'backstab') {
       hero.activeSkillIdx = swapIdx;
-      hero.activeSkillTab = cls.skills[swapIdx].tier || 1;
+      hero.activeSkillTab = swapSkill.tier || 1;
     } else {
-      // No loadout skill set — fall back to first available non-backstab T1 skill
+      // No loadout skill set (or loadout is backstab) — fall back to first available non-backstab T1 skill
       var fallback = cls.skills.filter(function(s) {
         return (s.tier || 1) === 1 && !s.passive && s.id !== 'backstab' && s.spec === hero.rogueSpec;
       })[0];
@@ -12488,7 +12542,501 @@ var CombatScene = new Phaser.Class({
           .setOrigin(0.5, 1).setScale(scale).setDepth(3).setAlpha(0);
         self.tweens.add({ targets: self.heroImg, alpha: 1, duration: 300 });
       }
+      if (classKey === 'rogue') self._loadRogueSkillSheets();
+      if (classKey === 'sorceress') {
+        self._heroScale = scale;
+        if (self.heroImg) self.heroImg.setVisible(false);
+        self._loadSorcSkillSheets();
+      }
     });
+  },
+
+  _loadRogueSkillSheets: function() {
+    var self = this;
+    var sheets = [
+      { key: 'hero-rogue-bladedance',  src: ROG_BLADEDANCE_SHEET,  fw: ROG_BLADEDANCE_FRAME_W,  fh: ROG_BLADEDANCE_FRAME_H,  n: ROG_BLADEDANCE_FRAMES,  anim: 'rog-bladedance'  },
+      { key: 'hero-rogue-backstab',    src: ROG_BACKSTAB_SHEET,    fw: ROG_BACKSTAB_FRAME_W,    fh: ROG_BACKSTAB_FRAME_H,    n: ROG_BACKSTAB_FRAMES,    anim: 'rog-backstab'    },
+      { key: 'hero-rogue-flurry',      src: ROG_FLURRY_SHEET,      fw: ROG_FLURRY_FRAME_W,      fh: ROG_FLURRY_FRAME_H,      n: ROG_FLURRY_FRAMES,      anim: 'rog-flurry'      },
+      { key: 'hero-rogue-neurotoxin',  src: ROG_NEUROTOXIN_SHEET,  fw: ROG_NEUROTOXIN_FRAME_W,  fh: ROG_NEUROTOXIN_FRAME_H,  n: ROG_NEUROTOXIN_FRAMES,  anim: 'rog-neurotoxin'  },
+      { key: 'hero-rogue-corrosive',   src: ROG_CORROSIVE_SHEET,   fw: ROG_CORROSIVE_FRAME_W,   fh: ROG_CORROSIVE_FRAME_H,   n: ROG_CORROSIVE_FRAMES,   anim: 'rog-corrosive'   },
+      { key: 'hero-rogue-taintblood',  src: ROG_TAINTBLOOD_SHEET,  fw: ROG_TAINTBLOOD_FRAME_W,  fh: ROG_TAINTBLOOD_FRAME_H,  n: ROG_TAINTBLOOD_FRAMES,  anim: 'rog-taintblood'  },
+      { key: 'hero-rogue-nullstrike',  src: ROG_NULLSTRIKE_SHEET,  fw: ROG_NULLSTRIKE_FRAME_W,  fh: ROG_NULLSTRIKE_FRAME_H,  n: ROG_NULLSTRIKE_FRAMES,  anim: 'rog-nullstrike'  },
+      { key: 'hero-rogue-spellbreaker',src: ROG_SPELLBREAKER_SHEET,fw: ROG_SPELLBREAKER_FRAME_W,fh: ROG_SPELLBREAKER_FRAME_H,n: ROG_SPELLBREAKER_FRAMES,anim: 'rog-spellbreaker' },
+      { key: 'hero-rogue-manaburn',    src: ROG_MANABURN_SHEET,    fw: ROG_MANABURN_FRAME_W,    fh: ROG_MANABURN_FRAME_H,    n: ROG_MANABURN_FRAMES,    anim: 'rog-manaburn'    },
+      { key: 'hero-rogue-toxgreet',    src: ROG_TOXGREET_SHEET,    fw: ROG_TOXGREET_FRAME_W,    fh: ROG_TOXGREET_FRAME_H,    n: ROG_TOXGREET_FRAMES,    anim: 'rog-toxgreet'    },
+      { key: 'hero-rogue-death',       src: ROG_DEATH_SHEET,       fw: ROG_DEATH_FRAME_W,       fh: ROG_DEATH_FRAME_H,       n: ROG_DEATH_FRAMES,       anim: 'rog-death'       },
+      { key: 'hero-rogue-toxdeath',    src: ROG_TOXDEATH_SHEET,    fw: ROG_TOXDEATH_FRAME_W,    fh: ROG_TOXDEATH_FRAME_H,    n: ROG_TOXDEATH_FRAMES,    anim: 'rog-toxdeath'    },
+      { key: 'hero-rogue-toxidle',     src: ROG_TOXIDLE_SHEET,     fw: ROG_TOXIDLE_FRAME_W,     fh: ROG_TOXIDLE_FRAME_H,     n: ROG_TOXIDLE_FRAMES,     anim: 'rog-toxidle'     }
+    ];
+    sheets.forEach(function(cfg) {
+      if (self.textures.exists(cfg.key)) return;
+      (function(c) {
+        var si = new Image();
+        si.crossOrigin = 'anonymous';
+        si.onload = function() {
+          if (!self.textures.exists(c.key)) {
+            self.textures.addSpriteSheet(c.key, si, { frameWidth: c.fw, frameHeight: c.fh });
+          }
+          if (!self.anims.exists(c.anim)) {
+            self.anims.create({ key: c.anim, frames: self.anims.generateFrameNumbers(c.key, { start: 0, end: c.n - 1 }), frameRate: 30, repeat: 0 });
+          }
+          if (c.key === 'hero-rogue-backstab') {
+            self._rogueInitIdleSprite();
+          }
+          if (c.key === 'hero-rogue-toxidle' && hero.rogueSpec === 'toxicologist') {
+            self._rogueRestoreIdle();
+          }
+          if (c.key === 'hero-rogue-toxgreet' && hero.rogueSpec === 'toxicologist' && self.heroImg) {
+            self.playRogueGreet();
+          }
+        };
+        si.src = c.src;
+      })(cfg);
+    });
+  },
+
+  _loadSorcSkillSheets: function() {
+    var self = this;
+    var sheets = [
+      { key: 'hero-sorc-fire',      src: SORC_FIRE_SHEET,      fw: SORC_FRAME_W, fh: SORC_FRAME_H, n: SORC_FIRE_FRAMES,      anim: 'sorc-fire'      },
+      { key: 'hero-sorc-lightning', src: SORC_LIGHTNING_SHEET, fw: SORC_FRAME_W, fh: SORC_FRAME_H, n: SORC_LIGHTNING_FRAMES, anim: 'sorc-lightning' },
+      { key: 'hero-sorc-ice',       src: SORC_ICE_SHEET,       fw: SORC_FRAME_W, fh: SORC_FRAME_H, n: SORC_ICE_FRAMES,       anim: 'sorc-ice'       },
+      { key: 'hero-sorc-frostfire', src: SORC_FROSTFIRE_SHEET, fw: SORC_FRAME_W, fh: SORC_FRAME_H, n: SORC_FROSTFIRE_FRAMES, anim: 'sorc-frostfire' },
+      { key: 'hero-sorc-nova',      src: SORC_NOVA_SHEET,      fw: SORC_FRAME_W, fh: SORC_FRAME_H, n: SORC_NOVA_FRAMES,      anim: 'sorc-nova'      },
+      { key: 'hero-sorc-death',     src: SORC_DEATH_SHEET,     fw: SORC_FRAME_W, fh: SORC_FRAME_H, n: SORC_DEATH_FRAMES,     anim: 'sorc-death'     }
+    ];
+    sheets.forEach(function(cfg) {
+      if (self.textures.exists(cfg.key)) return;
+      (function(c) {
+        var si = new Image();
+        si.crossOrigin = 'anonymous';
+        si.onload = function() {
+          if (!self.textures.exists(c.key)) {
+            self.textures.addSpriteSheet(c.key, si, { frameWidth: c.fw, frameHeight: c.fh });
+          }
+          if (!self.anims.exists(c.anim)) {
+            self.anims.create({ key: c.anim, frames: self.anims.generateFrameNumbers(c.key, { start: 0, end: c.n - 1 }), frameRate: 30, repeat: 0 });
+          }
+          if (c.key === 'hero-sorc-ice') self._sorcInitIdleSprite();
+        };
+        si.src = c.src;
+      })(cfg);
+    });
+  },
+
+  _sorcInitIdleSprite: function() {
+    if (this.heroImg) this.heroImg.setVisible(false);
+    if (!this.textures.exists('hero-sorc-ice')) return;
+    var scale = 220 / SORC_FRAME_H;
+    if (!this.sorcAnimSprite) {
+      this.sorcAnimSprite = this.add.sprite(HERO_X, GROUND_Y, 'hero-sorc-ice')
+        .setOrigin(0.5, 1).setDepth(3).setScale(scale).setFrame(0);
+    } else {
+      this._sorcRestoreIdle();
+    }
+  },
+
+  _sorcRestoreIdle: function() {
+    if (this.heroImg) this.heroImg.setVisible(false);
+    if (!this.sorcAnimSprite) return;
+    if (this.textures.exists('hero-sorc-ice')) {
+      var scale = 220 / SORC_FRAME_H;
+      this.sorcAnimSprite.setTexture('hero-sorc-ice', 0)
+        .setScale(scale).setPosition(HERO_X, GROUND_Y).setVisible(true);
+    } else {
+      if (this.heroImg) this.heroImg.setVisible(true);
+      this.sorcAnimSprite.setVisible(false);
+    }
+  },
+
+  playSorcOneShot: function(texKey, animKey, intervalMs) {
+    var self = this;
+    if (!this.textures.exists(texKey) || !this.anims.exists(animKey)) return;
+    var animObj = this.anims.get(animKey);
+    var frameCount = animObj ? animObj.frames.length : 1;
+    var fps = Math.round(frameCount * 1000 / Math.max(intervalMs, 200));
+    var scale = 220 / SORC_FRAME_H;
+    if (this.heroImg) this.heroImg.setVisible(false);
+    if (!this.sorcAnimSprite) {
+      this.sorcAnimSprite = this.add.sprite(HERO_X, GROUND_Y, texKey)
+        .setOrigin(0.5, 1).setDepth(3);
+    }
+    this.sorcAnimSprite.off('animationcomplete');
+    this.sorcAnimSprite.setTexture(texKey, 0).setScale(scale)
+      .setPosition(HERO_X, GROUND_Y).setVisible(true);
+    this.sorcAnimSprite.play({ key: animKey, frameRate: fps });
+    this.sorcAnimSprite.once('animationcomplete', function() {
+      self._sorcRestoreIdle();
+    });
+  },
+
+  playSorcDeath: function() {
+    if (!this.textures.exists('hero-sorc-death') || !this.anims.exists('sorc-death')) return;
+    var scale = (this._heroScale || 1);
+    if (this.heroImg) this.heroImg.setVisible(false);
+    if (!this.sorcAnimSprite) {
+      this.sorcAnimSprite = this.add.sprite(HERO_X, GROUND_Y, 'hero-sorc-death')
+        .setOrigin(0.5, 1).setDepth(3);
+    }
+    this.sorcAnimSprite.off('animationcomplete');
+    this.sorcAnimSprite.setTexture('hero-sorc-death', 0).setScale(scale)
+      .setPosition(HERO_X, GROUND_Y).setVisible(true);
+    this.sorcAnimSprite.play({ key: 'sorc-death', frameRate: 18, repeat: 0 });
+  },
+
+  _isToxicologist: function() { return classKey === 'rogue' && hero.rogueSpec === 'toxicologist'; },
+
+  _rogueRestoreIdle: function() {
+    if (this.heroImg) this.heroImg.setVisible(false);
+    if (!this.rogueAnimSprite) return;
+    var isTox = (hero.rogueSpec === 'toxicologist');
+    if (isTox && this.textures.exists('hero-rogue-toxidle')) {
+      var scale = 309 / ROG_TOXIDLE_FRAME_H;
+      this.rogueAnimSprite.setTexture('hero-rogue-toxidle', 0)
+        .setScale(scale).setPosition(HERO_X, GROUND_Y + 5).setVisible(true);
+    } else if (this.textures.exists('hero-rogue-backstab')) {
+      var scale = 234 / ROG_BACKSTAB_FRAME_H;
+      this.rogueAnimSprite.setTexture('hero-rogue-backstab', 0)
+        .setScale(scale).setPosition(HERO_X, GROUND_Y + 20).setVisible(true);
+    } else {
+      this.rogueAnimSprite.setFrame(0).setVisible(true);
+    }
+  },
+
+  _rogueInitIdleSprite: function() {
+    // Called when backstab sheet loads — pre-create rogueAnimSprite so heroImg never shows
+    if (!this.heroImg || !this.textures.exists('hero-rogue-backstab')) return;
+    this.heroImg.setVisible(false);
+    if (!this.rogueAnimSprite) {
+      var scale = 234 / ROG_BACKSTAB_FRAME_H;
+      this.rogueAnimSprite = this.add.sprite(HERO_X, GROUND_Y + 20, 'hero-rogue-backstab')
+        .setOrigin(0.5, 1).setDepth(3).setScale(scale).setFrame(0);
+    } else {
+      this._rogueRestoreIdle();
+    }
+  },
+
+  playRogueOneShot: function(texKey, animKey, frameH, intervalMs, yOff) {
+    var self = this;
+    // If sheet not loaded yet, keep rogueAnimSprite visible — no heroImg flash
+    if (!this.textures.exists(texKey) || !this.anims.exists(animKey)) {
+      return;
+    }
+    var animObj = this.anims.get(animKey);
+    var frameCount = animObj ? animObj.frames.length : 1;
+    var fps = Math.round(frameCount * 1000 / Math.max(intervalMs, 200));
+    var isTox = (hero.rogueSpec === 'toxicologist');
+    var baseH = isTox ? 309 : 234;
+    var scale = baseH / frameH;
+    var groundY = GROUND_Y + (yOff || 0);
+    if (this.heroImg) this.heroImg.setVisible(false);
+    if (!this.rogueAnimSprite) {
+      this.rogueAnimSprite = this.add.sprite(HERO_X, groundY, texKey)
+        .setOrigin(0.5, 1).setDepth(3);
+    }
+    this.rogueAnimSprite.off('animationcomplete');
+    this.rogueAnimSprite.setTexture(texKey, 0).setScale(scale)
+      .setPosition(HERO_X, groundY).setVisible(true);
+    this.rogueAnimSprite.play({ key: animKey, frameRate: fps });
+    this.rogueAnimSprite.once('animationcomplete', function() { self._rogueRestoreIdle(); });
+  },
+
+  playRogueGreet: function() {
+    var self = this;
+    if (!this.textures.exists('hero-rogue-toxgreet') || !this.anims.exists('rog-toxgreet')) return;
+    _rogueGreeting = true;
+    var scale = 309 / ROG_TOXGREET_FRAME_H;
+    if (this.heroImg) this.heroImg.setVisible(false);
+    if (!this.rogueAnimSprite) {
+      this.rogueAnimSprite = this.add.sprite(HERO_X, GROUND_Y, 'hero-rogue-toxgreet')
+        .setOrigin(0.5, 1).setDepth(3);
+    }
+    this.rogueAnimSprite.off('animationcomplete');
+    this.rogueAnimSprite.setTexture('hero-rogue-toxgreet', 0).setScale(scale).setVisible(true);
+    this.rogueAnimSprite.play({ key: 'rog-toxgreet', frameRate: 10 });
+    this.rogueAnimSprite.once('animationcomplete', function() {
+      _rogueGreeting = false;
+      self._rogueRestoreIdle();
+    });
+  },
+
+  _rogueDashForward: function(onDone) {
+    var self = this;
+    if (!this.rogueAnimSprite) { if (onDone) onDone(); return; }
+    var startX = HERO_X;
+    this.tweens.add({
+      targets: this.rogueAnimSprite, x: startX + 70, duration: 120, ease: 'Quad.easeOut',
+      onComplete: function() {
+        self.tweens.add({
+          targets: self.rogueAnimSprite, x: startX, duration: 90, ease: 'Quad.easeIn',
+          onComplete: function() { if (onDone) onDone(); }
+        });
+      }
+    });
+  },
+
+  playRogueBackstab: function(intervalMs) {
+    var self = this;
+    var texKey = 'hero-rogue-backstab', animKey = 'rog-backstab';
+    if (!this.textures.exists(texKey) || !this.anims.exists(animKey)) {
+      if (this.heroImg) this.heroImg.setVisible(true);
+      return;
+    }
+    var animObj = this.anims.get(animKey);
+    var frameCount = animObj ? animObj.frames.length : 1;
+    var fps = Math.round(frameCount * 1000 / Math.max(intervalMs, 200));
+    var scale = 234 / ROG_BACKSTAB_FRAME_H;
+    var groundY = GROUND_Y + 20;
+    if (this.heroImg) this.heroImg.setVisible(false);
+    if (!this.rogueAnimSprite) {
+      this.rogueAnimSprite = this.add.sprite(HERO_X, groundY, texKey)
+        .setOrigin(0.5, 1).setDepth(3);
+    }
+    this.rogueAnimSprite.off('animationcomplete');
+    this.rogueAnimSprite.off('animationupdate');
+    this.rogueAnimSprite.setTexture(texKey, 0).setScale(scale)
+      .setPosition(HERO_X, groundY).setVisible(true);
+    this.rogueAnimSprite.play({ key: animKey, frameRate: fps });
+    var _dashed = false;
+    this.rogueAnimSprite.on('animationupdate', function(anim, frame) {
+      if (!_dashed && frame.index === 12) {
+        _dashed = true;
+        self._rogueDashForward(null);
+      }
+    });
+    this.rogueAnimSprite.once('animationcomplete', function() {
+      self.rogueAnimSprite.off('animationupdate');
+      self.rogueAnimSprite.setPosition(HERO_X, groundY);
+      self._rogueRestoreIdle();
+    });
+  },
+
+  playRogueNullStrike: function(intervalMs) {
+    var self = this;
+    var texKey = 'hero-rogue-nullstrike', animKey = 'rog-nullstrike';
+    if (!this.textures.exists(texKey) || !this.anims.exists(animKey)) {
+      if (this.heroImg) this.heroImg.setVisible(true);
+      return;
+    }
+    var animObj = this.anims.get(animKey);
+    var frameCount = animObj ? animObj.frames.length : 1;
+    var fps = Math.round(frameCount * 1000 / Math.max(intervalMs, 200));
+    var scale = 234 / ROG_NULLSTRIKE_FRAME_H;
+    if (this.heroImg) this.heroImg.setVisible(false);
+    if (!this.rogueAnimSprite) {
+      this.rogueAnimSprite = this.add.sprite(HERO_X, GROUND_Y, texKey)
+        .setOrigin(0.5, 1).setDepth(3);
+    }
+    this.rogueAnimSprite.off('animationcomplete');
+    this.rogueAnimSprite.off('animationupdate');
+    this.rogueAnimSprite.setTexture(texKey, 0).setScale(scale)
+      .setPosition(HERO_X, GROUND_Y).setVisible(true);
+    this.rogueAnimSprite.play({ key: animKey, frameRate: fps });
+    var _orbFired = false;
+    this.rogueAnimSprite.on('animationupdate', function(anim, frame) {
+      if (!_orbFired && frame.index === 10) {
+        _orbFired = true;
+        self._nullStrikeOrb(HERO_X, GROUND_Y - 80, ENEMY_X, GROUND_Y - 80);
+      }
+    });
+    this.rogueAnimSprite.once('animationcomplete', function() {
+      self.rogueAnimSprite.off('animationupdate');
+      self._rogueDashForward(function() { self._rogueRestoreIdle(); });
+    });
+  },
+
+  playRogueTaintBlood: function(intervalMs) {
+    var self = this;
+    var texKey = 'hero-rogue-taintblood', animKey = 'rog-taintblood';
+    if (!this.textures.exists(texKey) || !this.anims.exists(animKey)) { return; }
+    var animObj = this.anims.get(animKey);
+    var frameCount = animObj ? animObj.frames.length : 1;
+    var fps = Math.round(frameCount * 1000 / Math.max(intervalMs, 200));
+    var isTox = (hero.rogueSpec === 'toxicologist');
+    var scale = (isTox ? 309 : 234) / ROG_TAINTBLOOD_FRAME_H;
+    if (this.heroImg) this.heroImg.setVisible(false);
+    if (!this.rogueAnimSprite) {
+      this.rogueAnimSprite = this.add.sprite(HERO_X, GROUND_Y, texKey).setOrigin(0.5, 1).setDepth(3);
+    }
+    this.rogueAnimSprite.off('animationcomplete');
+    this.rogueAnimSprite.off('animationupdate');
+    this.rogueAnimSprite.setTexture(texKey, 0).setScale(scale)
+      .setPosition(HERO_X, GROUND_Y).setVisible(true);
+    this.rogueAnimSprite.play({ key: animKey, frameRate: fps });
+    var _orbFired = false;
+    this.rogueAnimSprite.on('animationupdate', function(anim, frame) {
+      if (!_orbFired && frame.index === 9) {
+        _orbFired = true;
+        self._taintBloodOrb(HERO_X, GROUND_Y - 110, ENEMY_X, GROUND_Y - 110);
+      }
+    });
+    this.rogueAnimSprite.once('animationcomplete', function() {
+      self.rogueAnimSprite.off('animationupdate');
+      self._rogueRestoreIdle();
+    });
+  },
+
+  _taintBloodOrb: function(x, y, toX, toY) {
+    var self = this;
+    var burst = this.add.graphics().setDepth(12);
+    burst.fillStyle(0xcc0000, 0.85);
+    burst.fillCircle(0, 0, 32);
+    burst.lineStyle(8, 0xff2222, 0.4);
+    burst.strokeCircle(0, 0, 50);
+    burst.setPosition(x, y);
+    this.tweens.add({
+      targets: burst, scaleX: 2.2, scaleY: 2.2, alpha: 0, duration: 260, ease: 'Quad.easeOut',
+      onComplete: function() { burst.destroy(); }
+    });
+    var orb = this.add.graphics().setDepth(13);
+    orb.fillStyle(0xff1111, 1);
+    orb.fillCircle(0, 0, 22);
+    orb.lineStyle(10, 0xff4444, 0.35);
+    orb.strokeCircle(0, 0, 36);
+    orb.setPosition(x, y);
+    this.tweens.add({
+      targets: orb,
+      x: toX, y: toY,
+      duration: 380,
+      ease: 'Quad.easeIn',
+      onComplete: function() {
+        orb.destroy();
+        self._taintBloodImpact(toX, toY);
+      }
+    });
+  },
+
+  _taintBloodImpact: function(x, y) {
+    var ring1 = this.add.graphics().setDepth(13);
+    ring1.lineStyle(7, 0xff1111, 1);
+    ring1.strokeCircle(0, 0, 10);
+    ring1.setPosition(x, y);
+    this.tweens.add({
+      targets: ring1, scaleX: 18, scaleY: 18, alpha: 0, duration: 500, ease: 'Quad.easeOut',
+      onComplete: function() { ring1.destroy(); }
+    });
+    var ring2 = this.add.graphics().setDepth(12);
+    ring2.lineStyle(14, 0xff4444, 0.45);
+    ring2.strokeCircle(0, 0, 10);
+    ring2.setPosition(x, y);
+    this.tweens.add({
+      targets: ring2, scaleX: 12, scaleY: 12, alpha: 0, duration: 360, ease: 'Quad.easeOut',
+      onComplete: function() { ring2.destroy(); }
+    });
+    var core = this.add.graphics().setDepth(14);
+    core.fillStyle(0xff1111, 1);
+    core.fillCircle(0, 0, 28);
+    core.setPosition(x, y);
+    this.tweens.add({
+      targets: core, scaleX: 3, scaleY: 3, alpha: 0, duration: 220, ease: 'Quad.easeOut',
+      onComplete: function() { core.destroy(); }
+    });
+    this._burstAt(x, y, 0xcc0000, 28);
+  },
+
+  _nullStrikeOrb: function(x, y, toX, toY) {
+    var self = this;
+    // Initial burst at cast point
+    var burst = this.add.graphics().setDepth(12);
+    burst.fillStyle(0xffffff, 0.85);
+    burst.fillCircle(0, 0, 32);
+    burst.lineStyle(8, 0xffffff, 0.4);
+    burst.strokeCircle(0, 0, 50);
+    burst.setPosition(x, y);
+    this.tweens.add({
+      targets: burst, scaleX: 2.2, scaleY: 2.2, alpha: 0, duration: 260, ease: 'Quad.easeOut',
+      onComplete: function() { burst.destroy(); }
+    });
+    // Traveling orb — white filled circle with glow ring
+    var orb = this.add.graphics().setDepth(13);
+    orb.fillStyle(0xffffff, 1);
+    orb.fillCircle(0, 0, 22);
+    orb.lineStyle(10, 0xffffff, 0.35);
+    orb.strokeCircle(0, 0, 36);
+    orb.setPosition(x, y);
+    this.tweens.add({
+      targets: orb,
+      x: toX, y: toY,
+      duration: 380,
+      ease: 'Quad.easeIn',
+      onComplete: function() {
+        orb.destroy();
+        self._nullStrikeImpact(toX, toY);
+      }
+    });
+  },
+
+  _nullStrikeImpact: function(x, y) {
+    // Large white expanding ring burst
+    var ring1 = this.add.graphics().setDepth(13);
+    ring1.lineStyle(7, 0xffffff, 1);
+    ring1.strokeCircle(0, 0, 10);
+    ring1.setPosition(x, y);
+    this.tweens.add({
+      targets: ring1, scaleX: 18, scaleY: 18, alpha: 0, duration: 500, ease: 'Quad.easeOut',
+      onComplete: function() { ring1.destroy(); }
+    });
+    var ring2 = this.add.graphics().setDepth(12);
+    ring2.lineStyle(14, 0xffffff, 0.45);
+    ring2.strokeCircle(0, 0, 10);
+    ring2.setPosition(x, y);
+    this.tweens.add({
+      targets: ring2, scaleX: 12, scaleY: 12, alpha: 0, duration: 360, ease: 'Quad.easeOut',
+      onComplete: function() { ring2.destroy(); }
+    });
+    // Filled core flash
+    var core = this.add.graphics().setDepth(14);
+    core.fillStyle(0xffffff, 1);
+    core.fillCircle(0, 0, 28);
+    core.setPosition(x, y);
+    this.tweens.add({
+      targets: core, scaleX: 3, scaleY: 3, alpha: 0, duration: 220, ease: 'Quad.easeOut',
+      onComplete: function() { core.destroy(); }
+    });
+    this._burstAt(x, y, 0xffffff, 28);
+  },
+
+  blueExplosion: function(x, y) {
+    var self = this;
+    // Expanding ring
+    var ring = this.add.graphics().setDepth(10);
+    ring.lineStyle(4, 0x44aaff, 1);
+    ring.strokeCircle(0, 0, 10);
+    ring.setPosition(x, y - 60);
+    this.tweens.add({
+      targets: ring, scaleX: 14, scaleY: 14, alpha: 0, duration: 380, ease: 'Quad.easeOut',
+      onComplete: function() { ring.destroy(); }
+    });
+    // Second softer ring
+    var ring2 = this.add.graphics().setDepth(9);
+    ring2.lineStyle(8, 0x88ddff, 0.5);
+    ring2.strokeCircle(0, 0, 10);
+    ring2.setPosition(x, y - 60);
+    this.tweens.add({
+      targets: ring2, scaleX: 10, scaleY: 10, alpha: 0, duration: 280, ease: 'Quad.easeOut',
+      onComplete: function() { ring2.destroy(); }
+    });
+    // Particle burst
+    this._burstAt(x, y - 60, 0x44aaff, 28);
+  },
+
+  playRogueDeath: function() {
+    var isTox = (hero.rogueSpec === 'toxicologist');
+    var texKey = isTox ? 'hero-rogue-toxdeath' : 'hero-rogue-death';
+    var animKey = isTox ? 'rog-toxdeath' : 'rog-death';
+    var frameH  = isTox ? ROG_TOXDEATH_FRAME_H : ROG_DEATH_FRAME_H;
+    if (!this.textures.exists(texKey) || !this.anims.exists(animKey)) return;
+    var scale = 234 / frameH;
+    var groundY = isTox ? GROUND_Y + Math.round(scale * frameH * 0.4) : GROUND_Y;
+    if (this.heroImg) this.heroImg.setVisible(false);
+    if (!this.rogueAnimSprite) {
+      this.rogueAnimSprite = this.add.sprite(HERO_X, groundY, texKey)
+        .setOrigin(0.5, 1).setDepth(3);
+    }
+    this.rogueAnimSprite.off('animationcomplete');
+    this.rogueAnimSprite.setTexture(texKey, 0).setScale(scale)
+      .setPosition(HERO_X, groundY).setVisible(true);
+    this.rogueAnimSprite.play({ key: animKey, frameRate: 18, repeat: 0 });
   },
 
   playWarriorWhirlwind: function(intervalMs) {
@@ -14361,7 +14909,7 @@ function updateSceneBackground() {
 function triggerAttackAnim(skillId, isCrit) {
   if (!_pScene || settingsReduceAnims) return;
   if (bountySearchTimer) return;
-  if (_warriorGreeting) return;
+  if (_warriorGreeting || _rogueGreeting) return;
   if (classKey === 'warrior') {
     var _wsk = getActiveSkill();
     var _wsid = _wsk ? _wsk.id : '';
@@ -14375,8 +14923,33 @@ function triggerAttackAnim(skillId, isCrit) {
     else if (_wsid === 'leapslam')           _pScene.playWarriorOneShot('hero-warrior-leap',    'war-leap',    WAR_LEAP_FRAME_H,    _wint);
     else                                     _pScene.playWarriorSwing(_wint);
   }
+  else if (classKey === 'rogue') {
+    var _rint = heroAttackInterval();
+    if      (skillId === 'bladedance')   _pScene.playRogueOneShot('hero-rogue-bladedance',   'rog-bladedance',   ROG_BLADEDANCE_FRAME_H,   _rint);
+    else if (skillId === 'backstab')     _pScene.playRogueBackstab(_rint);
+    else if (skillId === 'flurry')       _pScene.playRogueOneShot('hero-rogue-flurry',       'rog-flurry',       ROG_FLURRY_FRAME_H,       _rint);
+    else if (skillId === 'neurotoxin')   _pScene.playRogueOneShot('hero-rogue-neurotoxin',   'rog-neurotoxin',   ROG_NEUROTOXIN_FRAME_H,   _rint);
+    else if (skillId === 'corrosive')    _pScene.playRogueOneShot('hero-rogue-corrosive',    'rog-corrosive',    ROG_CORROSIVE_FRAME_H,    _rint);
+    else if (skillId === 'taintblood')   _pScene.playRogueTaintBlood(_rint);
+    else if (skillId === 'nullstrike')   _pScene.playRogueNullStrike(_rint);
+    else if (skillId === 'spellbreaker') _pScene.playRogueOneShot('hero-rogue-spellbreaker', 'rog-spellbreaker', ROG_SPELLBREAKER_FRAME_H, _rint);
+    else if (skillId === 'manaburn')     _pScene.playRogueOneShot('hero-rogue-manaburn',     'rog-manaburn',     ROG_MANABURN_FRAME_H,     _rint);
+  }
+  else if (classKey === 'sorceress') {
+    var _sint = heroAttackInterval();
+    if      (skillId === 'fire'      || skillId === 'meteor')     _pScene.playSorcOneShot('hero-sorc-fire',      'sorc-fire',      _sint);
+    else if (skillId === 'lightning' || skillId === 'chainlight') _pScene.playSorcOneShot('hero-sorc-lightning', 'sorc-lightning', _sint);
+    else if (skillId === 'cold'      || skillId === 'blizzard'  || skillId === 'iceshard') _pScene.playSorcOneShot('hero-sorc-ice', 'sorc-ice', _sint);
+    else if (skillId === 'frostfire')  _pScene.playSorcOneShot('hero-sorc-frostfire', 'sorc-frostfire', _sint);
+    else if (skillId === 'lightnova')  _pScene.playSorcOneShot('hero-sorc-nova',      'sorc-nova',      _sint);
+  }
   else if (classKey === 'ranger') _pScene.playRangerShoot(heroAttackInterval());
-  if (skillId !== 'leapslam') _pScene.fireProjectile(skillId, isCrit);
+  var _noProjectile = ['leapslam', 'corrosive', 'neurotoxin', 'spellbreaker', 'nullstrike', 'taintblood'];
+  if (_noProjectile.indexOf(skillId) === -1) _pScene.fireProjectile(skillId, isCrit);
+  if (skillId === 'spellbreaker') {
+    var _sbDelay = _hitVisualDelayMs || 0;
+    (function(d){ setTimeout(function(){ if (_pScene) _pScene.blueExplosion(HERO_X, GROUND_Y); }, d); })(_sbDelay);
+  }
 }
 
 function _flashEnemyHit(color) {
@@ -14408,6 +14981,8 @@ function triggerDeathAnim() {
 function triggerHeroDeathAnim() {
   if (!_pScene || settingsReduceAnims) return;
   if (classKey === 'warrior') _pScene.playWarriorDeath();
+  if (classKey === 'rogue') _pScene.playRogueDeath();
+  if (classKey === 'sorceress') _pScene.playSorcDeath();
   _pScene.deathBurst(true);
 }
 
@@ -14852,11 +15427,22 @@ var _hitFrameMap = {
   mortalstrike:      20,
   thrust:            7,
   bash:              9,
-  leapslam:          21
+  leapslam:          21,
+  // Rogue hit frames
+  bladedance:        0,
+  backstab:          20,
+  flurry:            0,
+  neurotoxin:        13,
+  corrosive:         10,
+  taintblood:        9,
+  nullstrike:        10,
+  spellbreaker:      16,
+  manaburn:          0
 };
 var _hitVisualDelayMs = 0;
 var _enemyHpShowAt    = 0;
 var _warriorGreeting  = false;
+var _rogueGreeting    = false;
 function _updateGhostBar(ghostId, barId, newPct, prevPct, timerRef, setTimer) {
   var ghost = document.getElementById(ghostId);
   var bar   = document.getElementById(barId);
