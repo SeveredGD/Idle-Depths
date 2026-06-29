@@ -1749,6 +1749,14 @@ var ACT_BACKGROUNDS = {
   4: _REPO + 'act_4_background.png',
   5: _REPO + 'act_5_background.png'
 };
+var ACT_BG_ANIMATED = {
+  1: {
+    png:  _REPO + 'Background%20Animated/Act_1_background_3.png',
+    json: _REPO + 'Background%20Animated/Act_1_background_3.json',
+    key:  'bg-act1-anim',
+    anim: 'bg-act1-anim-play'
+  }
+};
 
 // Boss sprites — keyed by partial boss name
 var BOSS_SPRITES = {
@@ -1876,7 +1884,8 @@ var WAR_GREET_FRAMES   = 32; var WAR_GREET_FRAME_W = 228,  WAR_GREET_FRAME_H = 1
 // Rogue skill animations — all 228×128 frames
 var ROG_BLADEDANCE_SHEET    = _REPO + 'Rogue%20Animations/rogue_blade_dance_2.png';
 var ROG_BLADEDANCE_FRAMES   = 24; var ROG_BLADEDANCE_FRAME_W = 228, ROG_BLADEDANCE_FRAME_H = 128;
-var ROG_BACKSTAB_SHEET      = _REPO + 'Rogue%20Animations/rogue_backstab_2.png';
+var ROG_BACKSTAB_SHEET      = _REPO + 'Rogue%20Animations/rogue_backstab_4.png';
+var ROG_BACKSTAB_JSON       = _REPO + 'Rogue%20Animations/rogue_backstab_4.json';
 var ROG_BACKSTAB_FRAMES     = 24; var ROG_BACKSTAB_FRAME_W = 228, ROG_BACKSTAB_FRAME_H = 128;
 var ROG_FLURRY_SHEET        = _REPO + 'Rogue%20Animations/rogue_flurry.png';
 var ROG_FLURRY_FRAMES       = 24; var ROG_FLURRY_FRAME_W = 228, ROG_FLURRY_FRAME_H = 128;
@@ -1903,6 +1912,7 @@ var ROG_TOXIDLE_FRAMES      = 1;  var ROG_TOXIDLE_FRAME_W  = 228, ROG_TOXIDLE_FR
 // Sorceress skill animations — all 228×128
 var SORC_FRAME_W = 228, SORC_FRAME_H = 128;
 var SORC_FIRE_SHEET      = _REPO + 'Sorceress%20Animations/sorceress_fireball.png';
+var SORC_FIREBALL_PROJ   = _REPO + 'skills%20and%20spells/fireball.png';
 var SORC_FIRE_FRAMES     = 34;
 var SORC_LIGHTNING_SHEET = _REPO + 'Sorceress%20Animations/sorceress_lightning.png';
 var SORC_LIGHTNING_FRAMES = 33;
@@ -1917,6 +1927,18 @@ var SORC_DEATH_FRAMES    = 25;
 // Ranger shoot spritesheet — horizontal strip, frame 0 = idle
 var RANGER_SHOOT_SHEET  = _REPO + 'ranger_shoot_animation.png';
 var RANGER_SHOOT_FRAMES = 6;
+// Ranger bow draw attack
+var RAN_BOWDRAW_SHEET   = _REPO + 'Ranger%20Animations/ranger_bow_draw_attack.png';
+var RAN_BOWDRAW_JSON    = _REPO + 'Ranger%20Animations/ranger_bow_draw_attack.json';
+var RAN_DEATH_SHEET     = _REPO + 'Ranger%20Animations/ranger_death_2.png';
+var RAN_DEATH_JSON      = _REPO + 'Ranger%20Animations/ranger_death_2.json';
+var RAN_IDLE_SHEET      = _REPO + 'Ranger%20Animations/ranger_idle.png';
+var RAN_IDLE_JSON       = _REPO + 'Ranger%20Animations/ranger_idle.json';
+var RAN_TRAPPER_SHEET   = _REPO + 'Ranger%20Animations/ranger_Trapper_attack.png';
+var RAN_TRAPPER_JSON    = _REPO + 'Ranger%20Animations/ranger_Trapper_attack.json';
+// Skills that use the bow draw animation
+var RAN_BOW_SKILLS     = ['long_shot', 'strafing_shot', 'vuln_shot', 'overload_shot', 'execute_shot'];
+var RAN_TRAPPER_SKILLS = ['chain_trap', 'freezing_trap', 'explosive_trap'];
 
 // ═══════════════════════════════════════════════════
 // DATA
@@ -3680,6 +3702,7 @@ var _mnemonicBonus    = false; // flag: mnemonic bonus is active this act
 
 var dead        = false;
 var respawnAt   = 0;
+var _heroRespawnDelay = 0; // extra ms before first attack after respawn
 var shopOpen    = false;
 var gamePaused  = false;
 
@@ -4809,18 +4832,20 @@ function spawnNextEnemy(simNow) {
   }
 
   // Rogue Assassin: reset opener state and apply positioning delay
+  var _spawnExtraDelay = _heroRespawnDelay;
+  _heroRespawnDelay = 0;
   if (classKey === 'rogue' && hero.rogueSpec === 'assassin' && !enemy.isBoss) {
     hero._rogueHasOpened = false;
     var backstabPts = hero.skillTree['backstab'] || 0;
     var posDelay = Math.max(0, 1500 - backstabPts * 75);  // 1500ms at 0pts, 0ms at 20pts
-    heroNextAtk = spawnTime + posDelay + heroAttackInterval();
+    heroNextAtk = spawnTime + posDelay + _spawnExtraDelay + heroAttackInterval();
   } else if (classKey === 'rogue' && hero.rogueSpec === 'assassin' && enemy.isBoss) {
     hero._rogueHasOpened = false;
     var backstabPts = hero.skillTree['backstab'] || 0;
     var posDelay = Math.max(0, 1500 - backstabPts * 75);
-    heroNextAtk = spawnTime + posDelay + heroAttackInterval();
+    heroNextAtk = spawnTime + posDelay + _spawnExtraDelay + heroAttackInterval();
   } else {
-    heroNextAtk = spawnTime + heroAttackInterval();
+    heroNextAtk = spawnTime + _spawnExtraDelay + heroAttackInterval();
   }
 
   // Flurry: reset speed stacks on new mob
@@ -4834,6 +4859,8 @@ function spawnNextEnemy(simNow) {
   // Arcane Archer: reset overload charge on new mob
   if (classKey === 'ranger') {
     hero._overloadCharge = 0;
+    if (_pScene) _pScene._clearOverloadOrbs();
+    if (_pScene) _pScene._rangerRestoreIdle();
     hero._longShotMode = true;
     // _freezingTrapHit is on enemy object so resets automatically with new enemy
   }
@@ -5033,6 +5060,8 @@ function heroAttack(now) {
   } else if (classKey === 'rogue') {
     var _ratkSk = getActiveSkill();
     var _rsid2  = _ratkSk ? _ratkSk.id : '';
+    // Backstab opener: active skill will be forced to backstab before damage fires
+    if (hero.rogueSpec === 'assassin' && !hero._rogueHasOpened) _rsid2 = 'backstab';
     var _rhf    = _hitFrameMap[_rsid2] || 0;
     var _rogAnimFrameCounts = {
       bladedance: ROG_BLADEDANCE_FRAMES, backstab: ROG_BACKSTAB_FRAMES, flurry: ROG_FLURRY_FRAMES,
@@ -5042,6 +5071,18 @@ function heroAttack(now) {
     };
     var _rtotalF = _rogAnimFrameCounts[_rsid2] || 1;
     _hitVisualDelayMs = _rhf > 0 ? Math.round(_rhf * heroAttackInterval() / _rtotalF) : 0;
+  } else if (classKey === 'sorceress') {
+    var _satkSk = getActiveSkill();
+    var _ssid2  = _satkSk ? _satkSk.id : '';
+    var _shf    = _hitFrameMap[_ssid2] || 0;
+    var _sorcAnimFrameCounts = {
+      fire: SORC_FIRE_FRAMES, meteor: SORC_FIRE_FRAMES,
+      lightning: SORC_LIGHTNING_FRAMES, chainlight: SORC_LIGHTNING_FRAMES,
+      cold: SORC_ICE_FRAMES, blizzard: SORC_ICE_FRAMES, iceshard: SORC_ICE_FRAMES,
+      frostfire: SORC_FROSTFIRE_FRAMES, lightnova: SORC_NOVA_FRAMES
+    };
+    var _stotalF = _sorcAnimFrameCounts[_ssid2] || 1;
+    _hitVisualDelayMs = _shf > 0 ? Math.round(_shf * heroAttackInterval() / _stotalF) : 0;
   } else {
     _hitVisualDelayMs = 0;
   }
@@ -5772,6 +5813,13 @@ function heroAttack(now) {
     _lastDealtDmg = dmg;
     enemy.hp = Math.max(0, enemy.hp - dmg);
     addLog('⚔ Backstab: '+dmg+'! ('+critMult.toFixed(1)+'× crit + '+Math.round(hpPct*100)+'% max HP)', 'crit');
+    if (_pScene && !settingsReduceAnims) {
+      var _bsDelay = _hitVisualDelayMs || 0;
+      (function() {
+        var _bsScene = _pScene;
+        setTimeout(function() { _bsScene.spawnFloatText(ENEMY_X, GROUND_Y - 120, 'Assassinated!', '#ff44ff', true); }, _bsDelay);
+      })();
+    }
     var pilferPts = hero.skillTree['pilfer'] || 0;
     if (pilferPts > 0 && hero.activeScheme === 'pilfer') { hero.gold += pilferPts * 5; addLog('💰 Pilfer: +'+(pilferPts*5)+'g', 'level'); }
     hero._rogueHasOpened = true;
@@ -6588,6 +6636,7 @@ var _loopIntroPausedCombat = false;
 function showLoopIntro(context) {
   // context: 'kill' | 'boss-death' | 'mob-death'
   if (loopIntroSeen) return;
+  if (settingsHideHelpPopups) { loopIntroSeen = true; return; }
   loopIntroSeen = true;
   var titleEl = document.getElementById('loop-intro-title');
   var subEl   = document.getElementById('loop-intro-sub');
@@ -6625,6 +6674,7 @@ function dismissLoopIntro() {
 var _gemIntroTimer = null;
 function showGemIntro() {
   if (gemIntroSeen) return;
+  if (settingsHideHelpPopups) { gemIntroSeen = true; return; }
   gemIntroSeen = true;
   var overlay = document.getElementById('gem-intro-overlay');
   if (overlay) overlay.style.display = 'flex';
@@ -6641,6 +6691,7 @@ function dismissGemIntro() {
 var _priorityIntroTimer = null;
 function showPriorityIntro() {
   if (itemPriorityIntroSeen) return;
+  if (settingsHideHelpPopups) { itemPriorityIntroSeen = true; return; }
   itemPriorityIntroSeen = true;
   var overlay = document.getElementById('priority-intro-overlay');
   if (overlay) overlay.style.display = 'flex';
@@ -6660,6 +6711,7 @@ function dismissPriorityIntro() {
 
 function showLoadoutIntro() {
   if (skillLoadoutIntroSeen) return;
+  if (settingsHideHelpPopups) { skillLoadoutIntroSeen = true; return; }
   skillLoadoutIntroSeen = true;
   var overlay = document.getElementById('loadout-intro-overlay');
   if (overlay) overlay.style.display = 'flex';
@@ -6673,6 +6725,7 @@ function dismissLoadoutIntro() {
 
 function showBountyIntro() {
   if (bountyIntroSeen) return;
+  if (settingsHideHelpPopups) { bountyIntroSeen = true; return; }
   bountyIntroSeen = true;
   var overlay = document.getElementById('bounty-intro-overlay');
   if (overlay) overlay.style.display = 'flex';
@@ -6692,6 +6745,7 @@ var _vaultIntroTimer = null;
 var _vaultIntroPausedCombat = false;
 function showVaultIntro() {
   if (vaultIntroSeen) return;
+  if (settingsHideHelpPopups) { vaultIntroSeen = true; return; }
   vaultIntroSeen = true;
   var overlay = document.getElementById('vault-intro-overlay');
   if (overlay) overlay.style.display = 'flex';
@@ -7196,6 +7250,8 @@ function respawnNow() {
 function doRespawn() {
   dead = false;
   hero.hp = hero.maxHp;
+  _heroRespawnDelay = 900;
+  triggerHeroRespawnIdle();
   var _dov = document.getElementById('death-overlay');
   if (_dov) _dov.style.display = 'none';
   killCount = 0;
@@ -12156,7 +12212,7 @@ Object.defineProperty(window, 'GROUND_Y', { get: function() { return Math.round(
 
 // Colours matching SKILL_SCENE
 var SKILL_SCENE = {
-  fire:              { color:0xe85c1a, hex:'#e85c1a', glowColor:0xff8844, type:'orb',    speed:380 },
+  fire:              { color:0xe85c1a, hex:'#e85c1a', glowColor:0xff8844, type:'fireballsprite', speed:380 },
   lightning:         { color:0xc0d8ff, hex:'#c0d8ff', glowColor:0xffffff, type:'bolt',   speed:500 },
   cold:              { color:0x7dd4fc, hex:'#7dd4fc', glowColor:0xaaeeff, type:'shard',  speed:420 },
   meteor:            { color:0xff6600, hex:'#ff6600', glowColor:0xffaa44, type:'meteor', speed:260 },
@@ -12187,7 +12243,7 @@ var SKILL_SCENE = {
   strafing_shot:   { color:0x88cc44, hex:'#88cc44', glowColor:0xccff88, type:'multiarrow',  speed:320 },
   mark_prey:       { color:0xc8843a, hex:'#c8843a', glowColor:0xffaa44, type:'companion',   speed:400 },
   vuln_shot:       { color:0xc878f0, hex:'#c878f0', glowColor:0xee88ff, type:'arcane_arrow', speed:520 },
-  overload_shot:   { color:0x8844cc, hex:'#8844cc', glowColor:0xcc88ff, type:'arcane_arrow', speed:440 },
+  overload_shot:   { color:0x8844cc, hex:'#8844cc', glowColor:0xcc88ff, type:'overload_arrow', speed:440 },
   execute_shot:    { color:0xff44cc, hex:'#ff44cc', glowColor:0xff88ee, type:'executearrow', speed:380 },
   chain_trap:      { color:0xc8a84b, hex:'#c8a84b', glowColor:0xffe090, type:'trap',        speed:400 },
   freezing_trap:   { color:0x55aaff, hex:'#55aaff', glowColor:0xaaddff, type:'trap',        speed:300 },
@@ -12273,11 +12329,12 @@ var CombatScene = new Phaser.Class({
     this.scale.on('resize', function(gameSize) {
       var W = gameSize.width, H = gameSize.height;
 
-      if (_pScene.bgImg)  _pScene._setBgSize();
+      if (_pScene.bgAnimSprite || _pScene.bgImg) _pScene._setBgSize();
       if (_pScene.bg)     _pScene.bg.setPosition(W/2, H/2).setSize(W, H);
       if (_pScene.bgDark) _pScene.bgDark.setPosition(W/2, H/2).setSize(W, H);
 
       if (_pScene.heroImg)  _pScene.heroImg.setPosition(HERO_X, GROUND_Y + (_pScene._heroYOff || 0));
+      if (_pScene.rangerAnimSprite) _pScene.rangerAnimSprite.setPosition(HERO_X, GROUND_Y);
       if (_pScene.enemyImg) _pScene.enemyImg.setPosition(ENEMY_X, GROUND_Y + (_pScene._enemyYOff||0));
 
       if (_pScene._groundGfx) {
@@ -12394,29 +12451,8 @@ var CombatScene = new Phaser.Class({
     var key = 'hero-' + classKey;
 
     if (classKey === 'ranger') {
-      if (self.heroImg) { self.heroImg.destroy(); self.heroImg = null; }
-      var img = new Image();
-      img.crossOrigin = 'anonymous';
-      img.onload = function() {
-        var fw = Math.round(img.naturalWidth / RANGER_SHOOT_FRAMES);
-        var fh = img.naturalHeight;
-        if (!self.textures.exists(key)) {
-          self.textures.addSpriteSheet(key, img, { frameWidth: fw, frameHeight: fh });
-        }
-        if (!self.anims.exists('ranger-shoot')) {
-          self.anims.create({ key: 'ranger-shoot', frames: self.anims.generateFrameNumbers(key, { start: 0, end: RANGER_SHOOT_FRAMES - 1 }), frameRate: 12, repeat: 0 });
-        }
-        self.heroGfx.clear();
-        var scale = 217 / fh;
-        self._heroScale = scale;
-        self._heroYOff = 0;
-        self.heroImg = self.add.sprite(HERO_X, GROUND_Y, key)
-          .setOrigin(0.5, 1).setScale(scale).setDepth(3).setAlpha(0);
-        self.heroImg.setFrame(0);
-        self.tweens.add({ targets: self.heroImg, alpha: 1, duration: 300 });
-      };
-      img.onerror = function() { self._drawHeroFallback(); };
-      img.src = RANGER_SHOOT_SHEET;
+      if (self.heroImg) { self.heroImg.setVisible(false); }
+      self._loadRangerSkillSheets();
       return;
     }
 
@@ -12551,11 +12587,62 @@ var CombatScene = new Phaser.Class({
     });
   },
 
+  _loadRogueBackstabSheet: function() {
+    var self = this;
+    if (this.textures.exists('hero-rogue-backstab')) return;
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', ROG_BACKSTAB_JSON);
+    xhr.onload = function() {
+      var fw = ROG_BACKSTAB_FRAME_W, fh = ROG_BACKSTAB_FRAME_H;
+      if (xhr.status === 200) {
+        try {
+          var data = JSON.parse(xhr.responseText);
+          if (data.frameWidth)  fw = data.frameWidth;
+          if (data.frameHeight) fh = data.frameHeight;
+        } catch(e) {}
+      }
+      var img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = function() {
+        var cols = Math.floor(img.width / fw);
+        var rows = Math.floor(img.height / fh);
+        var frameCount = Math.max(1, cols * rows);
+        ROG_BACKSTAB_FRAME_W = fw;
+        ROG_BACKSTAB_FRAME_H = fh;
+        ROG_BACKSTAB_FRAMES  = frameCount;
+        if (!self.textures.exists('hero-rogue-backstab')) {
+          self.textures.addSpriteSheet('hero-rogue-backstab', img, { frameWidth: fw, frameHeight: fh });
+        }
+        if (!self.anims.exists('rog-backstab')) {
+          self.anims.create({ key: 'rog-backstab', frames: self.anims.generateFrameNumbers('hero-rogue-backstab', { start: 0, end: frameCount - 1 }), frameRate: 30, repeat: 0 });
+        }
+        self._rogueInitIdleSprite();
+      };
+      img.src = ROG_BACKSTAB_SHEET;
+    };
+    xhr.onerror = function() {
+      // JSON unavailable — load with hardcoded dimensions
+      var img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = function() {
+        if (!self.textures.exists('hero-rogue-backstab')) {
+          self.textures.addSpriteSheet('hero-rogue-backstab', img, { frameWidth: ROG_BACKSTAB_FRAME_W, frameHeight: ROG_BACKSTAB_FRAME_H });
+        }
+        if (!self.anims.exists('rog-backstab')) {
+          self.anims.create({ key: 'rog-backstab', frames: self.anims.generateFrameNumbers('hero-rogue-backstab', { start: 0, end: ROG_BACKSTAB_FRAMES - 1 }), frameRate: 30, repeat: 0 });
+        }
+        self._rogueInitIdleSprite();
+      };
+      img.src = ROG_BACKSTAB_SHEET;
+    };
+    xhr.send();
+  },
+
   _loadRogueSkillSheets: function() {
     var self = this;
+    this._loadRogueBackstabSheet();
     var sheets = [
       { key: 'hero-rogue-bladedance',  src: ROG_BLADEDANCE_SHEET,  fw: ROG_BLADEDANCE_FRAME_W,  fh: ROG_BLADEDANCE_FRAME_H,  n: ROG_BLADEDANCE_FRAMES,  anim: 'rog-bladedance'  },
-      { key: 'hero-rogue-backstab',    src: ROG_BACKSTAB_SHEET,    fw: ROG_BACKSTAB_FRAME_W,    fh: ROG_BACKSTAB_FRAME_H,    n: ROG_BACKSTAB_FRAMES,    anim: 'rog-backstab'    },
       { key: 'hero-rogue-flurry',      src: ROG_FLURRY_SHEET,      fw: ROG_FLURRY_FRAME_W,      fh: ROG_FLURRY_FRAME_H,      n: ROG_FLURRY_FRAMES,      anim: 'rog-flurry'      },
       { key: 'hero-rogue-neurotoxin',  src: ROG_NEUROTOXIN_SHEET,  fw: ROG_NEUROTOXIN_FRAME_W,  fh: ROG_NEUROTOXIN_FRAME_H,  n: ROG_NEUROTOXIN_FRAMES,  anim: 'rog-neurotoxin'  },
       { key: 'hero-rogue-corrosive',   src: ROG_CORROSIVE_SHEET,   fw: ROG_CORROSIVE_FRAME_W,   fh: ROG_CORROSIVE_FRAME_H,   n: ROG_CORROSIVE_FRAMES,   anim: 'rog-corrosive'   },
@@ -12622,6 +12709,17 @@ var CombatScene = new Phaser.Class({
         si.src = c.src;
       })(cfg);
     });
+    // Load fireball projectile sprite
+    if (!this.textures.exists('fireball-proj')) {
+      var fbImg = new Image();
+      fbImg.crossOrigin = 'anonymous';
+      fbImg.onload = function() {
+        if (!self.textures.exists('fireball-proj')) {
+          self.textures.addImage('fireball-proj', fbImg);
+        }
+      };
+      fbImg.src = SORC_FIREBALL_PROJ;
+    }
   },
 
   _sorcInitIdleSprite: function() {
@@ -12672,7 +12770,7 @@ var CombatScene = new Phaser.Class({
 
   playSorcDeath: function() {
     if (!this.textures.exists('hero-sorc-death') || !this.anims.exists('sorc-death')) return;
-    var scale = (this._heroScale || 1);
+    var scale = 220 / SORC_FRAME_H;
     if (this.heroImg) this.heroImg.setVisible(false);
     if (!this.sorcAnimSprite) {
       this.sorcAnimSprite = this.add.sprite(HERO_X, GROUND_Y, 'hero-sorc-death')
@@ -12682,6 +12780,240 @@ var CombatScene = new Phaser.Class({
     this.sorcAnimSprite.setTexture('hero-sorc-death', 0).setScale(scale)
       .setPosition(HERO_X, GROUND_Y).setVisible(true);
     this.sorcAnimSprite.play({ key: 'sorc-death', frameRate: 18, repeat: 0 });
+  },
+
+  _loadRangerSkillSheets: function() {
+    var self = this;
+    this._loadRangerTrapperSheet();
+    if (this.textures.exists('hero-ranger-bowdraw')) {
+      this._rangerRestoreIdle();
+      return;
+    }
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', RAN_BOWDRAW_JSON);
+    xhr.onload = function() {
+      try {
+        var data = JSON.parse(xhr.responseText);
+        var fw = data.frameWidth, fh = data.frameHeight;
+        var img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.onload = function() {
+          var cols = Math.floor(img.width / fw);
+          var rows = Math.floor(img.height / fh);
+          var frameCount = cols * rows;
+          if (!self.textures.exists('hero-ranger-bowdraw')) {
+            self.textures.addSpriteSheet('hero-ranger-bowdraw', img, { frameWidth: fw, frameHeight: fh });
+          }
+          if (!self.anims.exists('ran-bowdraw')) {
+            self.anims.create({
+              key: 'ran-bowdraw',
+              frames: self.anims.generateFrameNumbers('hero-ranger-bowdraw', { start: 0, end: frameCount - 1 }),
+              frameRate: 24,
+              repeat: 0
+            });
+          }
+          self._RAN_FRAME_H = fh;
+          // Load idle and death sheets, restore idle once idle is ready
+          self._loadRangerDeathSheet();
+          self._loadRangerIdleSheet();
+        };
+        img.src = RAN_BOWDRAW_SHEET;
+      } catch(e) { console.warn('Ranger bow JSON error', e); }
+    };
+    xhr.send();
+  },
+
+  _loadRangerDeathSheet: function() {
+    var self = this;
+    if (this.textures.exists('hero-ranger-death')) return;
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', RAN_DEATH_JSON);
+    xhr.onload = function() {
+      try {
+        var data = JSON.parse(xhr.responseText);
+        var fw = data.frameWidth, fh = data.frameHeight;
+        var img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.onload = function() {
+          var cols = Math.floor(img.width / fw);
+          var rows = Math.floor(img.height / fh);
+          var frameCount = cols * rows;
+          if (!self.textures.exists('hero-ranger-death')) {
+            self.textures.addSpriteSheet('hero-ranger-death', img, { frameWidth: fw, frameHeight: fh });
+          }
+          if (!self.anims.exists('ran-death')) {
+            var deathFps = ((data.defaultAnimation && data.defaultAnimation.speed) ? data.defaultAnimation.speed : 24) * 0.7;
+            self.anims.create({
+              key: 'ran-death',
+              frames: self.anims.generateFrameNumbers('hero-ranger-death', { start: 0, end: frameCount - 1 }),
+              frameRate: deathFps,
+              repeat: 0
+            });
+          }
+        };
+        img.src = RAN_DEATH_SHEET;
+      } catch(e) { console.warn('Ranger death JSON error', e); }
+    };
+    xhr.send();
+  },
+
+  _loadRangerIdleSheet: function() {
+    var self = this;
+    if (this.textures.exists('hero-ranger-idle')) { this._rangerRestoreIdle(); return; }
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', RAN_IDLE_JSON);
+    xhr.onload = function() {
+      try {
+        var data = JSON.parse(xhr.responseText);
+        var fw = data.frameWidth, fh = data.frameHeight;
+        var img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.onload = function() {
+          var cols = Math.floor(img.width / fw);
+          var rows = Math.floor(img.height / fh);
+          var frameCount = cols * rows;
+          if (!self.textures.exists('hero-ranger-idle')) {
+            self.textures.addSpriteSheet('hero-ranger-idle', img, { frameWidth: fw, frameHeight: fh });
+          }
+          if (!self.anims.exists('ran-idle')) {
+            self.anims.create({ key: 'ran-idle', frames: self.anims.generateFrameNumbers('hero-ranger-idle', { start: 0, end: frameCount - 1 }), frameRate: 8, repeat: -1 });
+          }
+          self._RAN_IDLE_FRAME_H = fh;
+          self._rangerRestoreIdle();
+        };
+        img.src = RAN_IDLE_SHEET;
+      } catch(e) { console.warn('Ranger idle JSON error', e); }
+    };
+    xhr.send();
+  },
+
+  _loadRangerTrapperSheet: function() {
+    var self = this;
+    if (this.textures.exists('hero-ranger-trapper')) return;
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', RAN_TRAPPER_JSON);
+    xhr.onload = function() {
+      try {
+        var data = JSON.parse(xhr.responseText);
+        var fw = data.frameWidth, fh = data.frameHeight;
+        var img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.onload = function() {
+          var cols = Math.floor(img.width / fw);
+          var rows = Math.floor(img.height / fh);
+          var frameCount = cols * rows;
+          if (!self.textures.exists('hero-ranger-trapper')) {
+            self.textures.addSpriteSheet('hero-ranger-trapper', img, { frameWidth: fw, frameHeight: fh });
+          }
+          if (!self.anims.exists('ran-trapper')) {
+            self.anims.create({
+              key: 'ran-trapper',
+              frames: self.anims.generateFrameNumbers('hero-ranger-trapper', { start: 0, end: frameCount - 1 }),
+              frameRate: 24,
+              repeat: 0
+            });
+          }
+          self._RAN_TRAPPER_FRAME_H = fh;
+        };
+        img.src = RAN_TRAPPER_SHEET;
+      } catch(e) { console.warn('Ranger trapper JSON error', e); }
+    };
+    xhr.send();
+  },
+
+  playRangerTrapperAttack: function(intervalMs) {
+    var self = this;
+    if (!this.textures.exists('hero-ranger-trapper') || !this.anims.exists('ran-trapper')) return;
+    var animObj = this.anims.get('ran-trapper');
+    var frameCount = animObj ? animObj.frames.length : 1;
+    var fps = Math.round(frameCount * 1000 / Math.max(intervalMs, 200));
+    var fh = this._RAN_TRAPPER_FRAME_H || 128;
+    var scale = 253 / fh;
+    if (this.heroImg) this.heroImg.setVisible(false);
+    if (!this.rangerAnimSprite) {
+      this.rangerAnimSprite = this.add.sprite(HERO_X, GROUND_Y, 'hero-ranger-trapper')
+        .setOrigin(0.5, 1).setDepth(3).setScale(scale);
+    }
+    this.rangerAnimSprite.off('animationcomplete');
+    this.rangerAnimSprite.setTexture('hero-ranger-trapper', 0)
+      .setScale(scale).setPosition(HERO_X, GROUND_Y).setVisible(true);
+    this.rangerAnimSprite.play({ key: 'ran-trapper', frameRate: fps });
+    this.rangerAnimSprite.once('animationcomplete', function() {
+      self._rangerRestoreIdle();
+    });
+  },
+
+  _rangerRestoreIdle: function() {
+    if (this.heroImg) this.heroImg.setVisible(false);
+    var isTrapper = (classKey === 'ranger' && hero.rangerDiscipline === 'trapper');
+    if (isTrapper) {
+      if (!this.textures.exists('hero-ranger-trapper')) return;
+      var fh = this._RAN_TRAPPER_FRAME_H || 128;
+      var scale = 253 / fh;
+      if (!this.rangerAnimSprite) {
+        this.rangerAnimSprite = this.add.sprite(HERO_X, GROUND_Y, 'hero-ranger-trapper')
+          .setOrigin(0.5, 1).setDepth(3).setScale(scale).setFrame(0);
+        this.tweens.add({ targets: this.rangerAnimSprite, alpha: 1, duration: 300 });
+      } else {
+        this.rangerAnimSprite.stop();
+        this.rangerAnimSprite.off('animationcomplete');
+        this.rangerAnimSprite.setTexture('hero-ranger-trapper', 0)
+          .setScale(scale).setPosition(HERO_X, GROUND_Y).setVisible(true);
+      }
+      return;
+    }
+    var idleReady = this.textures.exists('hero-ranger-idle') && this.anims.exists('ran-idle');
+    var bowReady  = this.textures.exists('hero-ranger-bowdraw');
+    if (!idleReady && !bowReady) return;
+    var fh = this._RAN_FRAME_H || 128;
+    var scale = 220 / fh;
+    if (!this.rangerAnimSprite) {
+      this.rangerAnimSprite = this.add.sprite(HERO_X, GROUND_Y, 'hero-ranger-bowdraw')
+        .setOrigin(0.5, 1).setDepth(3).setScale(scale).setFrame(0);
+      this.tweens.add({ targets: this.rangerAnimSprite, alpha: 1, duration: 300 });
+    } else {
+      this.rangerAnimSprite.stop();
+      this.rangerAnimSprite.off('animationcomplete');
+      this.rangerAnimSprite.setTexture('hero-ranger-bowdraw', 0)
+        .setScale(scale).setPosition(HERO_X, GROUND_Y).setVisible(true);
+    }
+  },
+
+  playRangerBowDraw: function(intervalMs) {
+    var self = this;
+    if (!this.textures.exists('hero-ranger-bowdraw') || !this.anims.exists('ran-bowdraw')) return;
+    var animObj = this.anims.get('ran-bowdraw');
+    var frameCount = animObj ? animObj.frames.length : 1;
+    var fps = Math.round(frameCount * 1000 / Math.max(intervalMs, 200));
+    var fh = this._RAN_FRAME_H || 128;
+    var scale = 220 / fh;
+    if (this.heroImg) this.heroImg.setVisible(false);
+    if (!this.rangerAnimSprite) {
+      this.rangerAnimSprite = this.add.sprite(HERO_X, GROUND_Y, 'hero-ranger-bowdraw')
+        .setOrigin(0.5, 1).setDepth(3).setScale(scale);
+    }
+    this.rangerAnimSprite.off('animationcomplete');
+    this.rangerAnimSprite.setTexture('hero-ranger-bowdraw', 0)
+      .setScale(scale).setPosition(HERO_X, GROUND_Y).setVisible(true);
+    this.rangerAnimSprite.play({ key: 'ran-bowdraw', frameRate: fps });
+    this.rangerAnimSprite.once('animationcomplete', function() {
+      self._rangerRestoreIdle();
+    });
+  },
+
+  playRangerDeath: function() {
+    if (!this.textures.exists('hero-ranger-death') || !this.anims.exists('ran-death')) return;
+    var fh = this._RAN_FRAME_H || 128;
+    var scale = 220 / fh;
+    if (this.heroImg) this.heroImg.setVisible(false);
+    if (!this.rangerAnimSprite) {
+      this.rangerAnimSprite = this.add.sprite(HERO_X, GROUND_Y, 'hero-ranger-death')
+        .setOrigin(0.5, 1).setDepth(3).setScale(scale);
+    }
+    this.rangerAnimSprite.off('animationcomplete');
+    this.rangerAnimSprite.setTexture('hero-ranger-death', 0)
+      .setScale(scale).setPosition(HERO_X, GROUND_Y).setVisible(true);
+    this.rangerAnimSprite.play('ran-death');
   },
 
   _isToxicologist: function() { return classKey === 'rogue' && hero.rogueSpec === 'toxicologist'; },
@@ -12797,16 +13129,7 @@ var CombatScene = new Phaser.Class({
     this.rogueAnimSprite.setTexture(texKey, 0).setScale(scale)
       .setPosition(HERO_X, groundY).setVisible(true);
     this.rogueAnimSprite.play({ key: animKey, frameRate: fps });
-    var _dashed = false;
-    this.rogueAnimSprite.on('animationupdate', function(anim, frame) {
-      if (!_dashed && frame.index === 12) {
-        _dashed = true;
-        self._rogueDashForward(null);
-      }
-    });
     this.rogueAnimSprite.once('animationcomplete', function() {
-      self.rogueAnimSprite.off('animationupdate');
-      self.rogueAnimSprite.setPosition(HERO_X, groundY);
       self._rogueRestoreIdle();
     });
   },
@@ -13082,6 +13405,14 @@ var CombatScene = new Phaser.Class({
     this.heroImg.play({ key: 'war-death', frameRate: 18, repeat: 0 });
   },
 
+  _warriorRestoreIdle: function() {
+    if (!this.heroImg || !this.textures.exists('hero-warrior-idle') || !this.anims.exists('war-idle')) return;
+    var idleScale = (this._heroScale || 1) * (WAR_FRAME_H / WAR_IDLE_FRAME_H);
+    this.heroImg.off('animationcomplete');
+    this.heroImg.setTexture('hero-warrior-idle', 0).setScale(idleScale);
+    this.heroImg.play({ key: 'war-idle', frameRate: 12 });
+  },
+
   playWarriorOneShot: function(texKey, animKey, frameH, intervalMs) {
     var self = this;
     if (!this.heroImg || !this.textures.exists(texKey) || !this.anims.exists(animKey)) return;
@@ -13166,20 +13497,79 @@ var CombatScene = new Phaser.Class({
 
 
   _setBgSize: function() {
-    if (!this.bgImg) return;
+    var obj = this.bgAnimSprite || this.bgImg;
+    if (!obj) return;
     var W = this.scale.width, H = this.scale.height;
-    // Scale to cover — no distortion
-    var scaleX = W / this.bgImg.width;
-    var scaleY = H / this.bgImg.height;
-    var s = Math.max(scaleX, scaleY);
-    this.bgImg.setScale(s);
-    // Anchor to bottom-center so ground is always visible
-    var scaledH = this.bgImg.height * s;
-    var y = H - scaledH / 2 + scaledH * 0.08; // pull up slightly so ground shows
-    this.bgImg.setPosition(W/2, Math.min(H/2, y));
+    var nw = obj.width, nh = obj.height;
+    if (!nw || !nh) return;
+    var s = Math.max(W / nw, H / nh);
+    obj.setScale(s);
+    var scaledH = nh * s;
+    var y = H - scaledH / 2 + scaledH * 0.08;
+    obj.setPosition(W / 2, Math.min(H / 2, y));
+  },
+  setBackgroundAnimated: function(cfg) {
+    var self = this;
+    var key = cfg.key, animKey = cfg.anim;
+    // Already playing or loading — don't restart
+    if (this._bgAnimLoading) return;
+    if (this.bgAnimSprite && this.bgAnimSprite.visible && this.bgAnimSprite.anims.isPlaying) return;
+    if (this.bgImg) this.bgImg.setVisible(false);
+    if (this.textures.exists(key)) {
+      if (!self.bgAnimSprite) {
+        self.bgAnimSprite = self.add.sprite(self.scale.width/2, self.scale.height/2, key).setDepth(0).setOrigin(0.5, 0.5);
+      } else {
+        self.bgAnimSprite.setVisible(true);
+      }
+      self._setBgSize();
+      if (self.anims.exists(animKey)) self.bgAnimSprite.play(animKey);
+      return;
+    }
+    self._bgAnimLoading = true;
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', cfg.json);
+    xhr.onload = function() {
+      try {
+        var data = JSON.parse(xhr.responseText);
+        var fw = data.frameWidth, fh = data.frameHeight;
+        var fps = (data.defaultAnimation && data.defaultAnimation.speed) ? data.defaultAnimation.speed : 12;
+        fps = fps * 0.375; // 62.5% slower total
+        var img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.onload = function() {
+          self._bgAnimLoading = false;
+          var cols = Math.floor(img.width / fw);
+          var rows = Math.floor(img.height / fh);
+          var frameCount = cols * rows - 1; // drop last frame (blank padding)
+          if (!self.textures.exists(key)) {
+            self.textures.addSpriteSheet(key, img, { frameWidth: fw, frameHeight: fh });
+          }
+          if (!self.anims.exists(animKey)) {
+            self.anims.create({
+              key: animKey,
+              frames: self.anims.generateFrameNumbers(key, { start: 0, end: frameCount - 1 }),
+              frameRate: fps,
+              repeat: -1
+            });
+          }
+          if (!self.bgAnimSprite) {
+            self.bgAnimSprite = self.add.sprite(self.scale.width/2, self.scale.height/2, key).setDepth(0).setOrigin(0.5, 0.5);
+          } else {
+            self.bgAnimSprite.setVisible(true);
+          }
+          self._setBgSize();
+          self.bgAnimSprite.play(animKey);
+        };
+        img.onerror = function() { self._bgAnimLoading = false; };
+        img.src = cfg.png;
+      } catch(e) { self._bgAnimLoading = false; console.warn('BG anim load error', e); }
+    };
+    xhr.onerror = function() { self._bgAnimLoading = false; };
+    xhr.send();
   },
   setBackground: function(url) {
     if (!url) { if (this.bgImg) this.bgImg.setVisible(false); return; }
+    if (this.bgAnimSprite) this.bgAnimSprite.setVisible(false);
     var self = this;
     var key = 'bg-' + url.slice(-20).replace(/[^a-z0-9]/gi, '_');
     this._loadTexture(key, url, function() {
@@ -13191,7 +13581,6 @@ var CombatScene = new Phaser.Class({
       }
     });
   },
-
   showEnemy: function(isBoss, enemyName, spriteUrl) {
     var self = this;
     this._bossAuraPulse = isBoss;
@@ -13366,11 +13755,13 @@ var CombatScene = new Phaser.Class({
     else if (type === 'arrow')        this._fireArrow(cfg, isCrit);
     else if (type === 'multiarrow')   this._fireMultiArrow(cfg, isCrit);
     else if (type === 'executearrow') this._fireExecuteArrow(cfg, isCrit);
-    else if (type === 'arcane_arrow') this._fireArcaneArrow(cfg, isCrit);
+    else if (type === 'arcane_arrow')  this._fireArcaneArrow(cfg, isCrit);
+    else if (type === 'overload_arrow') this._fireOverloadArrow(cfg, isCrit);
     else if (type === 'trap')         this._fireTrap(cfg, isCrit);
     else if (type === 'companion')    this._fireCompanionStrike(cfg, isCrit);
     else if (type === 'leapslam')     this._fireLeapSlam(cfg, isCrit);
     else if (type === 'twinorb')      this._fireTwinOrb(cfg, isCrit);
+    else if (type === 'fireballsprite') this._fireFireball(cfg, isCrit);
     else                              this._fireOrb(cfg, isCrit);
   },
 
@@ -13757,6 +14148,44 @@ var CombatScene = new Phaser.Class({
       if (t < 1) { requestAnimationFrame(tick); }
       else {
         [outerGlow,midGlow,orbBody,orbCore,halo].forEach(function(o){ o.destroy(); });
+        self.flashEnemy(cfg.color);
+        self._impactBurst(ex, ey, cfg, isCrit);
+      }
+    })();
+  },
+
+  // ── Fireball sprite: fireball.png along same bezier arc as orb ──────────
+  _fireFireball: function(cfg, isCrit) {
+    var self = this;
+    if (!this.textures.exists('fireball-proj')) { this._fireOrb(cfg, isCrit); return; }
+    var sx = HERO_X+26, sy = GROUND_Y-126, ex = ENEMY_X, ey = GROUND_Y-80;
+    var cpx = (sx+ex)/2, cpy = Math.min(sy,ey) - 60;
+    var dur = 650;
+    var start = Date.now();
+    var scale = isCrit ? 0.22 : 0.15;
+
+    var fb = this.add.image(sx, sy, 'fireball-proj').setDepth(7).setScale(scale).setOrigin(0.5, 0.5);
+
+    (function tick() {
+      var t = Math.min(1, (Date.now()-start)/dur);
+      var mt = 1-t;
+      var x = mt*mt*sx + 2*mt*t*cpx + t*t*ex;
+      var y = mt*mt*sy + 2*mt*t*cpy + t*t*ey;
+      // Rotate to face direction of travel
+      var dtx = 2*(1-t)*(cpx-sx) + 2*t*(ex-cpx);
+      var dty = 2*(1-t)*(cpy-sy) + 2*t*(ey-cpy);
+      fb.setPosition(x, y).setRotation(Math.atan2(dty, dtx));
+
+      // Glow trail
+      if (Math.random() > 0.35) {
+        var tr = self.add.circle(x, y, (isCrit?9:6)*Math.random(), cfg.color, 0.4+Math.random()*0.3).setDepth(5);
+        self.tweens.add({ targets:tr, scaleX:0.05, scaleY:0.05, alpha:0, duration:220+Math.random()*100,
+          ease:'Quad.easeIn', onComplete:function(){ tr.destroy(); }});
+      }
+
+      if (t < 1) { requestAnimationFrame(tick); }
+      else {
+        fb.destroy();
         self.flashEnemy(cfg.color);
         self._impactBurst(ex, ey, cfg, isCrit);
       }
@@ -14201,47 +14630,83 @@ var CombatScene = new Phaser.Class({
     });
   },
 
-  // ── Arrow: thin shaft with fletching tail, fast arc to enemy ─────────
+  // ── Long Shot: slow heavy power arrow with glowing trail and earth-shattering impact ──
   _fireArrow: function(cfg, isCrit) {
     var self = this;
     var sx = HERO_X + 20, sy = GROUND_Y - 130;
     var ex = ENEMY_X, ey = GROUND_Y - 100;
-    var dur = isCrit ? 130 : 180;
+    var dur = isCrit ? 380 : 560;
+    var arc = 70;
     var start = Date.now();
     var arrowGfx = this.add.graphics().setDepth(9);
+    // Glowing ember trail
+    var trailTimer = this.time.addEvent({ delay: 22, repeat: Math.floor(dur / 22),
+      callback: function() {
+        var t2 = Math.min(1, (Date.now() - start) / dur);
+        var x2 = sx + (ex-sx)*t2;
+        var y2 = sy + (ey-sy)*t2 - Math.sin(t2*Math.PI)*arc;
+        var ember = self.add.circle(x2, y2, isCrit?4:2.5, cfg.glowColor, 0.65).setDepth(7);
+        self.tweens.add({ targets:ember, scaleX:0.1, scaleY:0.1, alpha:0, y: y2+18,
+          duration:350, ease:'Quad.easeIn', onComplete:function(){ ember.destroy(); }});
+      }
+    });
     (function tick() {
       var t = Math.min(1, (Date.now() - start) / dur);
-      var ease = t < 0.5 ? 2*t*t : -1+(4-2*t)*t;
-      var x = sx + (ex - sx) * ease;
-      var y = sy + (ey - sy) * ease - Math.sin(t * Math.PI) * 30;
-      var ang = Math.atan2(ey - sy, ex - sx);
+      var x = sx + (ex-sx)*t;
+      var y = sy + (ey-sy)*t - Math.sin(t*Math.PI)*arc;
+      var tangY = (ey-sy) - arc*Math.PI*Math.cos(t*Math.PI);
+      var ang = Math.atan2(tangY, ex-sx);
       arrowGfx.clear();
-      arrowGfx.lineStyle(isCrit ? 3 : 2, cfg.glowColor, 0.95);
-      arrowGfx.lineBetween(x, y, x - Math.cos(ang)*22, y - Math.sin(ang)*22);
-      arrowGfx.fillStyle(cfg.glowColor, 1);
+      // Outer glow
+      arrowGfx.lineStyle(isCrit?10:7, cfg.color, 0.12);
+      arrowGfx.lineBetween(x, y, x-Math.cos(ang)*32, y-Math.sin(ang)*32);
+      // Shaft
+      arrowGfx.lineStyle(isCrit?4:3, cfg.glowColor, 0.95);
+      arrowGfx.lineBetween(x, y, x-Math.cos(ang)*30, y-Math.sin(ang)*30);
+      // White core
+      arrowGfx.lineStyle(isCrit?2:1.5, 0xffffff, 0.55);
+      arrowGfx.lineBetween(x, y, x-Math.cos(ang)*22, y-Math.sin(ang)*22);
+      // Head
+      arrowGfx.fillStyle(0xffffff, 0.9);
       arrowGfx.fillTriangle(
-        x + Math.cos(ang)*6,  y + Math.sin(ang)*6,
-        x - Math.cos(ang+0.5)*6, y - Math.sin(ang+0.5)*6,
-        x - Math.cos(ang-0.5)*6, y - Math.sin(ang-0.5)*6
+        x+Math.cos(ang)*10, y+Math.sin(ang)*10,
+        x-Math.cos(ang+0.52)*8, y-Math.sin(ang+0.52)*8,
+        x-Math.cos(ang-0.52)*8, y-Math.sin(ang-0.52)*8
       );
-      arrowGfx.lineStyle(1, cfg.color, 0.35);
-      arrowGfx.lineBetween(x - Math.cos(ang)*22, y - Math.sin(ang)*22, x - Math.cos(ang)*36, y - Math.sin(ang)*36 - 5);
-      arrowGfx.lineBetween(x - Math.cos(ang)*22, y - Math.sin(ang)*22, x - Math.cos(ang)*36, y - Math.sin(ang)*36 + 5);
-      if (t < 1) {
-        requestAnimationFrame(tick);
-      } else {
-        arrowGfx.destroy();
+      // Fletching
+      arrowGfx.lineStyle(2, cfg.color, 0.7);
+      arrowGfx.lineBetween(x-Math.cos(ang)*30, y-Math.sin(ang)*30,
+        x-Math.cos(ang)*46+Math.cos(ang+1.57)*10, y-Math.sin(ang)*46+Math.sin(ang+1.57)*10);
+      arrowGfx.lineBetween(x-Math.cos(ang)*30, y-Math.sin(ang)*30,
+        x-Math.cos(ang)*46-Math.cos(ang+1.57)*10, y-Math.sin(ang)*46-Math.sin(ang+1.57)*10);
+      if (t < 1) { requestAnimationFrame(tick); }
+      else {
+        trailTimer.remove(); arrowGfx.destroy();
         self.flashEnemy(cfg.color);
-        if (isCrit) {
-          self._burstAt(ex, ey, cfg.color, 10);
-          self.cameras.main.shake(100, 0.008);
-        } else {
-          self._sparkBurst(ex, ey, cfg, false);
-        }
+        self._burstAt(ex, ey, cfg.color, isCrit?22:14);
+        self.cameras.main.shake(isCrit?260:160, isCrit?0.022:0.014);
+        // Expanding impact ring
+        var ring = self.add.graphics().setDepth(10);
+        ring.lineStyle(isCrit?6:4, cfg.glowColor, 0.9);
+        ring.strokeCircle(ex, ey, 10);
+        self.tweens.add({ targets:ring, scaleX:isCrit?8:5.5, scaleY:isCrit?8:5.5, alpha:0,
+          duration:520, ease:'Quad.easeOut', onComplete:function(){ ring.destroy(); }});
+        // Arrow shaft fragment embedded
         var frag = self.add.graphics().setDepth(8);
-        frag.lineStyle(2, cfg.color, 0.6);
-        frag.lineBetween(ex - Math.cos(ang)*4, ey - Math.sin(ang)*4, ex + Math.cos(ang)*12, ey + Math.sin(ang)*12);
-        self.tweens.add({ targets: frag, alpha: 0, duration: 300, onComplete: function() { frag.destroy(); } });
+        frag.lineStyle(3, cfg.glowColor, 0.85);
+        frag.lineBetween(ex-Math.cos(ang)*5, ey-Math.sin(ang)*5, ex+Math.cos(ang)*20, ey+Math.sin(ang)*20);
+        self.tweens.add({ targets:frag, alpha:0, duration:900, delay:120, onComplete:function(){ frag.destroy(); }});
+        // Earth debris shards scatter upward
+        for (var i=0; i<(isCrit?9:6); i++) {
+          var da = -Math.PI*0.5 + (Math.random()-0.5)*Math.PI*1.2;
+          var shard = self.add.graphics().setDepth(8);
+          shard.lineStyle(isCrit?2.5:1.5, cfg.glowColor, 0.8);
+          shard.lineBetween(0, 0, Math.cos(da)*10, Math.sin(da)*10);
+          shard.x = ex; shard.y = ey;
+          self.tweens.add({ targets:shard, x: ex+Math.cos(da)*(35+Math.random()*45),
+            y: ey+Math.sin(da)*(35+Math.random()*45)-15, alpha:0,
+            duration:420+Math.random()*180, ease:'Quad.easeOut', onComplete:function(){ shard.destroy(); }});
+        }
       }
     })();
   },
@@ -14488,99 +14953,328 @@ var CombatScene = new Phaser.Class({
     })();
   },
 
-  // ── Multi Arrow (Strafing Shot): 3 quick arrows in spread ────────────
+  // ── Strafing Shot: rapid spread with hero motion blur and spark trails ──
   _fireMultiArrow: function(cfg, isCrit) {
     var self = this;
     var count = isCrit ? 4 : 3;
     var sx = HERO_X + 20, sy = GROUND_Y - 130;
     var ex = ENEMY_X, ey = GROUND_Y - 100;
+    // Hero-side motion blur streaks
+    for (var b = 0; b < 3; b++) {
+      (function(bi) {
+        var blur = self.add.graphics().setDepth(4);
+        blur.lineStyle(isCrit?3:2, cfg.glowColor, 0.22 - bi*0.06);
+        blur.lineBetween(HERO_X - bi*14, GROUND_Y - 80 - bi*8,
+                         HERO_X - bi*14 - 28, GROUND_Y - 80 - bi*8);
+        self.tweens.add({ targets:blur, alpha:0, duration:180+bi*40,
+          onComplete:function(){ blur.destroy(); }});
+      })(b);
+    }
     for (var i = 0; i < count; i++) {
       (function(ai) {
-        self.time.delayedCall(ai * 85, function() {
-          var sv = (ai - (count-1)/2) * 16;
-          var dur = 155 - ai * 8;
+        self.time.delayedCall(ai * 70, function() {
+          var sv = (ai - (count-1)/2) * 18;
+          var dur = 140 - ai * 6;
           var start = Date.now();
           var arrowGfx = self.add.graphics().setDepth(9);
+          // Spark trail per arrow
+          var trailTimer = self.time.addEvent({ delay: 18, repeat: Math.floor(dur/18),
+            callback: function() {
+              var t2 = Math.min(1, (Date.now()-start)/dur);
+              var x2 = sx+(ex-sx)*t2, y2 = (sy+sv)+((ey+sv)-(sy+sv))*t2 - Math.sin(t2*Math.PI)*18;
+              var sp = self.add.circle(x2, y2, 1.5, cfg.glowColor, 0.6).setDepth(7);
+              self.tweens.add({ targets:sp, scaleX:0.1, scaleY:0.1, alpha:0, duration:160,
+                onComplete:function(){ sp.destroy(); }});
+            }
+          });
           (function tick() {
             var t = Math.min(1, (Date.now()-start)/dur);
             var x = sx + (ex-sx)*t;
             var y = (sy+sv) + ((ey+sv)-(sy+sv))*t - Math.sin(t*Math.PI)*18;
             var ang = Math.atan2((ey+sv)-(sy+sv), ex-sx);
             arrowGfx.clear();
-            arrowGfx.lineStyle(ai===0?(isCrit?3:2):(isCrit?2:1.5), cfg.glowColor, 0.92);
+            // Glow halo
+            arrowGfx.lineStyle(isCrit?5:3, cfg.color, 0.18);
+            arrowGfx.lineBetween(x, y, x-Math.cos(ang)*22, y-Math.sin(ang)*22);
+            // Shaft
+            arrowGfx.lineStyle(ai===0?(isCrit?3:2):(isCrit?2.5:2), cfg.glowColor, 0.95);
             arrowGfx.lineBetween(x, y, x-Math.cos(ang)*20, y-Math.sin(ang)*20);
-            arrowGfx.fillStyle(cfg.glowColor, 1);
+            // Head
+            arrowGfx.fillStyle(0xffffff, 0.85);
             arrowGfx.fillTriangle(
-              x+Math.cos(ang)*5, y+Math.sin(ang)*5,
+              x+Math.cos(ang)*6, y+Math.sin(ang)*6,
               x-Math.cos(ang+0.5)*5, y-Math.sin(ang+0.5)*5,
               x-Math.cos(ang-0.5)*5, y-Math.sin(ang-0.5)*5
             );
             if (t < 1) { requestAnimationFrame(tick); }
             else {
-              arrowGfx.destroy();
-              if (ai === 0) self.flashEnemy(cfg.color);
+              trailTimer.remove(); arrowGfx.destroy();
+              if (ai === 0) { self.flashEnemy(cfg.color); }
+              // Quick impact spark at each hit point
+              self._sparkBurst(ex, ey+sv*0.3, cfg, false);
               var frag = self.add.graphics().setDepth(8);
-              frag.lineStyle(1.5, cfg.color, 0.6);
-              frag.lineBetween(ex-Math.cos(ang)*3, ey+sv-Math.sin(ang)*3, ex+Math.cos(ang)*11, ey+sv+Math.sin(ang)*11);
-              self.tweens.add({ targets:frag, alpha:0, duration:380, onComplete:function(){ frag.destroy(); }});
+              frag.lineStyle(2, cfg.glowColor, 0.7);
+              frag.lineBetween(ex-Math.cos(ang)*3, ey+sv*0.3-Math.sin(ang)*3,
+                               ex+Math.cos(ang)*13, ey+sv*0.3+Math.sin(ang)*13);
+              self.tweens.add({ targets:frag, alpha:0, duration:320, onComplete:function(){ frag.destroy(); }});
             }
           })();
         });
       })(i);
     }
-    if (isCrit) self.cameras.main.shake(70, 0.005);
+    if (isCrit) self.cameras.main.shake(90, 0.007);
   },
 
-  // ── Execute Arrow: charge-up then single heavy shot ───────────────────
+  // ── Execute Arrow: scales power with enemy missing HP ─────────────────
   _fireExecuteArrow: function(cfg, isCrit) {
     var self = this;
     var sx = HERO_X + 20, sy = GROUND_Y - 130;
     var ex = ENEMY_X, ey = GROUND_Y - 100;
-    var charge  = self.add.circle(sx, sy, 7, cfg.color, 0.85).setDepth(9);
-    var chargeG = self.add.circle(sx, sy, 16, cfg.glowColor, 0.28).setDepth(8);
-    self.tweens.add({ targets:[charge,chargeG], scaleX:2.4, scaleY:2.4, duration:220, ease:'Back.easeOut' });
-    self.time.delayedCall(240, function() {
+    // 0 = full HP, 1 = dead — drives all scaling below
+    var missingPct = (enemy && enemy.maxHp > 0) ? Math.min(1, 1 - enemy.hp / enemy.maxHp) : 0;
+    var power = isCrit ? Math.min(1, missingPct + 0.35) : missingPct;
+    // Charge orb pulses bigger as enemy weakens
+    var chargeR = 7 + power * 14;
+    var charge  = self.add.circle(sx, sy, chargeR, cfg.color, 0.85).setDepth(9);
+    var chargeG = self.add.circle(sx, sy, chargeR * 2.2, cfg.glowColor, 0.25).setDepth(8);
+    // Red tint creeps in at low enemy HP
+    if (missingPct > 0.5) {
+      var blood = self.add.circle(sx, sy, chargeR * 1.4, 0xff2200, missingPct * 0.35).setDepth(9);
+      self.tweens.add({ targets:blood, scaleX:2.8, scaleY:2.8, alpha:0, duration:200+power*80,
+        onComplete:function(){ blood.destroy(); }});
+    }
+    var chargeTime = Math.round(180 + (1-power) * 120);
+    self.tweens.add({ targets:[charge,chargeG], scaleX:2.2+power*1.2, scaleY:2.2+power*1.2,
+      duration:chargeTime, ease:'Back.easeOut' });
+    self.time.delayedCall(chargeTime + 30, function() {
       charge.destroy(); chargeG.destroy();
-      var dur = isCrit ? 105 : 150;
+      var dur = Math.round((isCrit ? 90 : 130) - power * 40);
       var start = Date.now();
       var arrowGfx = self.add.graphics().setDepth(9);
-      var trailTimer = self.time.addEvent({
-        delay: 18, repeat: Math.floor(dur/18),
+      var trailR = 4 + power * 6;
+      var trailTimer = self.time.addEvent({ delay: 15, repeat: Math.floor(dur/15),
         callback: function() {
           var t2 = Math.min(1, (Date.now()-start)/dur);
           var x2 = sx+(ex-sx)*t2, y2 = sy+(ey-sy)*t2 - Math.sin(t2*Math.PI)*28;
-          var tr = self.add.circle(x2, y2, isCrit?6:4, cfg.color, 0.6).setDepth(7);
-          self.tweens.add({ targets:tr, scaleX:0.1, scaleY:0.1, alpha:0, duration:210, onComplete:function(){ tr.destroy(); }});
+          var tr = self.add.circle(x2, y2, trailR, cfg.color, 0.55).setDepth(7);
+          if (missingPct > 0.5) {
+            var trBlood = self.add.circle(x2, y2, trailR*0.6, 0xff2200, missingPct*0.4).setDepth(7);
+            self.tweens.add({ targets:trBlood, scaleX:0.1, scaleY:0.1, alpha:0, duration:180, onComplete:function(){ trBlood.destroy(); }});
+          }
+          self.tweens.add({ targets:tr, scaleX:0.1, scaleY:0.1, alpha:0, duration:200, onComplete:function(){ tr.destroy(); }});
         }
       });
       (function tick() {
         var t = Math.min(1, (Date.now()-start)/dur);
         var x = sx+(ex-sx)*t, y = sy+(ey-sy)*t - Math.sin(t*Math.PI)*28;
         var ang = Math.atan2(ey-sy, ex-sx);
+        var shaftW = 3 + power * 4;
         arrowGfx.clear();
-        arrowGfx.lineStyle(isCrit?5:3, cfg.glowColor, 0.95);
+        // Outer glow widens at low HP
+        arrowGfx.lineStyle(shaftW*2.5, cfg.color, 0.18 + power*0.12);
+        arrowGfx.lineBetween(x, y, x-Math.cos(ang)*32, y-Math.sin(ang)*32);
+        // Shaft
+        arrowGfx.lineStyle(shaftW, cfg.glowColor, 0.95);
         arrowGfx.lineBetween(x, y, x-Math.cos(ang)*30, y-Math.sin(ang)*30);
-        arrowGfx.lineStyle(isCrit?2:1.5, 0xffffff, 0.65);
-        arrowGfx.lineBetween(x, y, x-Math.cos(ang)*26, y-Math.sin(ang)*26);
-        arrowGfx.fillStyle(cfg.glowColor, 1);
+        if (missingPct > 0.4) {
+          arrowGfx.lineStyle(shaftW*0.5, 0xff4400, missingPct*0.7);
+          arrowGfx.lineBetween(x, y, x-Math.cos(ang)*26, y-Math.sin(ang)*26);
+        }
+        arrowGfx.lineStyle(1.5, 0xffffff, 0.55);
+        arrowGfx.lineBetween(x, y, x-Math.cos(ang)*22, y-Math.sin(ang)*22);
+        var headR = 8 + power * 5;
+        arrowGfx.fillStyle(missingPct > 0.5 ? 0xff4422 : cfg.glowColor, 1);
         arrowGfx.fillTriangle(
-          x+Math.cos(ang)*8, y+Math.sin(ang)*8,
-          x-Math.cos(ang+0.42)*8, y-Math.sin(ang+0.42)*8,
-          x-Math.cos(ang-0.42)*8, y-Math.sin(ang-0.42)*8
+          x+Math.cos(ang)*headR, y+Math.sin(ang)*headR,
+          x-Math.cos(ang+0.42)*headR*0.9, y-Math.sin(ang+0.42)*headR*0.9,
+          x-Math.cos(ang-0.42)*headR*0.9, y-Math.sin(ang-0.42)*headR*0.9
         );
         if (t < 1) { requestAnimationFrame(tick); }
         else {
           trailTimer.remove(); arrowGfx.destroy();
           self.flashEnemy(cfg.color);
-          self._burstAt(ex, ey, cfg.color, isCrit?20:12);
-          self.cameras.main.shake(isCrit?220:130, isCrit?0.020:0.011);
-          var ring = self.add.circle(ex, ey, 12, 0, 0).setDepth(9);
-          ring.setStrokeStyle(isCrit?5:3, cfg.glowColor);
-          self.tweens.add({ targets:ring, scaleX:isCrit?8:5, scaleY:isCrit?8:5, alpha:0,
-            duration:560, ease:'Quad.easeOut', onComplete:function(){ ring.destroy(); }});
+          var burstCount = Math.round(10 + power * 16);
+          self._burstAt(ex, ey, missingPct > 0.5 ? 0xff2200 : cfg.color, burstCount);
+          if (missingPct > 0.5) self._burstAt(ex, ey, cfg.color, Math.round(burstCount*0.5));
+          var shake = 0.010 + power * 0.018;
+          self.cameras.main.shake(Math.round(140 + power * 160), isCrit ? shake*1.4 : shake);
+          // Impact ring — grows with power
+          var ringScale = 4 + power * 5;
+          var ring = self.add.graphics().setDepth(10);
+          ring.lineStyle(3+power*3, missingPct>0.5 ? 0xff4422 : cfg.glowColor, 0.9);
+          ring.strokeCircle(ex, ey, 10);
+          self.tweens.add({ targets:ring, scaleX:ringScale, scaleY:ringScale, alpha:0,
+            duration:480+power*120, ease:'Quad.easeOut', onComplete:function(){ ring.destroy(); }});
+          // Second ring at high power
+          if (power > 0.5) {
+            self.time.delayedCall(80, function() {
+              var ring2 = self.add.graphics().setDepth(10);
+              ring2.lineStyle(2, 0xff2200, 0.7);
+              ring2.strokeCircle(ex, ey, 10);
+              self.tweens.add({ targets:ring2, scaleX:ringScale*0.7, scaleY:ringScale*0.7, alpha:0,
+                duration:400, ease:'Quad.easeOut', onComplete:function(){ ring2.destroy(); }});
+            });
+          }
         }
       })();
     });
+  },
+
+  _clearOverloadOrbs: function() {
+    if (!this._overloadOrbs) return;
+    this._overloadOrbs.forEach(function(o) {
+      if (!o) return;
+      if (o.circle) o.circle.destroy();
+      if (o.glow)   o.glow.destroy();
+    });
+    this._overloadOrbs = [];
+    this._overloadCharge = 0;
+  },
+
+  // ── Overload Arrow: builds 3 visual charges, 3rd fires devastating burst ──
+  _fireOverloadArrow: function(cfg, isCrit) {
+    var self = this;
+    if (!this._overloadCharge) this._overloadCharge = 0;
+    this._overloadCharge++;
+    if (this._overloadCharge > 3) this._overloadCharge = 1;
+    var charge = this._overloadCharge;
+    var sx = HERO_X + 20, sy = GROUND_Y - 130;
+    var ex = ENEMY_X, ey = GROUND_Y - 100;
+
+    // Spawn / update floating charge orbs near hero
+    if (!this._overloadOrbs) this._overloadOrbs = [];
+    // Destroy any stale orbs beyond current charge
+    while (this._overloadOrbs.length >= charge && charge < 3) {
+      var old = this._overloadOrbs.pop();
+      if (old && old.circle) { old.circle.destroy(); old.glow.destroy(); }
+    }
+    if (charge < 3) {
+      // Add a new charge orb
+      var orbX = HERO_X - 30 - (charge-1)*22, orbY = GROUND_Y - 170;
+      var orbCircle = self.add.circle(orbX, orbY, 7, cfg.color, 0.9).setDepth(10);
+      var orbGlow   = self.add.circle(orbX, orbY, 14, cfg.glowColor, 0.3).setDepth(9);
+      self.tweens.add({ targets:[orbCircle,orbGlow], scaleX:1.25, scaleY:1.25,
+        duration:300, yoyo:true, repeat:-1, ease:'Sine.easeInOut' });
+      self._overloadOrbs.push({ circle: orbCircle, glow: orbGlow });
+    }
+
+    if (charge < 3) {
+      // Charges 1 & 2: quick arcane bolt, no big fanfare
+      var dur = isCrit ? 170 : 230;
+      var start = Date.now();
+      var arrowGfx = self.add.graphics().setDepth(9);
+      var trailTimer = self.time.addEvent({ delay: 22, repeat: Math.floor(dur/22),
+        callback: function() {
+          var t2 = Math.min(1, (Date.now()-start)/dur);
+          var x2 = sx+(ex-sx)*t2, y2 = sy+(ey-sy)*t2 - Math.sin(t2*Math.PI)*22;
+          var tr = self.add.circle(x2, y2, charge===2?3.5:2.5, cfg.color, 0.5).setDepth(7);
+          self.tweens.add({ targets:tr, scaleX:0.1, scaleY:0.1, alpha:0, duration:200,
+            onComplete:function(){ tr.destroy(); }});
+        }
+      });
+      (function tick() {
+        var t = Math.min(1, (Date.now()-start)/dur);
+        var x = sx+(ex-sx)*t, y = sy+(ey-sy)*t - Math.sin(t*Math.PI)*22;
+        var ang = Math.atan2(ey-sy, ex-sx);
+        arrowGfx.clear();
+        arrowGfx.lineStyle(charge===2?5:3, cfg.color, 0.25);
+        arrowGfx.lineBetween(x, y, x-Math.cos(ang)*16, y-Math.sin(ang)*16);
+        arrowGfx.lineStyle(charge===2?3:2, cfg.glowColor, 0.9);
+        arrowGfx.lineBetween(x, y, x-Math.cos(ang)*14, y-Math.sin(ang)*14);
+        arrowGfx.fillStyle(cfg.glowColor, 1);
+        arrowGfx.fillCircle(x, y, charge===2?4:3);
+        arrowGfx.fillStyle(0xffffff, 0.6);
+        arrowGfx.fillCircle(x, y, charge===2?2:1.5);
+        if (t < 1) { requestAnimationFrame(tick); }
+        else {
+          trailTimer.remove(); arrowGfx.destroy();
+          self.flashEnemy(cfg.color);
+          var ring = self.add.graphics().setDepth(10);
+          ring.lineStyle(charge===2?3:2, cfg.glowColor, 0.8);
+          ring.strokeCircle(ex, ey, 7);
+          self.tweens.add({ targets:ring, scaleX:charge===2?4:3, scaleY:charge===2?4:3, alpha:0,
+            duration:300, ease:'Quad.easeOut', onComplete:function(){ ring.destroy(); }});
+          self._burstAt(ex, ey, cfg.color, charge===2?8:5);
+        }
+      })();
+    } else {
+      // CHARGE 3 — RELEASE. Destroy all orbs with a flash, then fire massive arcane burst.
+      self._overloadCharge = 0;
+      var orbs = self._overloadOrbs || [];
+      self._overloadOrbs = [];
+      orbs.forEach(function(o) {
+        if (!o) return;
+        self.tweens.add({ targets:[o.circle,o.glow], scaleX:3, scaleY:3, alpha:0, duration:200,
+          onComplete:function(){ o.circle.destroy(); o.glow.destroy(); }});
+      });
+      // Wind-up flash on hero
+      var windup = self.add.circle(HERO_X, GROUND_Y-130, 22, cfg.glowColor, 0.55).setDepth(10);
+      self.tweens.add({ targets:windup, scaleX:2.8, scaleY:2.8, alpha:0, duration:260,
+        ease:'Quad.easeOut', onComplete:function(){ windup.destroy(); }});
+      self.time.delayedCall(120, function() {
+        var dur = isCrit ? 110 : 155;
+        var start = Date.now();
+        var arrowGfx = self.add.graphics().setDepth(9);
+        var trailTimer = self.time.addEvent({ delay: 14, repeat: Math.floor(dur/14),
+          callback: function() {
+            var t2 = Math.min(1, (Date.now()-start)/dur);
+            var x2 = sx+(ex-sx)*t2, y2 = sy+(ey-sy)*t2 - Math.sin(t2*Math.PI)*30;
+            var tr = self.add.circle(x2, y2, isCrit?8:6, cfg.color, 0.55).setDepth(7);
+            var tr2= self.add.circle(x2, y2, isCrit?5:3.5, 0xffffff, 0.35).setDepth(8);
+            self.tweens.add({ targets:[tr,tr2], scaleX:0.1, scaleY:0.1, alpha:0, duration:240,
+              onComplete:function(){ tr.destroy(); tr2.destroy(); }});
+          }
+        });
+        (function tick() {
+          var t = Math.min(1, (Date.now()-start)/dur);
+          var x = sx+(ex-sx)*t, y = sy+(ey-sy)*t - Math.sin(t*Math.PI)*30;
+          var ang = Math.atan2(ey-sy, ex-sx);
+          arrowGfx.clear();
+          // Triple-layer glow
+          arrowGfx.lineStyle(isCrit?18:14, cfg.color, 0.10);
+          arrowGfx.lineBetween(x, y, x-Math.cos(ang)*36, y-Math.sin(ang)*36);
+          arrowGfx.lineStyle(isCrit?10:7, cfg.glowColor, 0.25);
+          arrowGfx.lineBetween(x, y, x-Math.cos(ang)*32, y-Math.sin(ang)*32);
+          arrowGfx.lineStyle(isCrit?5:3.5, 0xffffff, 0.85);
+          arrowGfx.lineBetween(x, y, x-Math.cos(ang)*28, y-Math.sin(ang)*28);
+          // Arcing energy core
+          arrowGfx.fillStyle(0xffffff, 1);
+          arrowGfx.fillCircle(x, y, isCrit?8:6);
+          arrowGfx.fillStyle(cfg.glowColor, 0.7);
+          arrowGfx.fillCircle(x, y, isCrit?5:3.5);
+          if (t < 1) { requestAnimationFrame(tick); }
+          else {
+            trailTimer.remove(); arrowGfx.destroy();
+            self.flashEnemy(cfg.color);
+            self._burstAt(ex, ey, cfg.color, isCrit?28:18);
+            self._burstAt(ex, ey, 0xffffff, isCrit?12:8);
+            self.cameras.main.shake(isCrit?300:200, isCrit?0.026:0.018);
+            // Large primary ring
+            var ring = self.add.graphics().setDepth(10);
+            ring.lineStyle(isCrit?7:5, cfg.glowColor, 0.95);
+            ring.strokeCircle(ex, ey, 12);
+            self.tweens.add({ targets:ring, scaleX:isCrit?11:8, scaleY:isCrit?11:8, alpha:0,
+              duration:650, ease:'Quad.easeOut', onComplete:function(){ ring.destroy(); }});
+            // White inner ring
+            self.time.delayedCall(60, function() {
+              var ring2 = self.add.graphics().setDepth(10);
+              ring2.lineStyle(isCrit?5:3, 0xffffff, 0.8);
+              ring2.strokeCircle(ex, ey, 10);
+              self.tweens.add({ targets:ring2, scaleX:isCrit?7:5, scaleY:isCrit?7:5, alpha:0,
+                duration:480, ease:'Quad.easeOut', onComplete:function(){ ring2.destroy(); }});
+            });
+            // Arcane void pulse — dark ring contracts inward
+            self.time.delayedCall(100, function() {
+              var voidRing = self.add.graphics().setDepth(9);
+              voidRing.lineStyle(3, 0x220044, 0.7);
+              voidRing.strokeCircle(ex, ey, 80);
+              self.tweens.add({ targets:voidRing, scaleX:0.1, scaleY:0.1, alpha:0,
+                duration:380, ease:'Quad.easeIn', onComplete:function(){ voidRing.destroy(); }});
+            });
+          }
+        })();
+      });
+    }
   },
 
   // ── Shared impact helpers ─────────────────────────────────────────────
@@ -14860,8 +15554,12 @@ function _preloadActSprites(actNum) {
   }
 
   // Background
-  var bgUrl = ACT_BACKGROUNDS[actNum];
-  if (bgUrl) _pScene.setBackground(bgUrl);
+  if (ACT_BG_ANIMATED[actNum]) {
+    _pScene.setBackgroundAnimated(ACT_BG_ANIMATED[actNum]);
+  } else {
+    var bgUrl = ACT_BACKGROUNDS[actNum];
+    if (bgUrl) _pScene.setBackground(bgUrl);
+  }
 }
 
 function _updateEnemyScene() {
@@ -14900,8 +15598,12 @@ function _updateEnemyScene() {
 function updateSceneBackground() {
   if (!_pScene) return;
   var actNum = actIdx + 1;
-  var src = ACT_BACKGROUNDS[actNum] || null;
-  _pScene.setBackground(src);
+  if (ACT_BG_ANIMATED[actNum]) {
+    _pScene.setBackgroundAnimated(ACT_BG_ANIMATED[actNum]);
+  } else {
+    var src = ACT_BACKGROUNDS[actNum] || null;
+    _pScene.setBackground(src);
+  }
   // Preload all sprites for this act in the background
   _preloadActSprites(actNum);
 }
@@ -14943,8 +15645,13 @@ function triggerAttackAnim(skillId, isCrit) {
     else if (skillId === 'frostfire')  _pScene.playSorcOneShot('hero-sorc-frostfire', 'sorc-frostfire', _sint);
     else if (skillId === 'lightnova')  _pScene.playSorcOneShot('hero-sorc-nova',      'sorc-nova',      _sint);
   }
-  else if (classKey === 'ranger') _pScene.playRangerShoot(heroAttackInterval());
-  var _noProjectile = ['leapslam', 'corrosive', 'neurotoxin', 'spellbreaker', 'nullstrike', 'taintblood'];
+  else if (classKey === 'ranger') {
+    if (skillId !== 'overload_shot' && _pScene._overloadOrbs && _pScene._overloadOrbs.length) _pScene._clearOverloadOrbs();
+    if (RAN_BOW_SKILLS.indexOf(skillId) !== -1) _pScene.playRangerBowDraw(heroAttackInterval());
+    else if (RAN_TRAPPER_SKILLS.indexOf(skillId) !== -1) _pScene.playRangerTrapperAttack(heroAttackInterval());
+    else _pScene.playRangerShoot(heroAttackInterval());
+  }
+  var _noProjectile = ['leapslam', 'corrosive', 'neurotoxin', 'spellbreaker', 'nullstrike', 'taintblood', 'backstab'];
   if (_noProjectile.indexOf(skillId) === -1) _pScene.fireProjectile(skillId, isCrit);
   if (skillId === 'spellbreaker') {
     var _sbDelay = _hitVisualDelayMs || 0;
@@ -14983,13 +15690,23 @@ function triggerHeroDeathAnim() {
   if (classKey === 'warrior') _pScene.playWarriorDeath();
   if (classKey === 'rogue') _pScene.playRogueDeath();
   if (classKey === 'sorceress') _pScene.playSorcDeath();
+  if (classKey === 'ranger') _pScene.playRangerDeath();
   _pScene.deathBurst(true);
+}
+
+function triggerHeroRespawnIdle() {
+  if (!_pScene || settingsReduceAnims) return;
+  if (classKey === 'warrior') _pScene._warriorRestoreIdle();
+  else if (classKey === 'rogue') _pScene._rogueRestoreIdle();
+  else if (classKey === 'sorceress') _pScene._sorcRestoreIdle();
+  else if (classKey === 'ranger') _pScene._rangerRestoreIdle();
 }
 
 function triggerGemDropAnim() { /* handled by Phaser burst */ }
 
 // ── Bounty Complete float ──
 function openDesoHelp() {
+  if (settingsHideHelpPopups) return;
   document.getElementById('deso-help-modal').classList.add('open');
   // Switch to subtle pulse and stop flashing once acknowledged
   var banner = document.getElementById('desolation-banner');
@@ -15210,6 +15927,7 @@ function saveGame() {
       settingsShopTimer:       settingsShopTimer,
       settingsReduceAnims:     settingsReduceAnims,
       settingsFloatDmg:        settingsFloatDmg,
+      settingsHideHelpPopups:  settingsHideHelpPopups,
     };
     localStorage.setItem(SAVE_KEY, JSON.stringify(state));
   } catch(e) {
@@ -15362,6 +16080,7 @@ function loadGame() {
     settingsShopTimer       = state.settingsShopTimer       || 15;
     settingsReduceAnims     = state.settingsReduceAnims     || false;
     settingsFloatDmg        = state.settingsFloatDmg        !== false;
+    settingsHideHelpPopups  = state.settingsHideHelpPopups  || false;
 
     // Bounty board
     currentBounty    = state.currentBounty    || null;
@@ -15412,6 +16131,7 @@ var settingsAutoDiscardMag  = false;    // auto-discard magic rarity drops
 var settingsShopTimer       = 15;       // shop auto-close seconds: 10|15|20|30
 var settingsReduceAnims     = false;    // reduce particle/shake animations
 var settingsFloatDmg        = true;     // floating combat damage numbers
+var settingsHideHelpPopups  = false;    // suppress tutorial/intro popups
 
 var _sessionKills     = 0;
 var _bonusKillCount   = 0;
@@ -15437,7 +16157,10 @@ var _hitFrameMap = {
   taintblood:        9,
   nullstrike:        10,
   spellbreaker:      16,
-  manaburn:          0
+  manaburn:          0,
+  // Sorceress hit frames
+  lightning:         32,
+  chainlight:        32
 };
 var _hitVisualDelayMs = 0;
 var _enemyHpShowAt    = 0;
@@ -15528,6 +16251,7 @@ function _updateSettingsUI() {
   _setToggle('settings-discard-mag',    settingsAutoDiscardMag);
   _setToggle('settings-reduce-anims',   settingsReduceAnims);
   _setToggle('settings-float-dmg',      settingsFloatDmg);
+  _setToggle('settings-hide-help',      settingsHideHelpPopups);
 
   var moreBtn = document.getElementById('settings-more-btn');
   if (moreBtn) moreBtn.style.display = (ngPlusDismissed && !ngPlusUnlocked) ? 'flex' : 'none';
@@ -15560,6 +16284,7 @@ function toggleDiscardNorm()    { settingsAutoDiscardNorm = !settingsAutoDiscard
 function toggleDiscardMag()     { settingsAutoDiscardMag = !settingsAutoDiscardMag; _updateSettingsUI(); saveGame(); }
 function toggleReduceAnims()    { settingsReduceAnims = !settingsReduceAnims; _updateSettingsUI(); saveGame(); }
 function toggleFloatDmg()       { settingsFloatDmg = !settingsFloatDmg; _updateSettingsUI(); saveGame(); }
+function toggleHideHelpPopups() { settingsHideHelpPopups = !settingsHideHelpPopups; _updateSettingsUI(); saveGame(); }
 function toggleLogVerbosity()   { settingsLogVerbosity = settingsLogVerbosity === 'normal' ? 'minimal' : 'normal'; _updateSettingsUI(); saveGame(); }
 function setShopTimer(secs)     { settingsShopTimer = secs; _updateSettingsUI(); saveGame(); }
 
@@ -16840,6 +17565,13 @@ init();
         <div style="font-size:10px;color:#5a5a6a;">Shows damage numbers over characters in combat</div>
       </div>
       <button id="settings-float-dmg" onclick="toggleFloatDmg()" style="padding:3px 14px;font-family:Georgia,serif;font-size:11px;cursor:pointer;border-radius:2px;min-width:44px;">ON</button>
+    </div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+      <div>
+        <div style="font-size:12px;color:#d4c9a8;">Suppress help popups</div>
+        <div style="font-size:10px;color:#5a5a6a;">Hides all tutorial and intro popups</div>
+      </div>
+      <button id="settings-hide-help" onclick="toggleHideHelpPopups()" style="padding:3px 14px;font-family:Georgia,serif;font-size:11px;cursor:pointer;border-radius:2px;min-width:44px;">OFF</button>
     </div>
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
       <div>
