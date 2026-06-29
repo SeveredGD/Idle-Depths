@@ -1408,6 +1408,7 @@
       <div class="stat-row"><span class="stat-label" title="Absorbs damage before HP. Refreshes to full every 10s in combat.">Spell Shield</span><span class="stat-val" id="stat-shield">0</span></div>
       <div class="stat-row"><span class="stat-label">XP Gain</span><span class="stat-val" id="stat-xpgain">0%</span></div>
       <div class="stat-row"><span class="stat-label">Gold Find</span><span class="stat-val" id="stat-goldfind">0%</span></div>
+      <div class="stat-row" id="stat-defense-row" style="display:none;"><span class="stat-label" title="Physical damage reduction from Desolation gear. Diminishing returns, cap 50%." style="color:#ffffff;">Defense</span><span class="stat-val" id="stat-defense" style="color:#ffffff;">0%</span></div>
       <div class="stat-row" id="stat-resist-row" style="display:none;"><span class="stat-label" title="Reduces fire, cold, lightning and poison damage. Cap: 75%." style="color:#ffffff;">Resist All</span><span class="stat-val" id="stat-resist" style="color:#ffffff;">0%</span></div>
       <div class="stat-row" id="stat-thorns-row" style="display:none;"><span class="stat-label" title="% of enemy physical damage reflected back each hit." style="color:#ffffff;">Thorns</span><span class="stat-val" id="stat-thorns" style="color:#ffffff;">0%</span></div>
       <div class="stat-row" id="stat-critmulti-row" style="display:none;"><span class="stat-label" title="Crit damage multiplier (base 2×, cap 4×)." style="color:#ffffff;">Crit Multi</span><span class="stat-val" id="stat-critmulti" style="color:#ffffff;">2.00×</span></div>
@@ -1936,6 +1937,8 @@ var RAN_IDLE_SHEET      = _REPO + 'Ranger%20Animations/ranger_idle.png';
 var RAN_IDLE_JSON       = _REPO + 'Ranger%20Animations/ranger_idle.json';
 var RAN_TRAPPER_SHEET   = _REPO + 'Ranger%20Animations/ranger_Trapper_attack.png';
 var RAN_TRAPPER_JSON    = _REPO + 'Ranger%20Animations/ranger_Trapper_attack.json';
+var RAN_MARKPREY_SHEET  = _REPO + 'Ranger%20Animations/ranger_mark_prey.png';
+var RAN_MARKPREY_JSON   = _REPO + 'Ranger%20Animations/ranger_mark_prey.json';
 // Skills that use the bow draw animation
 var RAN_BOW_SKILLS     = ['long_shot', 'strafing_shot', 'vuln_shot', 'overload_shot', 'execute_shot'];
 var RAN_TRAPPER_SKILLS = ['chain_trap', 'freezing_trap', 'explosive_trap'];
@@ -3265,7 +3268,7 @@ var SCORE_WEIGHTS  = {
   fireDmg:1.5, lightDmg:1.5, coldDmg:1.5, magicDmg:2.5,
   critChance:3.5, aoeChance:2.5,
   blockChance:1.0, spellShield:1.5,
-  xpGain:1.0, goldFind:1.0, castCooldown:3.5,
+  xpGain:1.0, goldFind:1.0, castCooldown:1.5,
   statusEffect:2.0,
   // Desolation-only stats
   resist:2.8, thorns:1.8, critMulti:2.5, sunder:2.5,
@@ -3287,6 +3290,10 @@ var ACT_STAT_BONUS  = {
 };
 
 var SLOTS = ['weapon','armor','ring','amulet','trinket','boots'];
+// Equipped-gear slots including the Desolation second ring. Use this (not SLOTS)
+// anywhere we aggregate stats/score/MF/skill-bonuses from equipped items, so ring2
+// contributes like any other piece. SLOTS stays for drop/vault (slot-type) logic.
+var EQUIP_SLOTS = SLOTS.concat(['ring2']);
 var VAULT_SIZE = 3;
 var VAULT_SIZE_RING = 6; // ring pool is shared across both ring slots (Desolation only)
 function ringVaultCap() { return ngPlusUnlocked ? VAULT_SIZE_RING : VAULT_SIZE; }
@@ -3439,7 +3446,7 @@ function makeRelic(id) {
 var HERO_BASE_MS  = 3000;
 var HERO_FLOOR_MS = 500;
 var SPD_PER_POINT = 40;
-var LOCKOUT_BASE_MS = 600;
+var LOCKOUT_BASE_MS = 1000;
 var MOB_MS        = 3500;
 var BOSS_MS       = 2160;
 // NG+ elemental zone mapping — index matches actIdx (0-4)
@@ -3511,6 +3518,7 @@ var RAGE_MAX = 50;
 var RAGE_DECAY_MS = 5000;
 var _lastRageDecay = 0;
 var _companionNextAtk = 0;   // timestamp for next companion attack
+var _markPreyPending  = null; // { applyAt, dmg, petName } — mark hit lands on the animation's final frame
 var _wolfActiveNext   = 0;   // wolf: off balance (5s)
 var _bearActiveNext   = 0;   // bear: provoke (8s)
 var _eagleActiveNext  = 0;   // eagle: dive bomb (6s)
@@ -3748,7 +3756,7 @@ var statsData = {
   gameStartTs:    0,    // real timestamp when session began
   totalDeaths:    0,    // total deaths across all runs (for feature unlocks)
 };
-var _bossSpawnRealTime = 0;  // real Date.now() when boss was spawned
+var _bossSpawnRealTime = 0;  // real gameNow() when boss was spawned
 var _trapEntryFiring = false; // guard: prevents recursive entry-trap chain when trap kill spawns next mob
 var MERCHANT_DEATH_THRESHOLD = 5; // nightmare/hell; normal uses 3
 var MERCHANT_GOLD_PER_SCORE  = 3;
@@ -3782,6 +3790,27 @@ var debugForceGemDrop = false;
 var debugForceUniqueInShop = false;
 var TICK_BASE      = 100;
 var LEVEL_CAP      = 50;
+
+// ── Virtual game clock ──────────────────────────────────────────────────────
+// All in-combat timing reads gameNow() instead of Date.now(). gameNow advances
+// by (real elapsed ms × gameSpeed) each tick, so game speed is controlled in ONE
+// place and every game-ms duration scales uniformly — no per-timer /gameSpeed.
+// Real wall-clock (offline earnings, save timestamps, cosmetic animations) keeps
+// using Date.now().
+var _gameClock      = Date.now();
+var _clockLastReal  = Date.now();
+var _lastClockDelta = 0;
+function gameNow() { return _gameClock; }
+function _advanceClock() {
+  var r = Date.now();
+  var dt = r - _clockLastReal;
+  _clockLastReal = r;
+  if (dt < 0) dt = 0;
+  else if (dt > 1000) dt = 1000;   // clamp after tab sleep so we don't dump a huge jump
+  _lastClockDelta = Math.round(dt * gameSpeed);
+  _gameClock += _lastClockDelta;
+}
+
 var NG_HP_MULT     = 1.4;   // NG+: enemy/boss HP multiplier (stacks with difficulty mult)
 var NG_DMG_MULT    = 2.0;   // NG+: enemy attack damage multiplier
 
@@ -3853,8 +3882,9 @@ function recalcStats() {
   var bonusFireDmg = 0, bonusLightDmg = 0, bonusColdDmg = 0, bonusMagicDmg = 0;
   var bonusLightCrit = 0, bonusAoe = 0, bonusStatusEffect = 0, bonusResist = 0;
   var bonusThorns = 0, bonusCritMulti = 0, bonusSunder = 0;
-  for (var i = 0; i < SLOTS.length; i++) {
-    var e = hero.equipped[SLOTS[i]];
+  var bonusDefense = 0;
+  for (var i = 0; i < EQUIP_SLOTS.length; i++) {
+    var e = hero.equipped[EQUIP_SLOTS[i]];
     if (e) {
       bonusDmg          += e.stats.mainDmg         || 0;
       bonusHp           += e.stats.hp              || 0;
@@ -3877,6 +3907,7 @@ function recalcStats() {
       bonusThorns       += e.stats.thorns       || 0;
       bonusCritMulti    += e.stats.critMulti    || 0;
       bonusSunder       += e.stats.sunder       || 0;
+      bonusDefense      += e.stats.defense      || 0;
     }
   }
   hero.dmgMin = Math.round(cls.dmgMin + (hero.level - 1) * 1.5 + bonusDmg);
@@ -3916,9 +3947,15 @@ function recalcStats() {
   hero._thorns          = ngPlusUnlocked ? bonusThorns : 0;
   hero._critMulti       = ngPlusUnlocked ? Math.min(200, bonusCritMulti) : 0;  // cap +2.00×; total max 4×
   hero._sunder          = ngPlusUnlocked ? bonusSunder : 0;
+  // Defense → diminishing physical damage reduction, cap 50%. Desolation only.
+  // reduction% = 100 * D / (D + 300)  →  full 5-slot Act-5 set (D=300) = 50% cap.
+  hero._defenseRaw      = bonusDefense;
+  hero._defense         = (ngPlusUnlocked && bonusDefense > 0)
+    ? Math.min(50, Math.round(100 * bonusDefense / (bonusDefense + 300)))
+    : 0;
 
   // ── Active relic stat bonuses (recalculated every recalcStats call) ──
-  if (equippedRelic && relicSystemUnlocked && relicActiveUntil > Date.now()) {
+  if (equippedRelic && relicSystemUnlocked && relicActiveUntil > gameNow()) {
     if (equippedRelic.effect === 'stormHeart') {
       hero._critChance  += (equippedRelic.effectValue  || 0);
       hero._lightDmg    += (equippedRelic.effectValue2 || 0);
@@ -3947,8 +3984,8 @@ function recalcStats() {
   // Rogue spec passive bonuses — allSkills bonus from gear adds to invested pts
   if (classKey === 'rogue') {
     var _allSkillsBonus = 0;
-    for (var _asi = 0; _asi < SLOTS.length; _asi++) {
-      var _ae = hero.equipped[SLOTS[_asi]];
+    for (var _asi = 0; _asi < EQUIP_SLOTS.length; _asi++) {
+      var _ae = hero.equipped[EQUIP_SLOTS[_asi]];
       if (_ae && _ae.allSkills) _allSkillsBonus += _ae.allSkills;
     }
     var _assPts = (hero.skillTree['assassin']     || 0) + _allSkillsBonus;
@@ -3997,7 +4034,7 @@ function heroSwingMs() {
   var skill = cls.skills[hero.activeSkillIdx];
   if (!skill) { hero.activeSkillIdx = 0; skill = cls.skills[0]; }
   var base = Math.max(HERO_FLOOR_MS, HERO_BASE_MS - (hero._bonusSpd || 0) * SPD_PER_POINT);
-  return Math.max(HERO_FLOOR_MS, Math.round(Math.round(base * skill.spdMod) / gameSpeed));
+  return Math.max(HERO_FLOOR_MS, Math.round(Math.round(base * skill.spdMod)));
 }
 function heroLockoutMs() {
   var base = LOCKOUT_BASE_MS - (hero._castCooldown || 0);
@@ -4029,8 +4066,8 @@ function getActiveSkill() {
 function getSkillTreePts()  { var s = getActiveSkill(); return hero.skillTree[s.id] || 0; }
 function getAmuletBonus()   {
   var single = 0, all = 0;
-  for (var _s = 0; _s < SLOTS.length; _s++) {
-    var _e = hero.equipped[SLOTS[_s]];
+  for (var _s = 0; _s < EQUIP_SLOTS.length; _s++) {
+    var _e = hero.equipped[EQUIP_SLOTS[_s]];
     if (!_e) continue;
     if (_e.skillBonus && _e.skillId === getActiveSkill().id) single += _e.skillBonus;
     if (_e.allSkills) all += _e.allSkills;
@@ -4040,8 +4077,8 @@ function getAmuletBonus()   {
 
 function getAmuletBonusForSkill(skill) {
   var single = 0, all = 0;
-  for (var _s = 0; _s < SLOTS.length; _s++) {
-    var _e = hero.equipped[SLOTS[_s]];
+  for (var _s = 0; _s < EQUIP_SLOTS.length; _s++) {
+    var _e = hero.equipped[EQUIP_SLOTS[_s]];
     if (!_e) continue;
     if (_e.skillBonus && _e.skillId === skill.id) single += _e.skillBonus;
     if (_e.allSkills) all += _e.allSkills;
@@ -4082,11 +4119,13 @@ function getSkillStats() {
 
 function totalMf() {
   var mf = 0;
-  for (var i = 0; i < SLOTS.length; i++) {
-    var e = hero.equipped[SLOTS[i]];
+  for (var i = 0; i < EQUIP_SLOTS.length; i++) {
+    var e = hero.equipped[EQUIP_SLOTS[i]];
     if (e) mf += e.stats.mf || 0;
   }
-  if (hero.mfBuff && Date.now() < hero.mfBuffEnd) mf += (hero.mfBuffAmount || 5);
+  if (hero.mfBuff && gameNow() < hero.mfBuffEnd) mf += (hero.mfBuffAmount || 5);
+  if (farmLoop && farmLoop.mfBonus) mf += farmLoop.mfBonus;
+  if (bossLoop && bossLoop.mfBonus) mf += bossLoop.mfBonus;
   mf += debugMfBonus;
   mf += (hero._passiveMf || 0);
   return mf;
@@ -4174,7 +4213,7 @@ function priorityScore(item) {
 
   // Stat count bonus — reward denser items
   var statCount = 0;
-  for (var k in item.stats) { if (item.stats[k]) statCount++; }
+  for (var k in item.stats) { if (item.stats[k] && k !== 'defense') statCount++; }
   if (item.skillBonus) statCount++;
   if (item.allSkills) statCount++;
   base += (STAT_COUNT_BONUS[statCount] || 0);
@@ -4200,8 +4239,8 @@ function priorityScore(item) {
 
 function totalGearScore() {
   var total = 0;
-  for (var _s = 0; _s < SLOTS.length; _s++) {
-    var eq = hero.equipped[SLOTS[_s]];
+  for (var _s = 0; _s < EQUIP_SLOTS.length; _s++) {
+    var eq = hero.equipped[EQUIP_SLOTS[_s]];
     if (eq) total += Math.round(priorityScore(eq));
   }
   return total;
@@ -4240,6 +4279,20 @@ function applyMfBoost(stats, effectiveMf) {
     if (boosted[scalable[i]]) boosted[scalable[i]] = Math.round(boosted[scalable[i]] * mult);
   }
   return { stats: boosted, exceptional: mult >= 1.30, mult: mult.toFixed(2) };
+}
+
+function applyDesolationDefense(item) {
+  // Baked-in Defense on Desolation drops (all rarities incl. unique).
+  // Slots: armor, boots, rings, amulet (not weapon/trinket). Act-scaled 20→60.
+  if (!item || !item.stats) return item;
+  if (!(ngPlusUnlocked && difficulty === 'hell')) return item;
+  var s = item.slot;
+  if (s === 'armor' || s === 'boots' || s === 'ring' || s === 'ring2' || s === 'amulet') {
+    var _defMax = 20 + actIdx * 10;            // act ceiling: A1..A5 = 20,30,40,50,60
+    var _defMin = Math.round(_defMax * 0.7);   // floor ~70% of ceiling
+    item.stats.defense = ri(_defMin, _defMax); // rolled per drop
+  }
+  return item;
 }
 
 function generateItem(isBossLoot, forceSlot, extraMf, ignoreMf) {
@@ -4396,6 +4449,9 @@ function generateItem(isBossLoot, forceSlot, extraMf, ignoreMf) {
     _lvlReq = 2 + actIdx * 2;  // 2,4,6,8,10
   }
   item._lvlReq = _lvlReq;
+
+  // Desolation: baked-in Defense (free, all rarities). See applyDesolationDefense.
+  applyDesolationDefense(item);
 
   return item;
 }
@@ -4632,20 +4688,20 @@ function spawnNextEnemy(simNow) {
   // Spell shield resets each new fight
   if (hero._spellShield) hero._shieldCurrent = hero._spellShield;
   // Companion timers reset each new fight
-  _companionNextAtk = Date.now() + 2000;
-  _wolfActiveNext   = Date.now() + 5000;
-  _bearActiveNext   = Date.now() + 8000;
-  _eagleActiveNext  = Date.now() + 6000;
-  _boarActiveNext   = Date.now() + 10000;
-  _lynxActiveNext   = Date.now() + 7000;
-  _serpentActiveNext= Date.now() + 12000;
-  _ravenActiveNext  = Date.now() + 15000;
-  _houndActiveNext  = Date.now() + 8000;
-  _pantherActiveNext= Date.now() + 15000;
+  _companionNextAtk = gameNow() + 2000;
+  _wolfActiveNext   = gameNow() + 5000;
+  _bearActiveNext   = gameNow() + 8000;
+  _eagleActiveNext  = gameNow() + 6000;
+  _boarActiveNext   = gameNow() + 10000;
+  _lynxActiveNext   = gameNow() + 7000;
+  _serpentActiveNext= gameNow() + 12000;
+  _ravenActiveNext  = gameNow() + 15000;
+  _houndActiveNext  = gameNow() + 8000;
+  _pantherActiveNext= gameNow() + 15000;
   _pantherReady     = false;
-  _wyvernActiveNext = Date.now() + 20000;
+  _wyvernActiveNext = gameNow() + 20000;
   _lynxFirstStrikeDone = false;
-  _bossRegenNext    = Date.now() + 8000;
+  _bossRegenNext    = gameNow() + 8000;
 
   // Ranger Forestcraft — Forage: recover HP between fights
   if (classKey === 'ranger' && !dead) {
@@ -4693,7 +4749,7 @@ function spawnNextEnemy(simNow) {
       // spawn boss
       rarePack = false; rarePackRemaining = 0;
       var maxHp = Math.round(act.bossHp * diff.bossMult * (ngPlusUnlocked ? NG_HP_MULT : 1));
-      enemy = { name:act.bossName, hp:maxHp, maxHp:maxHp, isBoss:true, frozenUntil:0, stunCooldownUntil:0, _freezeDR:1.0, _freezeCount:0, spawnTime:Date.now() };
+      enemy = { name:act.bossName, hp:maxHp, maxHp:maxHp, isBoss:true, frozenUntil:0, stunCooldownUntil:0, _freezeDR:1.0, _freezeCount:0, spawnTime:gameNow() };
       if (ngPlusUnlocked) {
         enemy._physResist = Math.min(75, ri(20 + actIdx*4, 25 + actIdx*5));
         enemy._elemResist = Math.min(75, ri(15 + actIdx*3, 25 + actIdx*4));
@@ -4720,7 +4776,7 @@ function spawnNextEnemy(simNow) {
       addLog('⚔ '+act.bossName+' appears!', 'death');
       _bossSpawnRealTime = Date.now();  // track real time for TTK stats
       // Relic: trigger 'On Boss' mode
-      if (equippedRelic && relicSystemUnlocked) checkRelicTrigger('boss_spawn', Date.now());
+      if (equippedRelic && relicSystemUnlocked) checkRelicTrigger('boss_spawn', gameNow());
       var announceEl = document.getElementById('boss-announce');
       var announceNameEl = document.getElementById('boss-announce-name');
       if (announceEl && announceNameEl) {
@@ -4819,7 +4875,7 @@ function spawnNextEnemy(simNow) {
     }
   }
 
-  var spawnTime = simNow || Date.now();
+  var spawnTime = simNow || gameNow();
 
   // Executioner's Toll: apply stored overkill damage to this spawn
   if (hero._execTollPending && hero._execTollPending > 0 && enemy && enemy.hp > 0) {
@@ -4839,11 +4895,13 @@ function spawnNextEnemy(simNow) {
     var backstabPts = hero.skillTree['backstab'] || 0;
     var posDelay = Math.max(0, 1500 - backstabPts * 75);  // 1500ms at 0pts, 0ms at 20pts
     heroNextAtk = spawnTime + posDelay + _spawnExtraDelay + heroAttackInterval();
+    if (posDelay > 0 && _pScene && !settingsReduceAnims) _pScene.playRogueCircling(Math.round(posDelay / gameSpeed));
   } else if (classKey === 'rogue' && hero.rogueSpec === 'assassin' && enemy.isBoss) {
     hero._rogueHasOpened = false;
     var backstabPts = hero.skillTree['backstab'] || 0;
     var posDelay = Math.max(0, 1500 - backstabPts * 75);
     heroNextAtk = spawnTime + posDelay + _spawnExtraDelay + heroAttackInterval();
+    if (posDelay > 0 && _pScene && !settingsReduceAnims) _pScene.playRogueCircling(Math.round(posDelay / gameSpeed));
   } else {
     heroNextAtk = spawnTime + _spawnExtraDelay + heroAttackInterval();
   }
@@ -4858,6 +4916,7 @@ function spawnNextEnemy(simNow) {
   }
   // Arcane Archer: reset overload charge on new mob
   if (classKey === 'ranger') {
+    _markPreyPending = null;
     hero._overloadCharge = 0;
     if (_pScene) _pScene._clearOverloadOrbs();
     if (_pScene) _pScene._rangerRestoreIdle();
@@ -4896,7 +4955,7 @@ function spawnNextEnemy(simNow) {
     }
   }
 
-  enemyNextAtk = spawnTime + Math.round((enemy.isBoss ? BOSS_MS : MOB_MS) / gameSpeed);
+  enemyNextAtk = spawnTime + Math.round((enemy.isBoss ? BOSS_MS : MOB_MS));
 
   // Hunter Long Shot: delay enemy's first attack by 2500ms if Long Shot is active skill
   if (classKey === 'ranger' && hero.rangerDiscipline === 'hunter') {
@@ -4947,7 +5006,7 @@ function tryApplyBurn(dmg) {
   var seMult = 1 + ((hero._statusEffect || 0) + (hero._relicStatusBoost || 0)) / 100;
   var chance = (0.10 + (classKey === 'sorceress' ? 0.05 : 0)) * seMult;
   // Ashpyre Remnant: guaranteed burn procs
-  var ashpyreGuaranteed = (hero._ashpyreProcsLeft || 0) > 0 && relicActiveUntil > Date.now();
+  var ashpyreGuaranteed = (hero._ashpyreProcsLeft || 0) > 0 && relicActiveUntil > gameNow();
   if (!ashpyreGuaranteed && Math.random() > chance) return;
   if (ashpyreGuaranteed) hero._ashpyreProcsLeft--;
   var burnMult = (ashpyreGuaranteed && hero._ashpyreBurnMult) ? hero._ashpyreBurnMult : 1;
@@ -4961,10 +5020,10 @@ function tryApplyBurn(dmg) {
   // Only overwrite if this hit burns harder than the current burn
   if (enemy._burn && tickDmg <= enemy._burn.tickDmg) {
     enemy._burn.ticksLeft = ticks;
-    enemy._burn.nextTick = Date.now() + 1000;
+    enemy._burn.nextTick = gameNow() + 1000;
     return;
   }
-  enemy._burn = { tickDmg: tickDmg, ticksLeft: ticks, nextTick: Date.now() + 1000 };
+  enemy._burn = { tickDmg: tickDmg, ticksLeft: ticks, nextTick: gameNow() + 1000 };
   addLog('🔥 Burn! ('+tickDmg+'/s for '+ticks+'s'+(burnMult>1?' [×'+burnMult+' Ashpyre]':'')+(seMult>1?' [SE+'+Math.round((seMult-1)*100)+'%]':'')+')' , 'burn');
   triggerStatusFlash('#ff6a1a');
 }
@@ -4989,7 +5048,7 @@ function tryApplyChill() {
   if (!enemy._chillStacks) enemy._chillStacks = 0;
   if (enemy._chillStacks < 10) enemy._chillStacks++;
   var chillDur = Math.round(10000 * seMult);
-  enemy._chillExpiry = Date.now() + chillDur;
+  enemy._chillExpiry = gameNow() + chillDur;
   var pct = enemy._chillStacks * 5;
   addLog('❄ Chill! ('+pct+'% slow, '+enemy._chillStacks+'/10 stacks)', 'chill');
   triggerStatusFlash('#80c8e8');
@@ -5004,7 +5063,7 @@ function tryApplyBleed(dmg) {
   if (enemy._bleedStacks.length >= 5) return;  // max 5 stacks
   var bleedDur = Math.round(5 * seMult);
   var tickDmg = Math.max(1, Math.round(dmg * 0.05 / 5 * seMult));
-  enemy._bleedStacks.push({ tickDmg: tickDmg, ticksLeft: bleedDur, nextTick: Date.now() + 1000 });
+  enemy._bleedStacks.push({ tickDmg: tickDmg, ticksLeft: bleedDur, nextTick: gameNow() + 1000 });
   addLog('🩸 Bleed! ('+tickDmg+'/s for '+bleedDur+'s, stack '+enemy._bleedStacks.length+'/5)', 'bleed');
   triggerStatusFlash('#cc2233');
 }
@@ -5086,7 +5145,7 @@ function heroAttack(now) {
   } else {
     _hitVisualDelayMs = 0;
   }
-  _enemyHpShowAt = _hitVisualDelayMs > 0 ? Date.now() + _hitVisualDelayMs : 0;
+  _enemyHpShowAt = _hitVisualDelayMs > 0 ? gameNow() + _hitVisualDelayMs : 0;
 
   // Mark Prey (Hunter): hero doesn't attack — companion handles all damage
   // heroAttack still fires to advance the timer, but does nothing offensive
@@ -5094,7 +5153,7 @@ function heroAttack(now) {
     var _activeSk = cls.skills[hero.activeSkillIdx];
     if (_activeSk && _activeSk.id === 'mark_prey') {
       heroNextAtk = now + heroAttackInterval();
-      return; // companion handles damage in companionTick
+      return; // companion drives the mark animation + damage in companionTick
     }
   }
   if (classKey === 'rogue' && hero.rogueSpec === 'assassin' && !hero._rogueHasOpened) {
@@ -5162,7 +5221,7 @@ function heroAttack(now) {
     addLog('⚔ Last Rite — first strike crits!', 'crit');
   }
   // Martyrdom Plate: 3× damage while buff active
-  if (hero._martyrdomExpires && Date.now() < hero._martyrdomExpires) {
+  if (hero._martyrdomExpires && gameNow() < hero._martyrdomExpires) {
     base = Math.round(base * 3);
   }
 
@@ -5669,7 +5728,7 @@ function heroAttack(now) {
     var seMult = 1 + ((hero._statusEffect || 0) + (hero._relicStatusBoost || 0)) / 100;
     var tickDmg = Math.max(1, Math.round(dmg * 0.15 / 10 * seMult));
     var ticks = Math.round(10 * seMult);
-    enemy._burn = { tickDmg: tickDmg, ticksLeft: ticks, nextTick: Date.now() + 1000, tickGrowth: 1.15 };
+    enemy._burn = { tickDmg: tickDmg, ticksLeft: ticks, nextTick: gameNow() + 1000, tickGrowth: 1.15 };
     addLog('  ↳ 🔥 Burning! ('+tickDmg+'/s ↑ intensifying)', 'fire');
 
   }
@@ -5894,7 +5953,7 @@ function heroAttack(now) {
       var seMult = 1 + ((hero._statusEffect || 0) + (hero._relicStatusBoost || 0)) / 100;
       var bleedDur = Math.round(5 * seMult);
       var bleedTick = Math.max(1, Math.round(dmg * 0.05 / 5 * seMult));
-      enemy._bleedStacks.push({ tickDmg: bleedTick, ticksLeft: bleedDur, nextTick: Date.now() + 1000 });
+      enemy._bleedStacks.push({ tickDmg: bleedTick, ticksLeft: bleedDur, nextTick: gameNow() + 1000 });
       triggerStatusFlash('#cc2233');
     }
     if (!enemy._poisonStacks) enemy._poisonStacks = [];
@@ -5903,7 +5962,7 @@ function heroAttack(now) {
       var dotBonus = 1 + (hero._toxDotBonus || 0) / 100;
       var poisonDur = Math.round(6 * seMult);
       var poisonTick = Math.max(1, Math.round(dmg * 0.06 / 6 * seMult * dotBonus));
-      enemy._poisonStacks.push({ tickDmg: poisonTick, ticksLeft: poisonDur, nextTick: Date.now() + 1000 });
+      enemy._poisonStacks.push({ tickDmg: poisonTick, ticksLeft: poisonDur, nextTick: gameNow() + 1000 });
       addLog('  ↳ Poison applied! ('+poisonTick+'/s for '+poisonDur+'s, stack '+enemy._poisonStacks.length+'/5)', 'stun');
       triggerStatusFlash('#55aa55');
     }
@@ -5939,7 +5998,7 @@ function heroAttack(now) {
       var burstDmg = Math.round(enemy.hp * 0.20);
       enemy.hp = Math.max(0, enemy.hp - burstDmg);
       enemy._neurotoxinStacks = 0;
-      enemy._neurotoxinGraceUntil = Date.now() + 1000;  // 1s grace: miss still applies
+      enemy._neurotoxinGraceUntil = gameNow() + 1000;  // 1s grace: miss still applies
       addLog('Neurotoxin: '+dmg+(_isCrit?' CRIT!':'')+' ☠ BURST! +'+burstDmg+' (20% HP) — stacks reset', 'crit');
       triggerStatusFlash('#55aa55');
     } else {
@@ -5999,15 +6058,15 @@ function heroAttack(now) {
     if (hero._manaburnCount % 3 === 0 && enemy._burn) {
       var collapseDmg = enemy._burn.tickDmg * enemy._burn.ticksLeft;
       enemy.hp = Math.max(0, enemy.hp - collapseDmg);
-      enemy._burn = { tickDmg: tickDmg, ticksLeft: Math.round(10 * seMult), nextTick: Date.now() + 1000 };
+      enemy._burn = { tickDmg: tickDmg, ticksLeft: Math.round(10 * seMult), nextTick: gameNow() + 1000 };
       addLog('Mana Burn: '+dmg+(_isCrit?' CRIT!':'')+' ['+mhElem.label+'] ★ COLLAPSE! +'+collapseDmg+' instant', 'crit');
       triggerStatusFlash('#ff6a1a');
     } else {
       if (!enemy._burn || tickDmg > enemy._burn.tickDmg) {
-        enemy._burn = { tickDmg: tickDmg, ticksLeft: Math.round(10 * seMult), nextTick: Date.now() + 1000 };
+        enemy._burn = { tickDmg: tickDmg, ticksLeft: Math.round(10 * seMult), nextTick: gameNow() + 1000 };
       } else {
         enemy._burn.ticksLeft = Math.round(10 * seMult);
-        enemy._burn.nextTick = Date.now() + 1000;
+        enemy._burn.nextTick = gameNow() + 1000;
       }
       addLog('Mana Burn: '+dmg+(_isCrit?' CRIT!':'')+' ['+mhElem.label+'] 🔥 ['+hero._manaburnCount%3+'/3]', _isCrit?'crit':'fire');
       triggerStatusFlash('#ff6a1a');
@@ -6021,7 +6080,7 @@ function heroAttack(now) {
     var _seMult = 1 + ((hero._statusEffect || 0) + (hero._relicStatusBoost || 0)) / 100;
     while (enemy._bleedStacks.length < 5) {
       var _sBleedTick = Math.max(1, Math.round(_lastDealtDmg * 0.05 / 5 * _seMult));
-      enemy._bleedStacks.push({ tickDmg: _sBleedTick, ticksLeft: Math.round(5 * _seMult), nextTick: Date.now() + 1000 });
+      enemy._bleedStacks.push({ tickDmg: _sBleedTick, ticksLeft: Math.round(5 * _seMult), nextTick: gameNow() + 1000 });
     }
     addLog('🩸 Sanguine — bleeds maximized! (5 stacks)', 'bleed');
     triggerStatusFlash('#cc2233');
@@ -6120,12 +6179,12 @@ function enemyAttack(now) {
     if (enemy.isBoss) {
       // Boss: slowed to 50% speed (2x attack interval) instead of fully frozen
       var chillMult = 1 + (Math.min(enemy._chillStacks || 0, 10) * 0.05);
-      enemyNextAtk = now + Math.round((BOSS_MS * 2) * chillMult / gameSpeed);
+      enemyNextAtk = now + Math.round((BOSS_MS * 2) * chillMult);
       addLog('Boss slowed by frost ('+secsLeft+'s remaining)', 'chill');
     } else {
       addLog('Enemy frozen ('+secsLeft+'s remaining)', 'freeze');
       var chillMult = 1 + (Math.min(enemy._chillStacks || 0, 10) * 0.05);
-      enemyNextAtk = now + Math.round((enemy.isBoss ? BOSS_MS : MOB_MS) * 2 * chillMult / gameSpeed);
+      enemyNextAtk = now + Math.round((enemy.isBoss ? BOSS_MS : MOB_MS) * 2 * chillMult);
       return;
     }
   }
@@ -6140,14 +6199,14 @@ function enemyAttack(now) {
     var missChance = _ntGrace ? 0.25 : Math.min(0.25, _ntStacks * 0.05);
     if ((_ntStacks > 0 || _ntGrace) && Math.random() < missChance) {
       addLog('» '+enemy.name+' swings — MISSED! (neurotoxin '+Math.round(missChance*100)+'% miss)', 'dodge');
-      enemyNextAtk = now + Math.round(MOB_MS * _chillMult / gameSpeed);
+      enemyNextAtk = now + Math.round(MOB_MS * _chillMult);
       return;
     }
   }
   if (hero.dodgeNext) {
     hero.dodgeNext = false;
     addLog('Dodged!', 'dodge');
-    enemyNextAtk = now + Math.round((enemy.isBoss ? BOSS_MS : MOB_MS) * _chillMult / gameSpeed);
+    enemyNextAtk = now + Math.round((enemy.isBoss ? BOSS_MS : MOB_MS) * _chillMult);
     return;
   }
 
@@ -6158,7 +6217,7 @@ function enemyAttack(now) {
 
   // Boss enrage: damage increases over time (+10% per 30s, Nightmare/Hell only)
   if (enemy.isBoss && enemy.spawnTime && (difficulty !== 'normal' || ngPlusUnlocked)) {
-    var _enrageSecs = Math.floor((Date.now() - enemy.spawnTime) / 30000);
+    var _enrageSecs = Math.floor((gameNow() - enemy.spawnTime) / 30000);
     if (_enrageSecs > 0) {
       var _enrageMult = 1 + _enrageSecs * 0.10;
       dmg = Math.round(dmg * _enrageMult);
@@ -6179,10 +6238,10 @@ function enemyAttack(now) {
   }
 
   // Invulnerability (Last Stand)
-  if (hero._invulnUntil && Date.now() < hero._invulnUntil) {
-    var secsLeft = ((hero._invulnUntil - Date.now()) / 1000).toFixed(1);
+  if (hero._invulnUntil && gameNow() < hero._invulnUntil) {
+    var secsLeft = ((hero._invulnUntil - gameNow()) / 1000).toFixed(1);
     addLog('» '+enemy.name+' hits — INVULNERABLE ('+secsLeft+'s)', 'crit');
-    enemyNextAtk = now + Math.round((enemy.isBoss ? BOSS_MS : MOB_MS) * _chillMult / gameSpeed);
+    enemyNextAtk = now + Math.round((enemy.isBoss ? BOSS_MS : MOB_MS) * _chillMult);
     return;
   }
   // Bear provoke: next enemy attack is absorbed (no damage to hero)
@@ -6191,7 +6250,7 @@ function enemyAttack(now) {
     enemy._bearProvoked = false;
     var petName = companionDisplayName();
     addLog('🐻 '+petName+' absorbs the hit!', 'info');
-    enemyNextAtk = now + Math.round((enemy.isBoss ? BOSS_MS : MOB_MS) * _chillMult / gameSpeed);
+    enemyNextAtk = now + Math.round((enemy.isBoss ? BOSS_MS : MOB_MS) * _chillMult);
     return;
   }
 
@@ -6206,6 +6265,9 @@ function enemyAttack(now) {
     addLog('🏹 Caught up — switching to Basic Shot.', 'info');
   }
   dmg = Math.max(1, dmg - (hero._reducedDmg || 0) - (hero._lastStandReduce || 0) - (hero._nullstrikeReduce || 0) - _companionReduce);
+
+  // Defense: diminishing % physical reduction (Desolation), cap 50%
+  if (hero._defense) dmg = Math.max(1, Math.round(dmg * (1 - hero._defense / 100)));
 
   // Red Covenant relic: % damage reduction while active
   if (hero._relicDmgReduce && relicActiveUntil > now) {
@@ -6253,7 +6315,7 @@ function enemyAttack(now) {
         var _bristleDmg = Math.max(1, Math.round(dmg * _boarSlot.roll / 100));
         enemy.hp = Math.max(0, enemy.hp - _bristleDmg);
         if (_bristleDmg > 0) addLog('🐗 Bristle: '+_bristleDmg+' reflected!', 'info');
-        if (enemy.hp <= 0) gainKill(enemy.isBoss, false, Date.now());
+        if (enemy.hp <= 0) gainKill(enemy.isBoss, false, gameNow());
       }
     }
   }
@@ -6268,7 +6330,8 @@ function enemyAttack(now) {
         _elemType = _mixPool[ri(0, _mixPool.length - 1)];
       }
       var _resist    = Math.min(75, hero._resist || 0);
-      var _elemDmg   = Math.max(1, Math.round(_rawMobDmg * _elemPct * (1 - _resist / 100)));
+      // reducedDmg (flat) applies to all damage types — subtract from the elemental rider too
+      var _elemDmg   = Math.max(1, Math.round(_rawMobDmg * _elemPct * (1 - _resist / 100)) - (hero._reducedDmg || 0));
       hero.hp = Math.max(0, hero.hp - _elemDmg);
       var _elemLabel = _elemType.charAt(0).toUpperCase() + _elemType.slice(1);
       addLog('  ↳ '+_elemLabel+' damage: '+_elemDmg+(_resist > 0 ? ' ('+_resist+'% resisted)' : ''), ZONE_ELEM_COLOR[_elemType] || 'dmg');
@@ -6280,7 +6343,7 @@ function enemyAttack(now) {
     var _thornsDmg = Math.max(1, Math.round(_rawMobDmg * hero._thorns / 100));
     enemy.hp = Math.max(0, enemy.hp - _thornsDmg);
     addLog('  ↳ Thorns: ' + _thornsDmg + ' reflected!', 'info');
-    if (enemy.hp <= 0) { gainKill(enemy.isBoss, false, Date.now()); return; }
+    if (enemy.hp <= 0) { gainKill(enemy.isBoss, false, gameNow()); return; }
   }
 
   // Thornweave: reflect 30% of damage taken as magic damage
@@ -6288,7 +6351,7 @@ function enemyAttack(now) {
     var _reflectDmg = Math.max(1, Math.round(dmg * 0.30));
     enemy.hp = Math.max(0, enemy.hp - _reflectDmg);
     addLog('🌿 Thornweave reflects '+_reflectDmg+' damage!', 'info');
-    if (enemy.hp <= 0) { gainKill(enemy.isBoss, false, Date.now()); return; }
+    if (enemy.hp <= 0) { gainKill(enemy.isBoss, false, gameNow()); return; }
   }
   // Glass Cannon: take 2× damage (second application — total 2×)
   if (_hasUnique('Glass Cannon') && dmg > 0 && !debugGodMode) {
@@ -6297,7 +6360,7 @@ function enemyAttack(now) {
   // Martyrdom Plate: below 25% HP triggers 3× damage buff for 8s, once per combat
   if (_hasUnique('Martyrdom Plate') && !hero._martyrdomUsed && hero.hp > 0 && hero.hp <= hero.maxHp * 0.25) {
     hero._martyrdomUsed = true;
-    hero._martyrdomExpires = Date.now() + 8000;
+    hero._martyrdomExpires = gameNow() + 8000;
     addLog('🩸 Martyrdom ignites — 3× damage for 8s!', 'crit');
     triggerStatusFlash('#ff4444');
   }
@@ -6312,7 +6375,7 @@ function enemyAttack(now) {
       var invulSecs = Math.round(rageSpent / 10);
       hero.hp = healAmt;
       hero._lastStandUsed = true;
-      hero._invulnUntil = Date.now() + invulSecs * 1000;
+      hero._invulnUntil = gameNow() + invulSecs * 1000;
       var healMsg = lsPts > 0 ? 'healed '+healAmt+' HP ('+Math.round(healPct*100)+'% max), '+invulSecs+'s invulnerable' : 'survived on 1 HP — invest pts to heal more, '+invulSecs+'s invulnerable';
       addLog('🛡 Last Stand! '+healMsg+'. Rage lost.', 'crit');
       hero.rage = 0;
@@ -6324,7 +6387,7 @@ function enemyAttack(now) {
       hero.hp = 1;
       addLog('⚔ The Undying Vow — death denied! (1 HP)', 'crit');
       triggerStatusFlash('#ffffff');
-      enemyNextAtk = now + Math.round((enemy && enemy.isBoss ? BOSS_MS : MOB_MS) / gameSpeed);
+      enemyNextAtk = now + Math.round((enemy && enemy.isBoss ? BOSS_MS : MOB_MS));
       return;
     }
     // Soul Debt: first death = instant respawn + 300% damage; second death = act ends immediately
@@ -6358,9 +6421,9 @@ function enemyAttack(now) {
   }
   // Hourglass Shard: enemy attacks 35% slower
   if (_hasUnique('Hourglass Shard')) {
-    enemyNextAtk = now + Math.round((enemy.isBoss ? BOSS_MS : MOB_MS) * 1.35 * _chillMult * _offBalanceMult / gameSpeed);
+    enemyNextAtk = now + Math.round((enemy.isBoss ? BOSS_MS : MOB_MS) * 1.35 * _chillMult * _offBalanceMult);
   } else {
-    enemyNextAtk = now + Math.round((enemy.isBoss ? BOSS_MS : MOB_MS) * _chillMult * _offBalanceMult / gameSpeed);
+    enemyNextAtk = now + Math.round((enemy.isBoss ? BOSS_MS : MOB_MS) * _chillMult * _offBalanceMult);
   }
 }
 
@@ -6482,13 +6545,13 @@ function equipRelic(relic) {
   equippedRelic = relic;
   relicActiveUntil = 0;
   addLog('⚗ Relic equipped: '+relic.name, 'level');
-  renderRelicFrame(Date.now());
+  renderRelicFrame(gameNow());
 }
 
 function renderRelicFrame(now) {
   var frame = document.getElementById('relic-frame');
   if (!frame || !relicSystemUnlocked) return;
-  now = now || Date.now();
+  now = now || gameNow();
   var r = equippedRelic;
 
   if (!r) {
@@ -6554,19 +6617,19 @@ function relicShowTooltip(el) {
 }
 
 function fireRelicManual() {
-  fireRelic(Date.now());
+  fireRelic(gameNow());
 }
 
 function setRelicMode(mode) {
   relicTriggerMode = mode;
-  renderRelicFrame(Date.now());
+  renderRelicFrame(gameNow());
 }
 
 function injectRelicFrame() {
   var frame = document.getElementById('relic-frame');
   if (!frame) return;
   frame.style.display = 'block';
-  renderRelicFrame(Date.now());
+  renderRelicFrame(gameNow());
 }
 
 function showMorePrompt() {
@@ -6598,7 +6661,7 @@ function activateNgPlus() {
   hero.topOffUsed      = false;
   saveGame();
   spawnNextEnemy();
-  renderUI(Date.now());
+  renderUI(gameNow());
   // Show the whisper overlay
   var _wo = document.getElementById('ngplus-whisper-overlay');
   var _wt = document.getElementById('ngplus-whisper-text');
@@ -6855,13 +6918,13 @@ function gainKill(isBoss, isAoe, simNow) {
   }
 
   // Wraithbone Coil: restore % max HP per kill while active
-  if (hero._relicWraithActive && relicActiveUntil > Date.now() && !dead && equippedRelic) {
+  if (hero._relicWraithActive && relicActiveUntil > gameNow() && !dead && equippedRelic) {
     var _wraithHp = Math.round(hero.maxHp * equippedRelic.effectValue / 100);
     hero.hp = Math.min(hero.maxHp, hero.hp + _wraithHp);
   }
 
   // Gilded Hunger: extra item drop chance per kill
-  if (hero._relicDropBonus && relicActiveUntil > Date.now() && Math.random() < hero._relicDropBonus / 100) {
+  if (hero._relicDropBonus && relicActiveUntil > gameNow() && Math.random() < hero._relicDropBonus / 100) {
     dropLoot(false, false);
   }
   // Toxicologist passive: restore % max HP per kill
@@ -6931,7 +6994,7 @@ function gainKill(isBoss, isAoe, simNow) {
       var _chargeCountEl = document.getElementById('relic-charge-count');
       if (_chargeCountEl) _chargeCountEl.textContent = equippedRelic.charges+' / '+equippedRelic.maxCharges+' · costs '+equippedRelic.chargeCost;
     }
-    checkRelicTrigger(isBoss ? 'boss_killed' : 'mob_killed', simNow || Date.now());
+    checkRelicTrigger(isBoss ? 'boss_killed' : 'mob_killed', simNow || gameNow());
   }
 
   if (isAoe) {
@@ -6942,6 +7005,9 @@ function gainKill(isBoss, isAoe, simNow) {
     if (Math.random() < 0.005) tryBunnzEvent(simNow);
     return;
   }
+
+  // Warrior: +5 rage per mob kill (AoE/bonus kills excluded above via early return)
+  if (classKey === 'warrior' && !isBoss) gainRage(5);
 
   if (!isAoe) {
     if (isRarePackMob) {
@@ -7093,7 +7159,7 @@ function gainKill(isBoss, isAoe, simNow) {
         triggerDeathAnim();
         addLog('Mob slain. +'+xpGain+' xp, +'+goldGain+' gold', 'info');
         // Executioner's Toll: store overkill damage to apply to next spawn
-        if (hero._execTollActive && relicActiveUntil > Date.now() && equippedRelic) {
+        if (hero._execTollActive && relicActiveUntil > gameNow() && equippedRelic) {
           var _overkill = Math.abs(Math.min(0, enemy ? enemy.hp : 0));
           if (_overkill > 0) hero._execTollPending = Math.round(_overkill * equippedRelic.effectValue);
         }
@@ -7216,7 +7282,7 @@ function triggerDeath() {
 
   hero.hp = 0;
   hero.rage = 0;
-  respawnAt = Date.now() + Math.round(RESPAWN_MS / gameSpeed);
+  respawnAt = gameNow() + Math.round(RESPAWN_MS);
   // Show death overlay
   var _dov = document.getElementById('death-overlay');
   if (_dov) {
@@ -7323,7 +7389,7 @@ function toggleShopPause() {
 function openShop() {
   shopOpen = true;
   shopPaused = false;
-  shopAutoCloseAt = Date.now() + (settingsShopTimer || 15) * 1000;
+  shopAutoCloseAt = gameNow() + (settingsShopTimer || 15) * 1000;
   var stp = document.getElementById('shop-timer-panel');
   if (stp) stp.style.display = 'block';
   shopRerollCount = 0;
@@ -7424,7 +7490,7 @@ function renderShop() {
   var canAffordMf = hero.gold >= mfCost;
   var canAffordGamble = hero.gold >= gambleCost;
   var mfUsed = hero.shopUsedThisAct;
-  var secsLeft = Math.max(0, Math.ceil((shopAutoCloseAt - Date.now()) / 1000));
+  var secsLeft = Math.max(0, Math.ceil((shopAutoCloseAt - gameNow()) / 1000));
   var rarityColors = { normal:'#7a7a8a', magic:'#6fa3ef', rare:'#ffd700', unique:'#e57bf5' };
 
   var html = '<div class="overlay-title">Act Shop</div>'
@@ -7551,7 +7617,7 @@ function buyMfBuff() {
   if (hero.gold < cost || hero.shopUsedThisAct) return;
   hero.gold -= cost;
   hero.mfBuff = true;
-  hero.mfBuffEnd = Date.now() + 5 * 60 * 1000;
+  hero.mfBuffEnd = gameNow() + 5 * 60 * 1000;
   hero.mfBuffAmount = _mfBlessCount * 5;
   hero.shopUsedThisAct = true;
   addLog('MF Blessing active! +' + (_mfBlessCount * 5) + '% MF for 5 minutes.', 'info');
@@ -7760,7 +7826,7 @@ function openMerchant() {
   }
   merchantOpen = true;
   shopPaused = false;
-  merchantAutoCloseAt = Date.now() + 10000;
+  merchantAutoCloseAt = gameNow() + 10000;
   renderMerchant();
   document.getElementById('overlay').classList.add('active');
 }
@@ -7788,7 +7854,7 @@ function buyMerchantItem(idx) {
 
 function renderMerchant() {
   var box = document.getElementById('overlay-box');
-  var secsLeft = Math.max(0, Math.ceil((merchantAutoCloseAt - Date.now()) / 1000));
+  var secsLeft = Math.max(0, Math.ceil((merchantAutoCloseAt - gameNow()) / 1000));
   var rarityColors = { normal:'#7a7a8a', magic:'#6fa3ef', rare:'#ffd700', unique:'#e57bf5' };
   var html = '<div class="overlay-title">Traveling Merchant</div>';
   html += '<div class="overlay-sub">A weathered trader offers wares from the road.<br>Items are fairly priced by their worth.</div>';
@@ -7831,6 +7897,33 @@ function renderMerchant() {
 var bossLoopMenuOpen = false;
 var _bossLoopCount = 1;
 var _farmLoopCount = 1;
+var _loopMfStacks  = 0;   // Desolation loop MF blessing: each stack = +5% MF for the whole loop session
+// Steep escalating per-stack cost (×1.4 vs the shop blessing's ×1.2). Total scales with loop count.
+function _loopMfStepCost(stacks) {
+  var total = 0, step = 250;
+  for (var i = 0; i < stacks; i++) { total += Math.round(step); step *= 1.4; }
+  return total;
+}
+function adjustLoopMf(delta) {
+  _loopMfStacks = Math.max(0, _loopMfStacks + delta);
+  if (farmLoopMenuOpen) renderFarmLoopMenu();
+  else if (bossLoopMenuOpen) renderBossLoopMenu();
+}
+// Desolation-only MF blessing stepper for the loop menus. loopsCost = loops-only gold (for + affordability).
+function _loopMfStepperHtml(loopCount, loopsCost) {
+  if (!ngPlusUnlocked) return '';
+  var pct        = _loopMfStacks * 5;
+  var mfTotal    = _loopMfStepCost(_loopMfStacks) * loopCount;
+  var nextMfTotal= _loopMfStepCost(_loopMfStacks + 1) * loopCount;
+  var canDec     = _loopMfStacks > 0;
+  var canInc     = (loopsCost + nextMfTotal) <= hero.gold;
+  return '<div style="display:flex;align-items:center;justify-content:center;gap:10px;margin:0 0 10px;padding:8px;background:#0a0010;border:1px solid #3a1a4a;border-radius:3px;">'
+    + '<button class="overlay-btn sec" onclick="adjustLoopMf(-1)" style="padding:3px 12px;font-size:16px;'+(canDec?'':'opacity:0.3;cursor:not-allowed')+'">-</button>'
+    + '<div style="text-align:center;min-width:130px;"><div style="font-size:14px;color:#cc44ff;">⚡ +'+pct+'% Magic Find</div>'
+    + '<div style="font-size:10px;color:#8a5aaa;">'+(mfTotal>0 ? '+'+mfTotal+'g for '+loopCount+' loop'+(loopCount>1?'s':'') : 'no blessing')+'</div></div>'
+    + '<button class="overlay-btn sec" onclick="adjustLoopMf(1)" style="padding:3px 12px;font-size:16px;'+(canInc?'':'opacity:0.3;cursor:not-allowed')+'">+</button>'
+    + '</div>';
+}
 var _bossLoopDesoFilter = false;
 var _farmLoopDesoFilter = false;
 
@@ -7955,6 +8048,7 @@ function openBossLoopMenu() {
   if (farmLoop) { addLog('Cannot start boss loop while farm loop is active.', 'info'); return; }
   if (Math.floor(hero.gold / BOSS_LOOP_COST) < 1) { addLog('Not enough gold for a boss loop.', 'info'); return; }
   _bossLoopCount = 1;
+  _loopMfStacks = 0;
   bossLoopMenuOpen = true;
   renderBossLoopMenu();
   document.getElementById('overlay').classList.add('active');
@@ -7983,11 +8077,12 @@ function cancelBossLoop() {
 }
 
 function selectBossLoop(diff, idx) {
-  var cost = _bossLoopCount * BOSS_LOOP_COST;
+  var _mfStacks = ngPlusUnlocked ? _loopMfStacks : 0;
+  var cost = _bossLoopCount * BOSS_LOOP_COST + _loopMfStepCost(_mfStacks) * _bossLoopCount;
   if (hero.gold < cost) { addLog('Not enough gold.', 'shop'); return; }
   if (farmLoop) { cancelFarmLoop(); }
   hero.gold -= cost;
-  bossLoop = { difficulty: diff, actIdx: idx, loopsRemaining: _bossLoopCount, loopsTotal: _bossLoopCount };
+  bossLoop = { difficulty: diff, actIdx: idx, loopsRemaining: _bossLoopCount, loopsTotal: _bossLoopCount, mfBonus: _mfStacks * 5 };
   sessionDrops = []; sessionDropsPending = false; _lastSessionType = 'boss';
   _updateLoopButtons();
   difficulty = diff; actIdx = idx;
@@ -8002,7 +8097,10 @@ function renderBossLoopMenu() {
   var box = document.getElementById('overlay-box');
   var maxAffordable = Math.floor(hero.gold / BOSS_LOOP_COST);
   _bossLoopCount = Math.max(1, Math.min(maxAffordable, _bossLoopCount));
-  var cost = _bossLoopCount * BOSS_LOOP_COST;
+  var loopCost = _bossLoopCount * BOSS_LOOP_COST;
+  var mfStacks = ngPlusUnlocked ? _loopMfStacks : 0;
+  var mfCost = _loopMfStepCost(mfStacks) * _bossLoopCount;
+  var cost = loopCost + mfCost;
   var canDecB = _bossLoopCount > 1;
   var canIncB = _bossLoopCount < maxAffordable;
   var html = '<div class="overlay-title">Target Boss</div>';
@@ -8018,7 +8116,8 @@ function renderBossLoopMenu() {
     + '<div style="font-size:10px;color:#5a5a6a;">loop'+(_bossLoopCount>1?'s':'')+'</div></div>'
     + '<button class="overlay-btn sec" onclick="adjustBossLoopCount(1)" style="padding:3px 12px;font-size:16px;'+(canIncB?'':'opacity:0.3;cursor:not-allowed')+'">+</button>'
     + '</div>'
-    + '<div style="text-align:center;font-size:12px;color:#c8a84b88;margin-bottom:10px;">Cost: '+cost+'g &nbsp;&middot;&nbsp; You have: '+hero.gold+'g</div>';
+    + '<div style="text-align:center;font-size:12px;color:#c8a84b88;margin-bottom:10px;">Cost: '+cost+'g'+(mfCost>0?' ('+loopCost+'g loops + '+mfCost+'g MF)':'')+' &nbsp;&middot;&nbsp; You have: '+hero.gold+'g</div>';
+  html += _loopMfStepperHtml(_bossLoopCount, loopCost);
   var anyUnlocked = false;
   for (var di = 0; di < DIFFICULTY_ORDER.length; di++) {
     var diff = DIFFICULTY_ORDER[di];
@@ -8052,6 +8151,7 @@ function openFarmLoopMenu() {
   if (bossLoop) { addLog('Cannot start farm loop while boss loop is active.', 'info'); return; }
   if (Math.floor(hero.gold / FARM_LOOP_COST) < 1) { addLog('Not enough gold for a farm loop.', 'info'); return; }
   _farmLoopCount = 1;
+  _loopMfStacks = 0;
   farmLoopMenuOpen = true;
   renderFarmLoopMenu();
   document.getElementById('overlay').classList.add('active');
@@ -8084,11 +8184,12 @@ function cancelFarmLoop() {
 
 function selectFarmLoop(diff, idx) {
   var loopCost = farmPackType !== 'any' ? FARM_LOOP_COST * 2 : FARM_LOOP_COST;
-  var cost = _farmLoopCount * loopCost;
+  var _mfStacks = ngPlusUnlocked ? _loopMfStacks : 0;
+  var cost = _farmLoopCount * loopCost + _loopMfStepCost(_mfStacks) * _farmLoopCount;
   if (hero.gold < cost) { addLog('Not enough gold.', 'shop'); return; }
   if (bossLoop) { cancelBossLoop(); }
   hero.gold -= cost;
-  farmLoop = { difficulty: diff, actIdx: idx, loopsRemaining: _farmLoopCount, loopsTotal: _farmLoopCount, packType: farmPackType };
+  farmLoop = { difficulty: diff, actIdx: idx, loopsRemaining: _farmLoopCount, loopsTotal: _farmLoopCount, packType: farmPackType, mfBonus: _mfStacks * 5 };
   sessionDrops = []; sessionDropsPending = false; _lastSessionType = 'farm';
   _updateLoopButtons();
   difficulty = diff; actIdx = idx;
@@ -8105,7 +8206,10 @@ function renderFarmLoopMenu() {
   var loopCost = farmPackType !== 'any' ? FARM_LOOP_COST * 2 : FARM_LOOP_COST;
   var maxAffordable = Math.floor(hero.gold / loopCost);
   _farmLoopCount = Math.max(1, Math.min(Math.max(1, maxAffordable), _farmLoopCount));
-  var cost = _farmLoopCount * loopCost;
+  var loopsCost = _farmLoopCount * loopCost;
+  var mfStacks = ngPlusUnlocked ? _loopMfStacks : 0;
+  var mfCost = _loopMfStepCost(mfStacks) * _farmLoopCount;
+  var cost = loopsCost + mfCost;
   var canDecF = _farmLoopCount > 1;
   var canIncF = _farmLoopCount < maxAffordable;
 
@@ -8144,7 +8248,8 @@ function renderFarmLoopMenu() {
     + '<div style="font-size:10px;color:#5a5a6a;">loop'+(_farmLoopCount>1?'s':'')+'</div></div>'
     + '<button class="overlay-btn sec" onclick="adjustFarmLoopCount(1)" style="padding:3px 12px;font-size:16px;'+(canIncF?'':'opacity:0.3;cursor:not-allowed')+'">+</button>'
     + '</div>'
-    + '<div style="text-align:center;font-size:12px;color:#c8a84b88;margin-bottom:10px;">Cost: '+cost+'g ('+loopCost+'g/loop) &nbsp;&middot;&nbsp; You have: '+hero.gold+'g</div>';
+    + '<div style="text-align:center;font-size:12px;color:#c8a84b88;margin-bottom:10px;">Cost: '+cost+'g ('+loopCost+'g/loop'+(mfCost>0?' + '+mfCost+'g MF':'')+') &nbsp;&middot;&nbsp; You have: '+hero.gold+'g</div>';
+  html += _loopMfStepperHtml(_farmLoopCount, loopsCost);
 
   // Zone list
   var anyUnlocked = false;
@@ -8300,6 +8405,7 @@ function generateBounty() {
         uItem = { slot: uBase.slot, name: uBase.name, stats: rawStats, rarity: 'unique', score: Math.round(itemScore(rawStats, uBase.skillBonus, uBase.allSkills)) };
         if (uBase.skillBonus) { uItem.skillBonus = uBase.skillBonus; uItem.skillId = uBase.skillId; uItem.skillName = uBase.skillName; }
         if (uBase.allSkills)  { uItem.allSkills = uBase.allSkills; }
+        applyDesolationDefense(uItem); // baked-in Defense (uses zone diff/act, still set here)
       }
     }
     difficulty = _savedDiff; actIdx = _savedAct;
@@ -8643,7 +8749,7 @@ function _startBountyFight() {
     speed: 2200,
     isBoss: false,  // bounty mobs never count as bosses — no shop reopen
     isBounty: true,
-    spawnTime: Date.now(),
+    spawnTime: gameNow(),
     _bleedStacks: [], _bleedInterval: null,
     _burnActive: false, _burnInterval: null,
     _poisonStacks: 0, _poisonInterval: null,
@@ -8666,7 +8772,7 @@ function _startBountyFight() {
   var _stpB = document.getElementById('shop-timer-panel'); if (_stpB) _stpB.style.display = 'none';
   addLog('⚔ '+b.label+' appears! [Bounty · '+b.tier+']', 'death');
   recalcStats();
-  var _now = Date.now();
+  var _now = gameNow();
   heroNextAtk  = _now + heroAttackInterval();
   enemyNextAtk = _now + MOB_MS;
   renderUI();
@@ -9075,7 +9181,7 @@ function savePetName(slotIdx) {
 
 function setCompanionStance(stance) {
   hero.companionStance = stance;
-  _companionNextAtk = Date.now() + 2000; // reset attack timer on stance change
+  _companionNextAtk = gameNow() + 2000; // reset attack timer on stance change
   renderPetPanel();
   saveGame();
 }
@@ -9091,7 +9197,7 @@ function selectPet(slotIdx) {
   } else if (pet) {
     addLog('🐾 '+pet.name+' watches you from the treeline.', 'info');
   }
-  _companionNextAtk = Date.now() + 2000;
+  _companionNextAtk = gameNow() + 2000;
   recalcStats();
   renderPetPanel();
   saveGame();
@@ -9320,6 +9426,7 @@ function statLine(stats) {
   if (stats.thorns    && ngPlusUnlocked) parts.push(_ngW+'+'+stats.thorns+'% Thorns'+_ngE);
   if (stats.critMulti && ngPlusUnlocked) parts.push(_ngW+'+'+(stats.critMulti/100).toFixed(2)+'× Crit Multi'+_ngE);
   if (stats.sunder    && ngPlusUnlocked) parts.push(_ngW+'+'+stats.sunder+'% Sunder'+_ngE);
+  if (stats.defense   && ngPlusUnlocked) parts.push(_ngW+'+'+stats.defense+' Defense'+_ngE);
   return parts.join(' · ');
 }
 
@@ -9373,13 +9480,33 @@ function renderUI(now) {
       }
       var _modeAll  = hero.recoverAutoMode === 'all';
       var _modeBoss = hero.recoverAutoMode === 'boss';
-      quiverBar.innerHTML = '<span style="font-size:11px;color:#7a7a5a;white-space:nowrap;">'+_qLabel+'</span>'
-        + '<span style="letter-spacing:2px;display:flex;align-items:center;gap:2px;">'+_qPips+'</span>'
-        + '<span style="font-size:10px;color:#4a5a4a;white-space:nowrap;">'+_qFilled+'/5 · 2× crit</span>'
-        + '<div style="display:flex;gap:3px;">'
-        + '<button onclick="setRecoverMode(\'all\')" style="padding:1px 7px;border:1px solid '+(_modeAll?'#7aaa5a':'#2a3a2a')+';background:'+(_modeAll?'#0a1a0a':'#080d08')+';color:'+(_modeAll?'#7aaa5a':'#3a5a3a')+';font-family:Georgia,serif;font-size:10px;cursor:pointer;border-radius:2px;">Auto</button>'
-        + '<button onclick="setRecoverMode(\'boss\')" style="padding:1px 7px;border:1px solid '+(_modeBoss?'#c8843a':'#2a3a2a')+';background:'+(_modeBoss?'#1a0800':'#080d08')+';color:'+(_modeBoss?'#c8843a':'#3a5a3a')+';font-family:Georgia,serif;font-size:10px;cursor:pointer;border-radius:2px;">Boss only</button>'
-        + '</div>';
+      // Build the structure ONCE so the buttons aren't destroyed/recreated every tick
+      // (that rebuild was eating taps, especially on touch / iPad). Afterward we only
+      // update text and styles in place, leaving the button nodes (and their listeners) intact.
+      if (!quiverBar._built) {
+        quiverBar.innerHTML = '<span id="quiver-label" style="font-size:11px;color:#7a7a5a;white-space:nowrap;"></span>'
+          + '<span id="quiver-pips" style="letter-spacing:2px;display:flex;align-items:center;gap:2px;"></span>'
+          + '<span id="quiver-count" style="font-size:10px;color:#4a5a4a;white-space:nowrap;"></span>'
+          + '<div style="display:flex;gap:3px;">'
+          + '<button id="quiver-mode-all" type="button" style="padding:2px 8px;border:1px solid #2a3a2a;background:#080d08;color:#3a5a3a;font-family:Georgia,serif;font-size:10px;cursor:pointer;border-radius:2px;touch-action:manipulation;">Auto</button>'
+          + '<button id="quiver-mode-boss" type="button" style="padding:2px 8px;border:1px solid #2a3a2a;background:#080d08;color:#3a5a3a;font-family:Georgia,serif;font-size:10px;cursor:pointer;border-radius:2px;touch-action:manipulation;">Boss only</button>'
+          + '</div>';
+        var _bAll  = document.getElementById('quiver-mode-all');
+        var _bBoss = document.getElementById('quiver-mode-boss');
+        if (_bAll)  _bAll.addEventListener('click',  function(){ setRecoverMode('all'); });
+        if (_bBoss) _bBoss.addEventListener('click', function(){ setRecoverMode('boss'); });
+        quiverBar._built = true;
+      }
+      var _qLabelEl = document.getElementById('quiver-label');
+      if (_qLabelEl) _qLabelEl.textContent = _qLabel;
+      var _qPipsEl  = document.getElementById('quiver-pips');
+      if (_qPipsEl)  _qPipsEl.innerHTML = _qPips;
+      var _qCountEl = document.getElementById('quiver-count');
+      if (_qCountEl) _qCountEl.textContent = _qFilled + '/5 · 2× crit';
+      var _qbAll  = document.getElementById('quiver-mode-all');
+      var _qbBoss = document.getElementById('quiver-mode-boss');
+      if (_qbAll)  { _qbAll.style.borderColor  = _modeAll  ? '#7aaa5a' : '#2a3a2a'; _qbAll.style.background  = _modeAll  ? '#0a1a0a' : '#080d08'; _qbAll.style.color  = _modeAll  ? '#7aaa5a' : '#3a5a3a'; }
+      if (_qbBoss) { _qbBoss.style.borderColor = _modeBoss ? '#c8843a' : '#2a3a2a'; _qbBoss.style.background = _modeBoss ? '#1a0800' : '#080d08'; _qbBoss.style.color = _modeBoss ? '#c8843a' : '#3a5a3a'; }
       if (quiverEl) quiverEl.style.display = 'none';
     } else {
       quiverBar.style.display = 'none';
@@ -9425,6 +9552,10 @@ function renderUI(now) {
   var seEl = document.getElementById('stat-statuseffect');
   if (seEl) seEl.textContent = (hero._statusEffect || 0) + '%';
 
+  var defenseRow = document.getElementById('stat-defense-row');
+  var defenseEl  = document.getElementById('stat-defense');
+  if (defenseRow) defenseRow.style.display = ngPlusUnlocked ? '' : 'none';
+  if (defenseEl)  defenseEl.textContent = (hero._defense || 0) + '%';
   var resistRow = document.getElementById('stat-resist-row');
   var resistEl  = document.getElementById('stat-resist');
   if (resistRow) resistRow.style.display = ngPlusUnlocked ? '' : 'none';
@@ -9536,7 +9667,7 @@ function renderUI(now) {
     var nameEl = document.getElementById('enemy-name');
     nameEl.textContent = enemy.name;
     nameEl.className   = 'enemy-name' + (enemy.isBoss ? ' boss' : '');
-    if (_enemyHpShowAt === 0 || Date.now() >= _enemyHpShowAt) {
+    if (_enemyHpShowAt === 0 || gameNow() >= _enemyHpShowAt) {
       var ePct = Math.max(0, Math.round(enemy.hp / enemy.maxHp * 100));
       _prevEnemyHpPct = _updateGhostBar('enemy-hp-ghost', 'enemy-hp-bar', ePct, _prevEnemyHpPct, _enemyGhostTimer, function(t){ _enemyGhostTimer = t; });
       document.getElementById('enemy-hp-text').textContent = enemy.hp + ' / ' + enemy.maxHp;
@@ -9597,10 +9728,20 @@ function renderUI(now) {
     document.getElementById('status-line').innerHTML = '';
   }
 
-  // Boss loop button — hidden until first boss kill or first boss death (whichever comes first)
+  // Loop buttons (Target Boss / Farm Zone) unlock once the player is past the intro.
+  // Computed once so the farm button never reads an undefined value, and gated on several
+  // signals so it can't vanish in Desolation or on older saves where the boss-kill counter
+  // may be empty: the loop tutorial has shown, OR a boss is recorded, OR they're clearly
+  // past it (advanced an act, unlocked a higher difficulty, or entered NG+/Desolation).
+  var anyBossKilled = loopIntroSeen
+    || getTotalBossKills() > 0
+    || ngPlusUnlocked
+    || actIdx > 0
+    || (unlockedDiffs && (unlockedDiffs.nightmare || unlockedDiffs.hell));
+
+  // Boss loop button
   var loopBtn = document.getElementById('boss-loop-btn');
   if (loopBtn && !sessionDropsPending) {
-    var anyBossKilled = getTotalBossKills() > 0 || loopIntroSeen;
     loopBtn.style.display = anyBossKilled ? '' : 'none';
     if (anyBossKilled) {
       loopBtn.disabled      = false;
@@ -9612,11 +9753,15 @@ function renderUI(now) {
     }
   }
 
-  // Farm loop button — hidden until first boss kill (introduced alongside Target Boss)
+  // Farm loop button
   var farmBtn = document.getElementById('farm-loop-btn');
   if (farmBtn && !sessionDropsPending) {
     farmBtn.style.display = anyBossKilled ? '' : 'none';
     if (anyBossKilled) {
+      farmBtn.disabled      = false;
+      farmBtn.style.opacity = '1';
+      farmBtn.style.cursor  = 'pointer';
+      farmBtn.onclick       = function() { openFarmLoopMenu(); };
       farmBtn.style.borderColor = farmLoop ? '#7aaa5a' : '#1a3a1a';
       farmBtn.style.color       = farmLoop ? '#7aaa5a' : '#7aaa5a88';
       farmBtn.textContent       = farmLoop ? '🌾 '+ACTS[farmLoop.actIdx].name.split(' ')[1]+'... ('+farmLoop.loopsRemaining+')' : '🌾 Farm Zone';
@@ -9920,6 +10065,8 @@ function rerollVaultItem(slot, idx) {
     if (rightPanelTab === 'crafting') renderGemPanel();
     return;
   }
+  // Preserve baked-in Desolation Defense (intrinsic, not a reforgeable affix)
+  if (item.stats && item.stats.defense) newStats.defense = item.stats.defense;
   item.stats = newStats;
   item.score = Math.round(itemScore(item.stats, item.skillBonus, item.allSkills));
   // Re-sort vault
@@ -9959,6 +10106,7 @@ function statLineForStat(k, v) {
     case 'thorns':       return '+'+v+'% Thorns';
     case 'critMulti':    return '+'+(v/100).toFixed(2)+'× Crit Multi';
     case 'sunder':       return '+'+v+'% Sunder';
+    case 'defense':      return '+'+v+' Defense';
     default:             return '+'+v+' '+k;
   }
 }
@@ -10130,6 +10278,7 @@ function doEnchant() {
     }
   }
 
+  if (item.stats && item.stats.defense) newStats.defense = item.stats.defense;
   item.stats     = newStats;
   item.score     = Math.round(itemScore(item.stats, item.skillBonus, item.allSkills));
   item.enchanted = true;
@@ -11149,7 +11298,7 @@ function isRogueSkillAvailable(s) {
 function setRecoverMode(mode) {
   hero.recoverAutoMode = mode;
   renderSkillPicker();
-  renderUI(Date.now());
+  renderUI(gameNow());
 }
 
 function renderSkillTree() {
@@ -11768,7 +11917,7 @@ function skillTooltipHtml(skill) {
     var min = Math.round((skill.spellMin + lvlBonus + bonusDmg) * (stats.dmMult || 1));
     var max = Math.round((skill.spellMax + lvlBonus + bonusDmg) * (stats.dmMult || 1));
     var base = Math.max(HERO_FLOOR_MS, HERO_BASE_MS - (hero._bonusSpd || 0) * SPD_PER_POINT);
-    var swingMs   = Math.max(HERO_FLOOR_MS, Math.round(Math.round(base * skill.spdMod) / gameSpeed));
+    var swingMs   = Math.max(HERO_FLOOR_MS, Math.round(Math.round(base * skill.spdMod)));
     var lockoutMs = Math.max(0, LOCKOUT_BASE_MS - (hero._castCooldown || 0));
     var totalMs   = swingMs + lockoutMs;
     html += '<div class="tt-row"><span class="tt-label">Damage</span><span class="tt-val">'+min+'–'+max+'</span></div>';
@@ -11869,8 +12018,8 @@ function exportStats() {
   var enemyDmgMax = Math.round(9  * diff.enemyDmgMult);
   var bossDmgMin  = Math.round(12 * diff.enemyDmgMult);
   var bossDmgMax  = Math.round(22 * diff.enemyDmgMult);
-  var mobAtkMs    = (MOB_MS  / gameSpeed).toFixed(0);
-  var bossAtkMs   = (BOSS_MS / gameSpeed).toFixed(0);
+  var mobAtkMs    = (MOB_MS ).toFixed(0);
+  var bossAtkMs   = (BOSS_MS).toFixed(0);
 
   // Equipped gear
   var gearLines = [];
@@ -11952,6 +12101,7 @@ function debugRandomUnique() {
   for (var k in entry.stats) item.stats[k] = entry.stats[k];
   if (entry.skillBonus) { item.skillBonus = entry.skillBonus; item.skillId = entry.skillId; item.skillName = entry.skillName; }
   if (entry.allSkills)  { item.allSkills  = entry.allSkills; }
+  applyDesolationDefense(item);
   item.score = Math.round(itemScore(item.stats, item.skillBonus, item.allSkills));
   var result = processLoot(item);
   var tierLabel = item.uniqueTier === 3 ? ' ✦✦✦ [GOD-TIER]' : item.uniqueTier === 2 ? ' ✦✦ [Tier 2]' : ' ✦ [Tier 1]';
@@ -12021,6 +12171,7 @@ function equipHellTestGear() {
     }
   }
 
+  for (var _ds in hero.equipped) applyDesolationDefense(hero.equipped[_ds]);
   recalcStats();
   hero.hp = hero.maxHp;
   gearDirty = true;
@@ -12080,6 +12231,7 @@ function equipHellRareGear() {
     usedRares++;
   }
 
+  for (var _drs in hero.equipped) applyDesolationDefense(hero.equipped[_drs]);
   recalcStats();
   hero.hp = hero.maxHp;
   gearDirty = true;
@@ -12114,7 +12266,34 @@ function debugJumpHellAct5() {
   hero.topOffUsed = false;
   addLog('[DBG] Jumped to Hell Act 5.', 'info');
   spawnNextEnemy();
-  renderUI(Date.now());
+  renderUI(gameNow());
+}
+
+function debugJumpDesolation() {
+  // Simulate clearing Hell Act 5 and choosing to go deeper — drop straight into Desolation Hell Act 5.
+  ngPlusUnlocked  = true;
+  ngPlusDismissed = false;
+  difficulty   = 'hell';
+  actIdx       = 4;
+  killCount    = 0;
+  bossSpawned  = false;
+  rarePack     = false;
+  rarePackRemaining = 0;
+  enemy        = null;
+  dead         = false;
+  pendingDiffPromotion = false;
+  unlockedDiffs.normal    = true;
+  unlockedDiffs.nightmare = true;
+  unlockedDiffs.hell      = true;
+  hero.hp      = hero.maxHp;
+  hero.rage    = 0;
+  hero.shopUsedThisAct = false;
+  hero.topOffUsed = false;
+  recalcStats();
+  saveGame();
+  addLog('[DBG] Entered Desolation — Hell Act 5.', 'level');
+  spawnNextEnemy();
+  renderUI(gameNow());
 }
 
 function equipGodGear() {
@@ -12754,6 +12933,8 @@ var CombatScene = new Phaser.Class({
     var frameCount = animObj ? animObj.frames.length : 1;
     var fps = Math.round(frameCount * 1000 / Math.max(intervalMs, 200));
     var scale = 220 / SORC_FRAME_H;
+    // Fire art fills more of the frame than the others — trim ~10% so it reads the same size
+    if (texKey === 'hero-sorc-fire') scale *= 0.9;
     if (this.heroImg) this.heroImg.setVisible(false);
     if (!this.sorcAnimSprite) {
       this.sorcAnimSprite = this.add.sprite(HERO_X, GROUND_Y, texKey)
@@ -12785,6 +12966,7 @@ var CombatScene = new Phaser.Class({
   _loadRangerSkillSheets: function() {
     var self = this;
     this._loadRangerTrapperSheet();
+    this._loadRangerMarkPreySheet();
     if (this.textures.exists('hero-ranger-bowdraw')) {
       this._rangerRestoreIdle();
       return;
@@ -12921,6 +13103,48 @@ var CombatScene = new Phaser.Class({
     xhr.send();
   },
 
+  _loadRangerMarkPreySheet: function() {
+    var self = this;
+    if (this.textures.exists('hero-ranger-markprey')) return;
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', RAN_MARKPREY_JSON);
+    xhr.onload = function() {
+      try {
+        var data = JSON.parse(xhr.responseText);
+        var fw = data.frameWidth, fh = data.frameHeight;
+        var img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.onload = function() {
+          var cols = Math.floor(img.width / fw);
+          var rows = Math.floor(img.height / fh);
+          var frameCount = cols * rows;
+          if (!self.textures.exists('hero-ranger-markprey')) {
+            self.textures.addSpriteSheet('hero-ranger-markprey', img, { frameWidth: fw, frameHeight: fh });
+          }
+          if (!self.anims.exists('ran-markprey')) {
+            self.anims.create({
+              key: 'ran-markprey',
+              frames: self.anims.generateFrameNumbers('hero-ranger-markprey', { start: 0, end: frameCount - 1 }),
+              frameRate: 24,
+              repeat: 0
+            });
+          }
+          if (!self.anims.exists('ran-markprey-idle')) {
+            self.anims.create({
+              key: 'ran-markprey-idle',
+              frames: self.anims.generateFrameNumbers('hero-ranger-markprey', { start: 0, end: Math.min(2, frameCount - 1) }),
+              frameRate: 6,
+              repeat: -1
+            });
+          }
+          self._RAN_MARKPREY_FRAME_H = fh;
+        };
+        img.src = RAN_MARKPREY_SHEET;
+      } catch(e) { console.warn('Ranger mark prey JSON error', e); }
+    };
+    xhr.send();
+  },
+
   playRangerTrapperAttack: function(intervalMs) {
     var self = this;
     if (!this.textures.exists('hero-ranger-trapper') || !this.anims.exists('ran-trapper')) return;
@@ -12999,6 +13223,46 @@ var CombatScene = new Phaser.Class({
     this.rangerAnimSprite.once('animationcomplete', function() {
       self._rangerRestoreIdle();
     });
+  },
+
+  playRangerMarkPrey: function(intervalMs) {
+    var self = this;
+    if (!this.textures.exists('hero-ranger-markprey') || !this.anims.exists('ran-markprey')) return;
+    var animObj = this.anims.get('ran-markprey');
+    var frameCount = animObj ? animObj.frames.length : 1;
+    var fps = Math.round(frameCount * 1000 / Math.max(intervalMs, 200));
+    var fh = this._RAN_MARKPREY_FRAME_H || 128;
+    var scale = 264 / fh;   // ~20% larger than the standard ranger 220
+    if (this.heroImg) this.heroImg.setVisible(false);
+    if (!this.rangerAnimSprite) {
+      this.rangerAnimSprite = this.add.sprite(HERO_X, GROUND_Y, 'hero-ranger-markprey')
+        .setOrigin(0.5, 1).setDepth(3).setScale(scale);
+    }
+    this.rangerAnimSprite.off('animationcomplete');
+    this.rangerAnimSprite.setTexture('hero-ranger-markprey', 0)
+      .setScale(scale).setPosition(HERO_X, GROUND_Y).setVisible(true);
+    this.rangerAnimSprite.play({ key: 'ran-markprey', frameRate: fps });
+    this.rangerAnimSprite.once('animationcomplete', function() {
+      self._rangerPlayMarkIdle();
+    });
+  },
+
+  // Looping idle between Mark Prey casts — uses the mark_prey sheet's own first frames
+  // so scale and positioning match the cast animation exactly.
+  _rangerPlayMarkIdle: function() {
+    if (this.heroImg) this.heroImg.setVisible(false);
+    if (!this.textures.exists('hero-ranger-markprey') || !this.anims.exists('ran-markprey-idle')) { this._rangerRestoreIdle(); return; }
+    var fh = this._RAN_MARKPREY_FRAME_H || 128;
+    var scale = 264 / fh;
+    if (!this.rangerAnimSprite) {
+      this.rangerAnimSprite = this.add.sprite(HERO_X, GROUND_Y, 'hero-ranger-markprey')
+        .setOrigin(0.5, 1).setDepth(3).setScale(scale);
+    }
+    this.rangerAnimSprite.stop();
+    this.rangerAnimSprite.off('animationcomplete');
+    this.rangerAnimSprite.setTexture('hero-ranger-markprey', 0)
+      .setScale(scale).setPosition(HERO_X, GROUND_Y).setVisible(true);
+    this.rangerAnimSprite.play({ key: 'ran-markprey-idle' });
   },
 
   playRangerDeath: function() {
@@ -13109,6 +13373,7 @@ var CombatScene = new Phaser.Class({
 
   playRogueBackstab: function(intervalMs) {
     var self = this;
+    this._clearRogueCircling();
     var texKey = 'hero-rogue-backstab', animKey = 'rog-backstab';
     if (!this.textures.exists(texKey) || !this.anims.exists(animKey)) {
       if (this.heroImg) this.heroImg.setVisible(true);
@@ -13132,6 +13397,55 @@ var CombatScene = new Phaser.Class({
     this.rogueAnimSprite.once('animationcomplete', function() {
       self._rogueRestoreIdle();
     });
+  },
+
+  // Backstab opener: orbit a marker around the enemy during the positioning delay so the
+  // pre-strike pause reads as the assassin circling the opponent. durationMs is real time.
+  playRogueCircling: function(durationMs) {
+    var self = this;
+    this._clearRogueCircling();
+    if (!durationMs || durationMs < 150) return;
+    var cx = ENEMY_X, cy = GROUND_Y - 52, rx = 52, ry = 22;
+    var ring   = this.add.graphics().setDepth(5);
+    var marker = this.add.graphics().setDepth(6);
+    var label  = this.add.text(cx, cy - 42, '⟳ circling', {
+      fontFamily: 'Georgia, serif', fontSize: '12px', color: '#c8a0ff'
+    }).setOrigin(0.5).setDepth(6).setAlpha(0.85);
+    this._circleObjs = [ring, marker, label];
+    var turns = Math.max(1, Math.round(durationMs / 550));
+    var spin = { a: -Math.PI / 2 };
+    var draw = function() {
+      var behind = Math.sin(spin.a) < 0;
+      var mx = cx + Math.cos(spin.a) * rx;
+      var my = cy + Math.sin(spin.a) * ry;
+      ring.clear();
+      ring.lineStyle(1, 0x8a5aaa, 0.4);
+      ring.strokeEllipse(cx, cy, rx * 2, ry * 2);
+      marker.clear();
+      marker.fillStyle(0xc8a0ff, behind ? 0.35 : 0.95);
+      marker.fillTriangle(mx, my - 7, mx - 4, my + 5, mx + 4, my + 5); // blade
+      marker.fillStyle(0x6a4a8a, behind ? 0.35 : 0.9);
+      marker.fillRect(mx - 1.5, my + 4, 3, 4);                          // hilt
+    };
+    draw();
+    this._circleTween = this.tweens.add({
+      targets: spin,
+      a: -Math.PI / 2 + Math.PI * 2 * turns,
+      duration: durationMs,
+      ease: 'Sine.inOut',
+      onUpdate: draw,
+      onComplete: function() { self._clearRogueCircling(); }
+    });
+  },
+
+  _clearRogueCircling: function() {
+    if (this._circleTween) { this._circleTween.stop(); this._circleTween = null; }
+    if (this._circleObjs) {
+      for (var _ci = 0; _ci < this._circleObjs.length; _ci++) {
+        if (this._circleObjs[_ci] && this._circleObjs[_ci].destroy) this._circleObjs[_ci].destroy();
+      }
+      this._circleObjs = null;
+    }
   },
 
   playRogueNullStrike: function(intervalMs) {
@@ -14765,29 +15079,13 @@ var CombatScene = new Phaser.Class({
     var ty = GROUND_Y;
     var isFreezing = (cfg.color === 0x55aaff);
     var isExplosive = (cfg.color === 0xff6600);
-    var thrown = this.add.graphics().setDepth(8);
-    var sx = HERO_X+20, sy = GROUND_Y-100;
-    var dur = 350;
-    var start = Date.now();
-    (function tick() {
-      var t = Math.min(1, (Date.now()-start)/dur);
-      var x = sx + (tx-sx)*t;
-      var y = sy + (ty-sy)*t - Math.sin(t*Math.PI)*80;
-      thrown.clear();
-      thrown.fillStyle(cfg.glowColor, 0.8);
-      thrown.fillRect(x-5, y-5, 10, 10);
-      thrown.lineStyle(1, cfg.color, 0.5);
-      thrown.strokeRect(x-5, y-5, 10, 10);
-      if (t < 1) {
-        requestAnimationFrame(tick);
-      } else {
-        thrown.destroy();
-        var slam = self.add.graphics().setDepth(9);
-        slam.lineStyle(2, cfg.glowColor, 0.9);
-        slam.lineBetween(tx-20, ty, tx+20, ty);
-        slam.lineBetween(tx, ty-20, tx, ty);
-        self.tweens.add({ targets:slam, alpha:0, duration:150, onComplete:function(){ slam.destroy(); }});
-        self.time.delayedCall(180, function() {
+    // No projectile — trap deploys directly at the enemy on entry.
+    var slam = self.add.graphics().setDepth(9);
+    slam.lineStyle(2, cfg.glowColor, 0.9);
+    slam.lineBetween(tx-20, ty, tx+20, ty);
+    slam.lineBetween(tx, ty-20, tx, ty);
+    self.tweens.add({ targets:slam, alpha:0, duration:150, onComplete:function(){ slam.destroy(); }});
+    self.time.delayedCall(180, function() {
           self.flashEnemy(cfg.color);
           if (isExplosive) {
             var ring2 = self.add.graphics().setDepth(10);
@@ -14819,9 +15117,7 @@ var CombatScene = new Phaser.Class({
             }
             self._sparkBurst(tx, ty-30, cfg, isCrit);
           }
-        });
-      }
-    })();
+    });
   },
 
   // ── Companion Strike: claw marks sweep from the side ─────────────────
@@ -15615,7 +15911,7 @@ function triggerAttackAnim(skillId, isCrit) {
   if (classKey === 'warrior') {
     var _wsk = getActiveSkill();
     var _wsid = _wsk ? _wsk.id : '';
-    var _wint = heroAttackInterval();
+    var _wint = Math.max(1, Math.round(heroAttackInterval() / gameSpeed));
     if      (_wsid === 'slash')              _pScene.playWarriorWhirlwind(_wint);
     else if (_wsid === 'consecutivestrike')  _pScene.playWarriorOneShot('hero-warrior-consec',  'war-consec',  WAR_CONSEC_FRAME_H,  _wint);
     else if (_wsid === 'infusedstrike')      _pScene.playWarriorOneShot('hero-warrior-infused', 'war-infused', WAR_INFUSED_FRAME_H, _wint);
@@ -15626,7 +15922,7 @@ function triggerAttackAnim(skillId, isCrit) {
     else                                     _pScene.playWarriorSwing(_wint);
   }
   else if (classKey === 'rogue') {
-    var _rint = heroAttackInterval();
+    var _rint = Math.max(1, Math.round(heroAttackInterval() / gameSpeed));
     if      (skillId === 'bladedance')   _pScene.playRogueOneShot('hero-rogue-bladedance',   'rog-bladedance',   ROG_BLADEDANCE_FRAME_H,   _rint);
     else if (skillId === 'backstab')     _pScene.playRogueBackstab(_rint);
     else if (skillId === 'flurry')       _pScene.playRogueOneShot('hero-rogue-flurry',       'rog-flurry',       ROG_FLURRY_FRAME_H,       _rint);
@@ -15638,7 +15934,7 @@ function triggerAttackAnim(skillId, isCrit) {
     else if (skillId === 'manaburn')     _pScene.playRogueOneShot('hero-rogue-manaburn',     'rog-manaburn',     ROG_MANABURN_FRAME_H,     _rint);
   }
   else if (classKey === 'sorceress') {
-    var _sint = heroAttackInterval();
+    var _sint = Math.max(1, Math.round(heroAttackInterval() / gameSpeed));
     if      (skillId === 'fire'      || skillId === 'meteor')     _pScene.playSorcOneShot('hero-sorc-fire',      'sorc-fire',      _sint);
     else if (skillId === 'lightning' || skillId === 'chainlight') _pScene.playSorcOneShot('hero-sorc-lightning', 'sorc-lightning', _sint);
     else if (skillId === 'cold'      || skillId === 'blizzard'  || skillId === 'iceshard') _pScene.playSorcOneShot('hero-sorc-ice', 'sorc-ice', _sint);
@@ -16063,8 +16359,8 @@ function loadGame() {
     relicPending        = state.relicPending         || null;
     // Always clear all relic effects on load — reapply only if still active
     if (equippedRelic) clearRelicEffect(equippedRelic);
-    if (equippedRelic && relicActiveUntil > Date.now()) {
-      applyRelicEffect(equippedRelic, Date.now());  // reapply if still active
+    if (equippedRelic && relicActiveUntil > gameNow()) {
+      applyRelicEffect(equippedRelic, gameNow());  // reapply if still active
     } else {
       relicActiveUntil = 0;
     }
@@ -16955,12 +17251,13 @@ var gameSpeed = 1;  // 1-5x, controls setInterval frequency
 var _gameLoopInterval = null;
 
 function setGameSpeed(speed) {
+  _advanceClock();
   gameSpeed = Math.max(1, Math.min(3, speed));
   var btn = document.getElementById('speed-btn');
   if (btn) btn.textContent = gameSpeed + 'x';
   // Restart the loop at new speed
   if (_gameLoopInterval) clearInterval(_gameLoopInterval);
-  _gameLoopInterval = setInterval(_gameTick, Math.round(TICK_BASE / gameSpeed));
+  _gameLoopInterval = setInterval(_gameTick, Math.max(16, Math.round(TICK_BASE / gameSpeed)));
   // Update speed button styles
   var dec = document.getElementById('speed-dec');
   var inc = document.getElementById('speed-inc');
@@ -16969,8 +17266,8 @@ function setGameSpeed(speed) {
 }
 
 var _tickCounter = 0;
-var _lastRegenTick = Date.now();
-var _lastShieldRegen = Date.now();
+var _lastRegenTick = gameNow();
+var _lastShieldRegen = gameNow();
 var _dpsWindow = [];       // array of { ts, dmg } for rolling 5s window
 var _lastDpsUpdate = 0;    // last time DPS display was updated
 
@@ -16989,17 +17286,31 @@ function companionTick(now) {
     && _activeSk && _activeSk.id === 'mark_prey';
 
   if (_markPrey) {
+    // Resolve a pending mark hit once its wind-up animation has reached the final frame.
+    if (_markPreyPending && now >= _markPreyPending.applyAt) {
+      var _ph = _markPreyPending; _markPreyPending = null;
+      enemy.hp = Math.max(0, enemy.hp - _ph.dmg);
+      addLog('\uD83C\uDFAF ' + _ph.petName + ' hunts for ' + _ph.dmg + '.', 'crit');
+      if (enemy.hp <= 0) { gainKill(enemy.isBoss, false, now); return; }
+    }
     var mpPts = hero.skillTree['mark_prey'] || 0;
     var mpInterval = Math.max(1200, Math.round(2800 - mpPts * 40)); // 2800ms → 1200ms at 20pts
-    if (now >= _companionNextAtk) {
-      _companionNextAtk = now + Math.round(mpInterval / gameSpeed);
-      var dmg = Math.round(ri(hero.dmgMin || 1, hero.dmgMax || 1) * 0.50); // 50% hero dmg, not 100%
+    if (now >= _companionNextAtk && !_markPreyPending) {
+      _companionNextAtk = now + Math.round(mpInterval);
+      var dmg = Math.round(ri(hero.dmgMin || 1, hero.dmgMax || 1) * 0.50); // 50% hero dmg
       if (petId === 'wolf') dmg = Math.round(dmg * (1 + rollPct));
       if (enemy._arcaneVuln) dmg = Math.round(dmg * arcaneVulnMult());
-      enemy.hp = Math.max(0, enemy.hp - dmg);
-      addLog('\uD83C\uDFAF ' + petName + ' hunts for ' + dmg + '.', 'crit');
-      if (enemy.hp <= 0) { gainKill(enemy.isBoss, false, now); return; }
-      // Only fire the pet's own primary active — not all stances simultaneously
+      var _markDur = 600; // game-ms wind-up; the hit lands on the final frame
+      if (_pScene && !settingsReduceAnims && _pScene.playRangerMarkPrey) {
+        // anim plays in real time (markDur/gameSpeed); damage lands on the game clock at +markDur, so they coincide
+        _pScene.playRangerMarkPrey(Math.max(1, Math.round(_markDur / gameSpeed)));
+        _markPreyPending = { applyAt: now + _markDur, dmg: dmg, petName: petName };
+      } else {
+        enemy.hp = Math.max(0, enemy.hp - dmg);
+        addLog('\uD83C\uDFAF ' + petName + ' hunts for ' + dmg + '.', 'crit');
+        if (enemy.hp <= 0) { gainKill(enemy.isBoss, false, now); return; }
+      }
+      // Pet's own primary active still fires on its own cadence
       _fireCompanionActive(petId, petName, roll, rollPct, now);
     }
     return;
@@ -17008,7 +17319,7 @@ function companionTick(now) {
   // Aggressive / Utility
   if (stance === 'aggressive' || stance === 'utility') {
     if (now >= _companionNextAtk) {
-      _companionNextAtk = now + Math.round(2000 / gameSpeed);
+      _companionNextAtk = now + Math.round(2000);
       var dmg = Math.max(1, Math.round(ri(hero.dmgMin || 1, hero.dmgMax || 1) * 0.20));
       if (petId === 'wolf') dmg = Math.round(dmg * (1 + rollPct));
       if (petId === 'lynx' && !_lynxFirstStrikeDone) {
@@ -17036,7 +17347,7 @@ function companionTick(now) {
   }
 
   if (stance === 'defensive' && now >= _companionNextAtk) {
-    _companionNextAtk = now + Math.round(4000 / gameSpeed);
+    _companionNextAtk = now + Math.round(4000);
     var defDmg = Math.max(1, Math.round(ri(hero.dmgMin || 1, hero.dmgMax || 1) * 0.05));
     enemy.hp = Math.max(0, enemy.hp - defDmg);
     addLog('\uD83D\uDC3E '+petName+' intercepts \u2014 '+defDmg+' dmg.', 'info');
@@ -17048,7 +17359,7 @@ function _applyCompanionPoison(dmg) {
   if (!enemy) return;
   if (!enemy._poisonStacks) enemy._poisonStacks = [];
   var tickDmg = Math.max(1, Math.round(dmg * 0.08));
-  enemy._poisonStacks.push({ tickDmg: tickDmg, ticksLeft: 5, nextTick: Date.now() + 1000 });
+  enemy._poisonStacks.push({ tickDmg: tickDmg, ticksLeft: 5, nextTick: gameNow() + 1000 });
 }
 
 function _fireCompanionActive(petId, petName, roll, rollPct, now) {
@@ -17058,21 +17369,21 @@ function _fireCompanionActive(petId, petName, roll, rollPct, now) {
   switch (petId) {
     case 'wolf':
       if (now >= _wolfActiveNext) {
-        _wolfActiveNext = now + Math.round(5000 / gameSpeed);
+        _wolfActiveNext = now + Math.round(5000);
         enemy._offBalance = true;
         addLog('\uD83D\uDC3A '+petName+' throws '+enemy.name+' off balance!', 'stun');
       }
       break;
     case 'bear':
       if (now >= _bearActiveNext) {
-        _bearActiveNext = now + Math.round(8000 / gameSpeed);
+        _bearActiveNext = now + Math.round(8000);
         enemy._bearProvoked = true;
         addLog('\uD83D\uDC3B '+petName+' roars \u2014 draws enemy attack!', 'stun');
       }
       break;
     case 'eagle':
       if (now >= _eagleActiveNext) {
-        _eagleActiveNext = now + Math.round(6000 / gameSpeed);
+        _eagleActiveNext = now + Math.round(6000);
         var eDmg = Math.round(heroBaseDmg * 1.5);
         enemy.hp = Math.max(0, enemy.hp - eDmg);
         addLog('\uD83E\uDD85 '+petName+' dive bombs for '+eDmg+'!', 'crit');
@@ -17081,7 +17392,7 @@ function _fireCompanionActive(petId, petName, roll, rollPct, now) {
       break;
     case 'boar':
       if (now >= _boarActiveNext) {
-        _boarActiveNext = now + Math.round(10000 / gameSpeed);
+        _boarActiveNext = now + Math.round(10000);
         var bDmg = Math.round(heroBaseDmg * 1.2);
         enemy.hp = Math.max(0, enemy.hp - bDmg);
         addLog('\uD83D\uDC17 '+petName+' gores for '+bDmg+'! [stun]', 'stun');
@@ -17093,7 +17404,7 @@ function _fireCompanionActive(petId, petName, roll, rollPct, now) {
       break;
     case 'lynx':
       if (now >= _lynxActiveNext && enemy.maxHp > 0 && (enemy.hp / enemy.maxHp) < 0.4) {
-        _lynxActiveNext = now + Math.round(7000 / gameSpeed);
+        _lynxActiveNext = now + Math.round(7000);
         var lDmg = Math.round(heroBaseDmg * 2.0);
         enemy.hp = Math.max(0, enemy.hp - lDmg);
         addLog('\uD83D\uDC31 '+petName+' pounces for '+lDmg+'! [execute]', 'crit');
@@ -17102,7 +17413,7 @@ function _fireCompanionActive(petId, petName, roll, rollPct, now) {
       break;
     case 'serpent':
       if (now >= _serpentActiveNext) {
-        _serpentActiveNext = now + Math.round(12000 / gameSpeed);
+        _serpentActiveNext = now + Math.round(12000);
         for (var _vi = 0; _vi < 3; _vi++) _applyCompanionPoison(heroBaseDmg);
         addLog('\uD83D\uDC0D '+petName+' floods with venom! (3 stacks)', 'info');
         triggerStatusFlash('#88cc44');
@@ -17110,7 +17421,7 @@ function _fireCompanionActive(petId, petName, roll, rollPct, now) {
       break;
     case 'raven':
       if (now >= _ravenActiveNext) {
-        _ravenActiveNext = now + Math.round(15000 / gameSpeed);
+        _ravenActiveNext = now + Math.round(15000);
         var rTotal = 0;
         for (var _ri2 = 0; _ri2 < 3; _ri2++) {
           var rHit = Math.round(heroBaseDmg * 0.4);
@@ -17125,7 +17436,7 @@ function _fireCompanionActive(petId, petName, roll, rollPct, now) {
       break;
     case 'hound':
       if (now >= _houndActiveNext) {
-        _houndActiveNext = now + Math.round(8000 / gameSpeed);
+        _houndActiveNext = now + Math.round(8000);
         if (!enemy._neurotoxinStacks) enemy._neurotoxinStacks = 0;
         enemy._neurotoxinStacks = Math.min(5, enemy._neurotoxinStacks + 3);
         addLog('\uD83D\uDC15 '+petName+' bays \u2014 enemy disoriented! (30% miss)', 'stun');
@@ -17134,7 +17445,7 @@ function _fireCompanionActive(petId, petName, roll, rollPct, now) {
       break;
     case 'panther':
       if (!_pantherReady && now >= _pantherActiveNext) {
-        _pantherActiveNext = now + Math.round(15000 / gameSpeed);
+        _pantherActiveNext = now + Math.round(15000);
         _pantherReady = true;
         addLog('\uD83D\uDC06 '+petName+' vanishes into shadow...', 'info');
       }
@@ -17148,7 +17459,7 @@ function _fireCompanionActive(petId, petName, roll, rollPct, now) {
       break;
     case 'wyvern':
       if (now >= _wyvernActiveNext) {
-        _wyvernActiveNext = now + Math.round(20000 / gameSpeed);
+        _wyvernActiveNext = now + Math.round(20000);
         var fireMlt = 1 + (hero._fireDmg || 0) / 100;
         var wDmg = Math.round(heroBaseDmg * 1.8 * fireMlt);
         enemy.hp = Math.max(0, enemy.hp - wDmg);
@@ -17163,20 +17474,17 @@ function _fireCompanionActive(petId, petName, roll, rollPct, now) {
 
 
 function _gameTick() {
+    _advanceClock();
     _tickCounter++;
-    var now = Date.now();
+    var now = gameNow();
 
     // HP regen — ticks once per second of real time, scaled by gameSpeed
     if (now - _lastRegenTick >= 1000) {
       _lastRegenTick = now;
-      var totalRegen = ((hero._hpRegen || 0) + (hero._lastStandRegen || 0) + (hero._relicHpRegen || 0)) * gameSpeed;
+      var totalRegen = ((hero._hpRegen || 0) + (hero._lastStandRegen || 0) + (hero._relicHpRegen || 0));
       // Regen only ticks during active combat — not in shops, menus, paused, or between fights
       var _inCombat = enemy && enemy.hp > 0 && !dead && !shopOpen && !merchantOpen && !gamePaused;
       if (totalRegen > 0 && _inCombat) hero.hp = Math.min(hero.maxHp, hero.hp + totalRegen);
-      // MF Blessing ticks down faster at higher game speed
-      if (hero.mfBuff && hero.mfBuffEnd > now) {
-        hero.mfBuffEnd -= (gameSpeed - 1) * 1000;  // subtract extra ms for each speed level above 1x
-      }
       // Update DPS display in debug bar (rolling 5s window)
       var _dpsEl = document.getElementById('dbg-dps');
       if (_dpsEl && _dpsEl.parentElement && _dpsEl.parentElement.offsetParent !== null) {
@@ -17236,7 +17544,7 @@ function _gameTick() {
 
     // Merchant auto-close
     if (merchantOpen) {
-      if (shopPaused) merchantAutoCloseAt += Math.round(TICK_BASE / gameSpeed);
+      if (shopPaused) merchantAutoCloseAt += _lastClockDelta;
       var mc = document.getElementById('merchant-countdown');
       if (mc) mc.textContent = shopPaused ? '⏸' : Math.max(0, Math.ceil((merchantAutoCloseAt - now) / 1000));
       if (!shopPaused && now >= merchantAutoCloseAt) closeMerchant();
@@ -17246,7 +17554,7 @@ function _gameTick() {
 
     // Shop auto-close
     if (shopOpen) {
-      if (shopPaused || bountyActive || enchantOverlayOpen) shopAutoCloseAt += Math.round(TICK_BASE / gameSpeed);
+      if (shopPaused || bountyActive || enchantOverlayOpen) shopAutoCloseAt += _lastClockDelta;
       var _shopCdVal = (shopPaused || bountyActive || enchantOverlayOpen) ? (bountyActive ? '🏹' : (enchantOverlayOpen ? '🔮' : '⏸')) : Math.max(0, Math.ceil((shopAutoCloseAt - now) / 1000));
       var cd = document.getElementById('shop-countdown');
       if (cd) cd.textContent = _shopCdVal;
@@ -17357,7 +17665,7 @@ function _gameTick() {
     // Hell boss HP regen: 2% every 8 seconds (Hell only)
     if (difficulty === 'hell' && enemy && enemy.isBoss && enemy.hp > 0 && !dead) {
       if (now >= _bossRegenNext) {
-        _bossRegenNext = now + Math.round(8000 / gameSpeed);
+        _bossRegenNext = now + Math.round(8000);
         var _regenAmt = Math.round(enemy.maxHp * 0.0075);
         if (enemy.hp < enemy.maxHp) {
           enemy.hp = Math.min(enemy.maxHp, enemy.hp + _regenAmt);
@@ -17369,7 +17677,7 @@ function _gameTick() {
     if (classKey === 'ranger' && _activeRosterSlot() && enemy && enemy.hp > 0 && !dead) {
       companionTick(now);
     }
-    renderUI(Date.now());
+    renderUI(gameNow());
 }
 
 init();
@@ -17792,6 +18100,7 @@ init();
   <button onclick="wipeAllData()"      style="padding:2px 8px;border:1px solid #7a1a1a;background:#1a0606;color:#ff4a4a;font-size:10px;cursor:pointer;border-radius:2px;font-family:'Courier New',monospace;" title="Deletes ALL characters + bank">☠ Wipe All</button>
   <button onclick="toggleGodMode()" id="dbg-god-btn" style="padding:2px 8px;border:1px solid #2a3a2a;background:#060d06;color:#3a6a3a;font-size:10px;cursor:pointer;border-radius:2px;font-family:'Courier New',monospace;">God Mode</button>
   <button onclick="debugJumpHellAct5()" style="padding:2px 8px;border:1px solid #7a1a4a;background:#1a060f;color:#ff4aaa;font-size:10px;cursor:pointer;border-radius:2px;font-family:'Courier New',monospace;">→ Hell Act 5</button>
+  <button onclick="debugJumpDesolation()" style="padding:2px 8px;border:1px solid #6a1a7a;background:#10061a;color:#cc44ff;font-size:10px;cursor:pointer;border-radius:2px;font-family:'Courier New',monospace;">→ Desolation</button>
 </div>
 
 
