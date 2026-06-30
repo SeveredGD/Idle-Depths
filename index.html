@@ -222,16 +222,23 @@
 
   /* Class select */
   #class-select-overlay { position:fixed;inset:0;background:#07070f;z-index:9999;display:flex;align-items:center;justify-content:center; }
-  .cs-panel { background:#0d0d1a;border:1px solid #2a2a3a;border-radius:4px;padding:32px;max-width:500px;width:90%;text-align:center; }
+  .cs-panel { background:#0d0d1a;border:1px solid #2a2a3a;border-radius:4px;padding:32px;max-width:600px;width:92%;text-align:center; }
   .cs-title { font-family:Georgia,serif;font-size:22px;color:#c8a84b;letter-spacing:2px;margin-bottom:6px; }
   .cs-sub   { font-size:11px;color:#5a5a6a;margin-bottom:28px; }
   .cs-cards { display:flex;gap:12px;justify-content:center;flex-wrap:wrap; }
-  .cs-card  { flex:1;min-width:120px;max-width:150px;border:1px solid #2a2a3a;background:#0a0a14;border-radius:3px;padding:16px 10px;cursor:pointer;transition:border-color 0.15s; }
-  .cs-card:hover { border-color:#c8a84b; }
-  .cs-card-name  { font-family:Georgia,serif;font-size:14px;color:#c8a84b;margin-bottom:6px; }
+  .cs-card  { flex:1;min-width:118px;max-width:135px;border:none;background:transparent;padding:6px 8px; }
+  .cs-card-name  { font-family:Georgia,serif;font-size:14px;color:#c8a84b;margin-bottom:3px; }
   .cs-card-hp    { font-size:10px;color:#7aaa7a;margin-bottom:4px; }
-  .cs-card-style { font-size:10px;color:#7a9aba;margin-bottom:8px; }
+  .cs-card-style { font-size:9px;color:#7a9aba;margin-bottom:8px;min-height:24px; }
   .cs-card-desc  { font-size:10px;color:#5a5a6a;line-height:1.5; }
+  .cs-icon  { width:92px;height:92px;margin:0 auto 8px;border-radius:4px;background-repeat:no-repeat;image-rendering:auto; }
+  .cs-pips  { display:flex;flex-direction:column;gap:4px;margin-top:4px; }
+  .cs-pip   { display:flex;align-items:center;gap:6px;width:100%;padding:4px 6px;border:1px solid #2a2a3a;background:#070710;border-radius:2px;cursor:pointer;transition:all 0.12s;font-family:Georgia,serif; }
+  .cs-pip:hover { border-color:#c8a84b;background:#12121e; }
+  .cs-pip-dot   { width:8px;height:8px;border-radius:50%;background:#2a2a3a;flex-shrink:0;box-shadow:0 0 0 1px #00000066; }
+  .cs-pip-label { font-size:9px;color:#7a7a8a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
+  .cs-pip.filled .cs-pip-label { color:#c0c0d0; }
+  .cs-pip:not(.filled) .cs-pip-label { color:#4a4a5a;font-weight:bold; }
   .hp-text { font-size: 11px; color: #c0392b; text-align: center; margin-bottom: 6px; font-family: 'Courier New', monospace; }
   .rage-bar-outer { height:8px;background:#1a0a00;border:1px solid #5a2a0a;border-radius:2px;overflow:hidden;margin-bottom:2px;margin-top:4px;display:none; }
   .rage-bar-inner { height:100%;background:linear-gradient(90deg,#8b1a00,#e84010);transition:width 0.2s; }
@@ -1146,33 +1153,8 @@
   <div id="class-select-overlay" style="display:none;">
     <div class="cs-panel">
       <div class="cs-title">IDLE DEPTHS</div>
-      <div class="cs-sub">Choose your class</div>
-      <div class="cs-cards">
-        <div class="cs-card" onclick="selectClass('sorceress')">
-          <div class="cs-card-name">Sorceress</div>
-          <div class="cs-card-hp">80 HP</div>
-          <div class="cs-card-style">Spell caster</div>
-          <div class="cs-card-desc">Fire, Lightning &amp; Cold. Freeze enemies, chain crits, AoE obliteration.</div>
-        </div>
-        <div class="cs-card" onclick="selectClass('warrior')">
-          <div class="cs-card-name">Warrior</div>
-          <div class="cs-card-hp">130 HP</div>
-          <div class="cs-card-style">Melee bruiser</div>
-          <div class="cs-card-desc">Slash, Thrust &amp; Bash. Stun enemies, build Rage, cleave through packs.</div>
-        </div>
-        <div class="cs-card" onclick="selectClass('rogue')">
-          <div class="cs-card-name">Rogue</div>
-          <div class="cs-card-hp">90 HP</div>
-          <div class="cs-card-style">Assassin</div>
-          <div class="cs-card-desc">Daggers, poison &amp; shadow. Massive crits, AoE volleys, poisoned kills drop twice.</div>
-        </div>
-        <div class="cs-card" onclick="selectClass('ranger')">
-          <div class="cs-card-name">Ranger</div>
-          <div class="cs-card-hp">100 HP</div>
-          <div class="cs-card-style">Hunter / Archer / Trapper</div>
-          <div class="cs-card-desc">Bow, beast &amp; trap. Command an animal companion, rain imbued arrows, or lay deadly ambushes.</div>
-        </div>
-      </div>
+      <div class="cs-sub">Choose your class &amp; character slot</div>
+      <div class="cs-cards" id="cs-cards"></div>
     </div>
   </div>
 
@@ -4010,6 +3992,12 @@ var statsData = {
   diffUnlock:     {},   // key: diff → real timestamp ms
   gameStartTs:    0,    // real timestamp when session began
   totalDeaths:    0,    // total deaths across all runs (for feature unlocks)
+  // ── Progression milestones (only shown on the stats page once the feature is unlocked) ──
+  ngPlusTs:       0,    // when New Game+ / Desolation was activated
+  delveUnlockTs:  0,    // when Delve was unlocked
+  delveDeepest:   0,    // deepest delve depth reached
+  bountiesCompleted: 0, // bounty contracts fulfilled
+  relicsFound:    0,    // relics discovered
 };
 var _bossSpawnRealTime = 0;  // real gameNow() when boss was spawned
 // Per-fight combat tracking (current enemy), reset on each spawn — used for the death recap.
@@ -7084,6 +7072,7 @@ function activateNgPlus() {
   if (el) el.style.display = 'none';
   ngPlusUnlocked  = true;
   ngPlusDismissed = false;
+  if (!statsData.ngPlusTs) statsData.ngPlusTs = Date.now();
   // Reset progression — keep gear, gold, skills, relics
   difficulty        = 'normal';
   actIdx            = 0;
@@ -7484,6 +7473,7 @@ function gainKill(isBoss, isAoe, simNow) {
         if (_mRelicIds.length) {
           var _mRelicId = _mRelicIds[ri(0, _mRelicIds.length - 1)];
           var _mRelic = makeRelic(_mRelicId);
+          statsData.relicsFound = (statsData.relicsFound || 0) + 1;
           if (delveActive) {
             _mRelic._isRelic = true;
             _mRelic.score = 800; // high fixed score so it stays in bag
@@ -7528,6 +7518,7 @@ function gainKill(isBoss, isAoe, simNow) {
           if (_relicIds2.length) {
             var _relicId2 = _relicIds2[ri(0, _relicIds2.length - 1)];
             var _bossRelic = makeRelic(_relicId2);
+            statsData.relicsFound = (statsData.relicsFound || 0) + 1;
             relicStash.push(_bossRelic);
             addLog('⚗ '+_bossRelic.name+' found! [Relic — stored in the relic stash]', 'level', 'item');
             triggerItemDropAnim('unique');
@@ -7606,6 +7597,7 @@ function gainKill(isBoss, isAoe, simNow) {
           }
           if (ngPlusUnlocked && difficulty === 'hell' && actIdx === 4 && !delveUnlocked) {
             delveUnlocked = true;
+            if (!statsData.delveUnlockTs) statsData.delveUnlockTs = Date.now();
             renderDelveBtn();
             addLog('⛏ Delve unlocked — descend into the endless depths.', 'level', 'event');
             saveGame();
@@ -8928,6 +8920,7 @@ function _delveAddToBag(item) {
 
 // ── HUD ───────────────────────────────────────────────
 function _updateDelveHud() {
+  if (delveActive && delveLevel > (statsData.delveDeepest || 0)) statsData.delveDeepest = delveLevel;
   var zn = document.getElementById('zone-name');
   var zf = document.getElementById('zone-flavor');
   if (!delveActive) {
@@ -9899,6 +9892,7 @@ function _startBountyFight() {
 function completeBounty() {
   if (!currentBounty) return;
   var b = currentBounty;
+  statsData.bountiesCompleted = (statsData.bountiesCompleted || 0) + 1;
   bountyActive = false;
   _stopBountyFootsteps();
   triggerBountyCompleteAnim();
@@ -11926,6 +11920,9 @@ function renderStats() {
   html += _statRow('Class', cls.name);
   html += _statRow('Current level', 'Lv '+hero.level);
   html += _statRow('Current gear score', totalGearScore());
+  html += _statRow('Magic find', totalMf()+'%');
+  html += _statRow('Gold', (hero.gold||0).toLocaleString());
+  html += _statRow('Total deaths', statsData.totalDeaths||0);
   html += _statRow('Current speed', gameSpeed+'x');
 
   // ── Difficulty unlock times ──
@@ -11988,6 +11985,50 @@ function renderStats() {
   }
 
   html += '<div style="margin-top:4px;font-size:9px;color:#4a4a5a;">Lv¹ / GS¹ = level and gear score on first kill &nbsp;·&nbsp; Lv Now / GS Now = most recent kill</div>';
+
+  // ── Progression features ── (each only shown once unlocked, to avoid spoiling gated content)
+  if (bountyIntroSeen || (statsData.bountiesCompleted || 0) > 0) {
+    html += _statSection('Bounty Board');
+    html += _statRow('Contracts fulfilled', (statsData.bountiesCompleted || 0).toLocaleString());
+  }
+
+  if (classKey === 'ranger' && hero.petRoster && hero.petRoster.length) {
+    html += _statSection('Companions');
+    html += _statRow('Roster', hero.petRoster.length + ' / 6');
+    var _petNames = [];
+    for (var _pi = 0; _pi < hero.petRoster.length; _pi++) {
+      _petNames.push(companionDisplayName(_pi));
+    }
+    html += _statRow('Tamed', _petNames.join(', '));
+  }
+
+  if (relicSystemUnlocked) {
+    html += _statSection('Relics');
+    html += _statRow('Relics found', (statsData.relicsFound || 0).toLocaleString());
+    html += _statRow('Equipped', equippedRelic ? equippedRelic.name : '<span style="color:#4a4a5a;">none</span>');
+    html += _statRow('In stash', relicStash.length);
+  }
+
+  if (ngPlusUnlocked) {
+    html += _statSection('Desolation (New Game+)');
+    html += _statRow('Status', '<span style="color:#c87a3a;">Active</span>');
+    if (statsData.ngPlusTs) html += _statRow('Entered', _fmtTs(statsData.ngPlusTs));
+  }
+
+  if (delveUnlocked) {
+    html += _statSection('The Depths');
+    if (statsData.delveUnlockTs) html += _statRow('Unlocked', _fmtTs(statsData.delveUnlockTs));
+    html += _statRow('Deepest depth', (statsData.delveDeepest || 0).toLocaleString());
+    html += _statRow('Checkpoints cleared', delveCheckpoints.length);
+    if (delveActive) html += _statRow('Current depth', delveLevel);
+
+    // Vault expansion & shop passes are gated on the same Delve-unlock milestone
+    html += _statSection('Vault & Shop');
+    html += _statRow('Shop passes', (hero.shopPasses || 0) + ' / ' + SHOP_PASS_MAX);
+    var _boughtSlots = 0, _maxSlots = VAULT_SHOP_SLOTS.length * VAULT_SLOT_MAX_BOUGHT;
+    if (hero.vaultSlots) { for (var _vk in hero.vaultSlots) _boughtSlots += (hero.vaultSlots[_vk] || 0); }
+    html += _statRow('Vault slots purchased', _boughtSlots + ' / ' + _maxSlots);
+  }
 
   body.innerHTML = html;
 }
@@ -18099,8 +18140,13 @@ function initCombatScene() {
 // ═══════════════════════════════════════════════════
 
 var SAVE_VERSION = 1;
-var SAVE_KEY     = 'idledepths_save_' + classKey;
-var BANK_KEY     = 'idledepths_bank';    // shared across all classes
+// ── Character save slots: each class has 3 slots (0,1,2). Slot 0 reuses the legacy
+//    key ('idledepths_save_<class>') so existing single-character saves keep working. ──
+var SAVE_SLOT_COUNT = 3;
+function _saveKeyFor(cls, slot) { return 'idledepths_save_' + cls + ((slot > 0) ? ('_' + slot) : ''); }
+var SAVE_SLOT = (function() { var s = parseInt(localStorage.getItem('idledepths_slot') || '0', 10); return (s >= 0 && s < SAVE_SLOT_COUNT) ? s : 0; })();
+var SAVE_KEY     = _saveKeyFor(classKey, SAVE_SLOT);
+var BANK_KEY     = 'idledepths_bank';    // shared across all classes & slots
 var BANK_SIZE    = 20;                   // max items in bank
 var bank         = [];                   // array of items (each has _lvlReq, slot, etc.)
 
@@ -18396,6 +18442,11 @@ function loadGame() {
       statsData.diffUnlock    = state.statsData.diffUnlock    || {};
       statsData.gameStartTs   = state.statsData.gameStartTs   || 0;
       statsData.totalDeaths   = state.statsData.totalDeaths   || 0;
+      statsData.ngPlusTs          = state.statsData.ngPlusTs          || 0;
+      statsData.delveUnlockTs     = state.statsData.delveUnlockTs     || 0;
+      statsData.delveDeepest      = state.statsData.delveDeepest      || 0;
+      statsData.bountiesCompleted = state.statsData.bountiesCompleted || 0;
+      statsData.relicsFound       = state.statsData.relicsFound       || 0;
     }
     // Relic system
     relicSystemUnlocked = state.relicSystemUnlocked || false;
@@ -18879,10 +18930,13 @@ function closeWipeAll() {
 function executeWipeAll() {
   var allClasses = ['sorceress', 'warrior', 'rogue', 'ranger'];
   for (var i = 0; i < allClasses.length; i++) {
-    localStorage.removeItem('idledepths_save_' + allClasses[i]);
+    for (var s = 0; s < SAVE_SLOT_COUNT; s++) {
+      localStorage.removeItem(_saveKeyFor(allClasses[i], s));
+    }
   }
   localStorage.removeItem(BANK_KEY);
   localStorage.removeItem('idledepths_class');
+  localStorage.removeItem('idledepths_slot');
   localStorage.removeItem('idledepths_visited');
   localStorage.removeItem('idledepths_statscollapsed');
   location.reload();
@@ -18911,7 +18965,7 @@ function exportSave() {
     if (!dec.ok) { addLog('⚠ Nothing to export yet.', 'info'); return; }
     var bundle = { fmt: 'epoch-bundle', v: SAVE_VERSION, cls: classKey, ts: Date.now(), save: dec.obj, bank: bank };
     var blob = _encodeSave(bundle);
-    var fn = 'epoch-' + classKey + '-' + new Date().toISOString().slice(0, 10) + '.sav';
+    var fn = 'epoch-' + classKey + '-slot' + (SAVE_SLOT + 1) + '-' + new Date().toISOString().slice(0, 10) + '.sav';
     _downloadText(fn, blob);
     try { if (navigator.clipboard) navigator.clipboard.writeText(blob); } catch (e) {}
     addLog('💾 Save exported → ' + fn + ' (also copied to clipboard).', 'level', 'event');
@@ -18941,9 +18995,10 @@ function _confirmImport(str) {
   if (save.v !== SAVE_VERSION) { alert('That save is from a different game version and can’t be imported.'); return; }
   if (!confirm('Import this save? It will OVERWRITE your current ' + (cls.charAt(0).toUpperCase() + cls.slice(1)) + ' progress' + (bnk ? ' and shared bank' : '') + '. This cannot be undone.')) return;
   try {
-    localStorage.setItem('idledepths_save_' + cls, _encodeSave(save));
+    localStorage.setItem(_saveKeyFor(cls, SAVE_SLOT), _encodeSave(save));
     if (bnk) localStorage.setItem(BANK_KEY, _encodeSave(bnk));
     localStorage.setItem('idledepths_class', cls);
+    localStorage.setItem('idledepths_slot', String(SAVE_SLOT));
     setTimeout(function() { location.reload(); }, 400);
   } catch (e) { alert('Import failed — storage error.'); }
 }
@@ -19073,8 +19128,9 @@ function applyClassColors() {
   }
 }
 
-function selectClass(key) {
+function selectClass(key, slot) {
   localStorage.setItem('idledepths_class', key);
+  localStorage.setItem('idledepths_slot', String(slot || 0));
   location.reload();
 }
 
@@ -19084,7 +19140,65 @@ function switchClass() {
   showClassSelect();
 }
 
+// Class roster for the select screen — frame index maps into class_select_icons.png (2×2 sheet).
+var CLASS_SELECT = [
+  { key:'sorceress', name:'Sorceress', hp:'80 HP',  style:'Spell caster',             frame:0, color:'#c8a0ff' },
+  { key:'ranger',    name:'Ranger',    hp:'100 HP', style:'Hunter / Archer / Trapper',frame:1, color:'#7aaa5a' },
+  { key:'warrior',   name:'Warrior',   hp:'130 HP', style:'Melee bruiser',            frame:2, color:'#c87a3a' },
+  { key:'rogue',     name:'Rogue',     hp:'90 HP',  style:'Assassin',                 frame:3, color:'#c85a5a' },
+];
+// NOTE: _REPO is reassigned to a github.com/blob base earlier in the file (for Phaser's ?raw= loader),
+// so build this from the explicit github.io CDN base instead of the clobbered _REPO.
+var CLASS_SELECT_ICON_URL = 'https://severedgd.github.io/gamesprites/icons/class_select_icons.png';
+
+// Peek at a slot's save (decoded) to label its pip — returns {level, diff, ngPlus} or null.
+function _slotSummary(cls, slot) {
+  try {
+    var raw = localStorage.getItem(_saveKeyFor(cls, slot));
+    if (!raw) return null;
+    var dec = _decodeSave(raw);
+    if (!dec.ok || !dec.obj) return null;
+    var o = dec.obj;
+    return {
+      level:  (o.hero && o.hero.level) ? o.hero.level : 1,
+      diff:   o.difficulty || 'normal',
+      ngPlus: !!o.ngPlusUnlocked
+    };
+  } catch (e) { return null; }
+}
+
+function renderClassSelect() {
+  var wrap = document.getElementById('cs-cards');
+  if (!wrap) return;
+  var DIFF_ABBR = { normal:'N', nightmare:'NM', hell:'H' };
+  var html = '';
+  for (var ci = 0; ci < CLASS_SELECT.length; ci++) {
+    var c = CLASS_SELECT[ci];
+    // 2×2 sheet: col = frame%2, row = (frame/2|0) → background-position col*100% row*100%
+    var col = c.frame % 2, row = (c.frame / 2) | 0;
+    var pos = (col * 100) + '% ' + (row * 100) + '%';
+    html += '<div class="cs-card">';
+    html += '<div class="cs-icon" style="background-image:url(\'' + CLASS_SELECT_ICON_URL + '\');background-size:200% 200%;background-position:' + pos + ';"></div>';
+    // Save-slot pips
+    html += '<div class="cs-pips">';
+    for (var s = 0; s < SAVE_SLOT_COUNT; s++) {
+      var sum = _slotSummary(c.key, s);
+      var label = sum ? ('Lv ' + sum.level + (sum.ngPlus ? ' ★' : '') + ' · ' + (DIFF_ABBR[sum.diff] || '?')) : 'Empty';
+      var pipCls = 'cs-pip' + (sum ? ' filled' : '');
+      var pipStyle = sum ? ('border-color:' + c.color + ';background:' + c.color + '33;') : '';
+      html += '<button class="' + pipCls + '" style="' + pipStyle + '" onclick="selectClass(\'' + c.key + '\',' + s + ')" title="' + (sum ? (c.name + ' — ' + label) : ('New ' + c.name + ' — Slot ' + (s + 1))) + '">'
+        + '<span class="cs-pip-dot" style="' + (sum ? ('background:' + c.color + ';') : '') + '"></span>'
+        + '<span class="cs-pip-label">' + (sum ? label : 'New Run') + '</span>'
+        + '</button>';
+    }
+    html += '</div>';
+    html += '</div>';
+  }
+  wrap.innerHTML = html;
+}
+
 function showClassSelect() {
+  renderClassSelect();
   var el = document.getElementById('class-select-overlay');
   if (el) el.style.display = 'flex';
 }
