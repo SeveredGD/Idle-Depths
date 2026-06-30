@@ -657,6 +657,18 @@
     overflow-y: auto;
     max-height: 260px;
   }
+  #event-log-wrap {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    padding: 3px 2px;
+    flex-direction: column;
+    gap: 1px;
+    background: #03030a;
+    border: 1px solid #131320;
+    border-radius: 2px;
+  }
+  #log-tab-combat:hover, #log-tab-event:hover { color: #c8a84b88 !important; }
 
   #center-vault {
     flex: 1;
@@ -1136,7 +1148,7 @@
       <div class="help-hdr">Class Philosophies</div>
       <p class="help-p"><span style="color:#d4c9a8;">Sorceress</span> — A glass cannon built around elemental damage and crowd control. She hits hard and can freeze, burn, shock, and chill entire packs, and has an innate affinity for elemental status effects — her procs land more often than other classes. Defensively she relies on her Energy Shield passive and Warmth regen rather than raw HP. Play her as a high-output nuker: invest in AoE skills for farming and single-target spells for boss fights. Her damage ceiling is the highest of any class, but she punishes greediness.</p>
       <p class="help-p"><span style="color:#d4c9a8;">Warrior</span> — A bruiser who thrives on momentum. He builds Rage by attacking and taking hits, then spends it through his active Technique for powerful effects. More HP and a base block chance make him naturally durable, but his damage output depends heavily on how well you manage Rage. The Warrior rewards staying in the fight and planning around his Technique — Execute for burst, Last Stand for survival, Item Find for farming.</p>
-      <p class="help-p"><span style="color:#d4c9a8;">Rogue</span> — A specialist who commits to a playstyle from the start. The Rogue has no skills by default — first choose a <span style="color:#d4c9a8;">Specialization</span> in the T3 tab (Assassin, Toxicologist, or Mage Hunter), which unlocks your three T1 combat skills and defines how you fight. Then pick an active <span style="color:#d4c9a8;">Scheme</span> from the T2 tab (Lucky, Pilfer, or Excavation) for a passive bonus that enhances your loot and gold.</p>
+      <p class="help-p"><span style="color:#d4c9a8;">Rogue</span> — A specialist who commits to a playstyle from the start. The Rogue has no skills by default — first choose a <span style="color:#d4c9a8;">Specialization</span> in the T3 tab (Assassin, Toxicologist, or Mage Hunter), which unlocks your three T1 combat skills and defines how you fight. Then pick an active <span style="color:#d4c9a8;">Scheme</span> from the T2 tab (Lucky, Pilfer, or Heist) for a passive bonus that enhances your loot and gold.</p>
       <p class="help-p"><span style="color:#d4c9a8;">Ranger</span> — A versatile hunter who fights alongside an Animal Companion. Choose a <span style="color:#d4c9a8;">Discipline</span> in the T3 tab (Hunter, Arcane Archer, or Trapper) and a <span style="color:#d4c9a8;">Stratagem</span> from T2. Rangers get unique advantages on the Bounty Board: only Rangers can tame wild creatures encountered during a hunt, and only Rangers can Scout (reroll) bounties for a fee.</p>
     </div>
 
@@ -1218,6 +1230,16 @@
     <div style="font-size:14px;color:#88cc44;margin-bottom:2px;letter-spacing:1px;">🐾 Animal Companion</div>
     <div style="font-size:10px;color:#5a5a6a;margin-bottom:16px;">Your bonded companion fights at your side. Choose wisely — a bond cannot be broken.</div>
     <div id="pet-panel-content"></div>
+  </div>
+</div>
+
+<!-- Relic Stash management overlay -->
+<div id="relic-stash-overlay" onclick="if(event.target===this)toggleRelicStash()" style="display:none;position:fixed;inset:0;background:#000000bb;z-index:180;align-items:flex-start;justify-content:center;overflow-y:auto;padding:16px 0;">
+  <div style="background:#0c0814;border:1px solid #5a3a8a;border-radius:4px;padding:20px 24px;width:560px;max-width:96vw;font-family:Georgia,serif;color:#d4c9a8;position:relative;">
+    <button onclick="toggleRelicStash()" style="position:absolute;top:10px;right:12px;background:none;border:none;color:#5a5a6a;font-size:18px;cursor:pointer;font-family:Georgia,serif;">✕</button>
+    <div style="font-size:14px;color:#e57bf5;margin-bottom:2px;letter-spacing:1px;">⚗ Relic Stash</div>
+    <div style="font-size:10px;color:#5a5a6a;margin-bottom:16px;">Equip any relic you own, or stash the current one. Discarding is permanent.</div>
+    <div id="relic-stash-content"></div>
   </div>
 </div>
 
@@ -1421,8 +1443,14 @@
 
     <!-- Growing: combat log fills available space -->
     <div id="log-section">
-      <div class="panel-title" style="margin-bottom:4px;">Combat Log</div>
+      <div style="display:flex;gap:0;margin-bottom:4px;border-bottom:1px solid #1a1a2a;">
+        <button id="log-tab-combat" onclick="setLogTab('combat')" style="padding:3px 10px;border:none;border-bottom:2px solid #c8a84b;background:none;color:#c8a84b;font-family:Georgia,serif;font-size:10px;cursor:pointer;letter-spacing:1px;text-transform:uppercase;">Combat</button>
+        <button id="log-tab-event"  onclick="setLogTab('event')"  style="padding:3px 10px;border:none;border-bottom:2px solid transparent;background:none;color:#5a5a6a;font-family:Georgia,serif;font-size:10px;cursor:pointer;letter-spacing:1px;text-transform:uppercase;">Events</button>
+        <button id="log-tab-item"   onclick="setLogTab('item')"   style="padding:3px 10px;border:none;border-bottom:2px solid transparent;background:none;color:#5a5a6a;font-family:Georgia,serif;font-size:10px;cursor:pointer;letter-spacing:1px;text-transform:uppercase;">Items</button>
+      </div>
       <div id="log-wrap"></div>
+      <div id="event-log-wrap" style="display:none;flex:1;min-height:0;overflow-y:auto;padding:3px 2px;flex-direction:column;gap:1px;background:#03030a;border:1px solid #131320;border-radius:2px;"></div>
+      <div id="item-log-wrap"  style="display:none;flex:1;min-height:0;overflow-y:auto;padding:3px 2px;flex-direction:column;gap:1px;background:#03030a;border:1px solid #131320;border-radius:2px;"></div>
     </div>
 
     <!-- Pinned bottom: priority + bank -->
@@ -1510,6 +1538,7 @@
           <div style="background:#00000099;border:1px solid #2a2a2a44;border-radius:3px;padding:4px 6px;display:flex;align-items:center;gap:6px;pointer-events:auto;">
             <button id="boss-loop-btn" onclick="openBossLoopMenu()" style="padding:4px 10px;border:1px solid #3a2a1a;background:#0f0a06;color:#c8a84b88;font-family:Georgia,serif;font-size:12px;cursor:pointer;border-radius:2px;transition:all 0.15s;">🎯 Target Boss</button>
             <button id="farm-loop-btn" onclick="openFarmLoopMenu()" style="padding:4px 10px;border:1px solid #1a3a1a;background:#060f06;color:#7aaa5a88;font-family:Georgia,serif;font-size:12px;cursor:pointer;border-radius:2px;transition:all 0.15s;">🌾 Farm Zone</button>
+            <button id="delve-btn" onclick="openDelveMenu()" style="display:none;padding:4px 10px;border:1px solid #3a2a0a;background:#0f0a00;color:#c8a04488;font-family:Georgia,serif;font-size:12px;cursor:pointer;border-radius:2px;transition:all 0.15s;">⛏ Delve</button>
           </div>
           <div style="background:#00000099;border:1px solid #1a2a3a;border-radius:3px;padding:4px 8px;display:flex;align-items:center;gap:8px;pointer-events:auto;">
             <button id="topoff-btn" onclick="doTopOff()" style="padding:3px 10px;border:1px solid #1a2a3a;background:#060a0f;color:#5a9aca88;font-family:Georgia,serif;font-size:12px;cursor:pointer;border-radius:2px;transition:all 0.15s;" title="Heal to full (25g, once per act)">💊 Top Off</button>
@@ -1531,6 +1560,71 @@
       </div>
       <div id="bounty-hunt-overlay">
         <div id="bounty-hunt-timer">🏹 Hunting… <span id="bounty-hunt-countdown">10</span>s</div>
+      </div>
+
+      <!-- Delve Help Overlay -->
+      <div id="delve-help-overlay" style="display:none;position:fixed;inset:0;background:#000000cc;z-index:300;align-items:center;justify-content:center;">
+        <div style="background:#0c0a08;border:1px solid #c8a04466;border-radius:4px;padding:28px 32px;max-width:500px;width:90%;font-family:Georgia,serif;color:#d4c9a8;text-align:center;">
+          <div style="font-size:20px;color:#c8a044;margin-bottom:4px;letter-spacing:2px;">⛏ THE DEPTHS</div>
+          <div style="font-size:12px;color:#5a4a3a;font-style:italic;margin-bottom:20px;letter-spacing:1px;">Beneath hell, something older waits.</div>
+          <div style="text-align:left;background:#080604;border:1px solid #3a2a0a;border-radius:3px;padding:14px 16px;margin-bottom:16px;">
+            <div style="font-size:12px;color:#a09070;line-height:1.9;">
+              <div style="margin-bottom:10px;"><span style="color:#c8a044;">How it works</span> — Each depth is cleared by killing a handful of enemies. Every few depths you reach an extraction point where you can take your finds and leave, or press deeper.</div>
+              <div style="margin-bottom:10px;"><span style="color:#c8a044;">Bosses &amp; checkpoints</span> — Every twentieth depth a guardian blocks your path. Defeat it to unlock a checkpoint. On future runs you can start from any checkpoint you've cleared, skipping past already-beaten bosses.</div>
+              <div style="margin-bottom:10px;"><span style="color:#c8a044;">Loot &amp; the bag</span> — Drops go into your delve bag rather than your vault. The bag holds a limited number of items; if it fills up, the lowest-value item is dropped to make room. At an extraction point you choose which items to carry out — the rest are lost.</div>
+              <div style="margin-bottom:10px;"><span style="color:#c8a044;">Death</span> — If you die, a random item from the top of your bag is rescued for you. Half the gold you earned that run is recovered. All experience gained during the run is kept.</div>
+              <div style="margin-bottom:10px;"><span style="color:#c8a044;">Scaling rewards</span> — Magic find, experience, and enemy difficulty all scale with depth. There is no floor cap — the deeper you go, the richer the rewards and the more brutal the enemies. Depth 200 is theoretically reachable but effectively a wall.</div>
+              <div style="color:#5a4a3a;font-style:italic;font-size:11px;">Gold and gems earned during a delve are banked the moment you reach an extraction point, regardless of whether you extract or continue.</div>
+            </div>
+          </div>
+          <button onclick="document.getElementById('delve-help-overlay').style.display='none'" style="width:100%;padding:10px;border:1px solid #c8a04488;background:#1a1208;color:#c8a044;font-family:Georgia,serif;font-size:13px;cursor:pointer;border-radius:2px;letter-spacing:1px;transition:all 0.2s;" onmouseover="this.style.background='#2a1e0a'" onmouseout="this.style.background='#1a1208'">Got it</button>
+        </div>
+      </div>
+
+      <!-- Delve Start Menu -->
+      <div id="delve-menu" style="display:none;position:absolute;inset:0;z-index:25;align-items:center;justify-content:center;background:#00000099;backdrop-filter:blur(2px);">
+        <div style="background:#0c0a08;border:1px solid #5a3a1a;border-radius:4px;padding:20px 24px;min-width:300px;max-width:400px;font-family:Georgia,serif;color:#c8b080;">
+          <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:4px;">
+            <div style="font-size:16px;color:#c8a044;letter-spacing:1px;">⛏ Delve</div>
+            <button onclick="document.getElementById('delve-help-overlay').style.display='flex'" style="background:none;border:1px solid #5a3a1a;color:#7a6040;font-family:Georgia,serif;font-size:11px;cursor:pointer;border-radius:2px;padding:2px 8px;letter-spacing:1px;" onmouseover="this.style.color='#c8a044'" onmouseout="this.style.color='#7a6040'">? Help</button>
+          </div>
+          <div style="font-size:11px;color:#5a4a3a;margin-bottom:14px;">Descend until death or extraction. Each level is 5 enemies. Boss every 20 levels unlocks a checkpoint.</div>
+          <div id="delve-checkpoint-picker" style="margin-bottom:14px;"></div>
+          <div style="margin-bottom:14px;display:flex;align-items:center;gap:8px;">
+            <input type="checkbox" id="delve-auto-check" onchange="delveAutoDelve=this.checked" style="cursor:pointer;">
+            <label for="delve-auto-check" style="font-size:11px;color:#9a8060;cursor:pointer;">Auto-delve — extract popup dismisses after</label>
+            <input type="number" id="delve-timer-input" min="5" max="120" value="20" onchange="delveAutoDelveDelay=Math.max(5,Math.min(120,parseInt(this.value)||20));document.getElementById('delve-timer-display').textContent=delveAutoDelveDelay;" style="width:40px;background:#0a0800;border:1px solid #3a2a1a;color:#c8a044;font-size:11px;text-align:center;padding:1px 3px;border-radius:2px;">
+            <span style="font-size:11px;color:#9a8060;">s</span>
+            <span id="delve-timer-display" style="display:none">20</span>
+          </div>
+          <div style="display:flex;gap:8px;">
+            <button onclick="startDelve()" style="flex:1;padding:8px 0;border:1px solid #c8a044;background:#1a1208;color:#c8a044;font-family:Georgia,serif;font-size:13px;cursor:pointer;border-radius:2px;letter-spacing:1px;" onmouseover="this.style.background='#2a1e0a'" onmouseout="this.style.background='#1a1208'">Descend</button>
+            <button onclick="closeDelveMenu()" style="padding:8px 16px;border:1px solid #3a3030;background:#0c0a08;color:#7a6060;font-family:Georgia,serif;font-size:12px;cursor:pointer;border-radius:2px;">Cancel</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Delve Extract Popup -->
+      <div id="delve-extract" style="display:none;position:absolute;inset:0;z-index:26;align-items:center;justify-content:center;background:#00000099;backdrop-filter:blur(2px);">
+        <div style="background:#0c0a08;border:1px solid #5a3a1a;border-radius:4px;padding:18px 22px;min-width:340px;max-width:460px;font-family:Georgia,serif;">
+          <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px;">
+            <span style="font-size:15px;color:#c8a044;letter-spacing:1px;">⛏ Depth <span id="delve-extract-level">0</span> — Extract?</span>
+            <span id="delve-extract-countdown" style="font-size:11px;color:#5a4a3a;"></span>
+          </div>
+          <div style="font-size:11px;color:#5a4a3a;margin-bottom:12px;">Gold, gems &amp; XP are already banked. Select items to carry out — the rest stay in the depths.</div>
+          <div id="delve-extract-slots" style="display:grid;grid-template-columns:repeat(2,1fr);gap:5px;margin-bottom:10px;max-height:240px;overflow-y:auto;"></div>
+          <div id="delve-extract-pick-info" style="font-size:11px;color:#9a8060;margin-bottom:10px;"></div>
+          <div style="display:flex;align-items:center;gap:6px;margin-bottom:10px;">
+            <input type="checkbox" id="delve-extract-auto-check" onchange="delveAutoDelve=this.checked;if(!this.checked&&_delveExtractTimer){clearInterval(_delveExtractTimer);_delveExtractTimer=null;var c=document.getElementById('delve-extract-countdown');if(c)c.textContent='';}" style="cursor:pointer;">
+            <label for="delve-extract-auto-check" style="font-size:11px;color:#9a8060;cursor:pointer;">Auto-delve after</label>
+            <input type="number" id="delve-extract-timer-input" min="5" max="120" value="20" onchange="delveAutoDelveDelay=Math.max(5,Math.min(120,parseInt(this.value)||20));var ti=document.getElementById('delve-timer-input');if(ti)ti.value=delveAutoDelveDelay;" style="width:40px;background:#0a0800;border:1px solid #3a2a1a;color:#c8a044;font-size:11px;text-align:center;padding:1px 3px;border-radius:2px;">
+            <span style="font-size:11px;color:#9a8060;">s</span>
+          </div>
+          <div style="display:flex;gap:8px;">
+            <button onclick="confirmDelveExtract()" style="flex:1;padding:7px 0;border:1px solid #c8a044;background:#1a1208;color:#c8a044;font-family:Georgia,serif;font-size:12px;cursor:pointer;border-radius:2px;" onmouseover="this.style.background='#2a1e0a'" onmouseout="this.style.background='#1a1208'">Extract &amp; Leave</button>
+            <button onclick="continueDelve()" style="flex:1;padding:7px 0;border:1px solid #3a5a2a;background:#0a120a;color:#7aaa5a;font-family:Georgia,serif;font-size:12px;cursor:pointer;border-radius:2px;" onmouseover="this.style.background='#0f1e0f'" onmouseout="this.style.background='#0a120a'">Continue Deeper</button>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -1756,6 +1850,12 @@ var ACT_BG_ANIMATED = {
     json: _REPO + 'Background%20Animated/Act_1_background_3.json',
     key:  'bg-act1-anim',
     anim: 'bg-act1-anim-play'
+  },
+  2: {
+    png:  _REPO + 'Background%20Animated/act_2_background_animated.png',
+    json: _REPO + 'Background%20Animated/act_2_background_animated.json',
+    key:  'bg-act2-anim',
+    anim: 'bg-act2-anim-play'
   }
 };
 
@@ -1815,6 +1915,15 @@ var BOUNTY_SPRITES = [
   _REPO + 'rogue-class.png',
   _REPO + 'sorc-class-1.png',
 ];
+
+// All mob sprite URLs used as the delve random sprite pool
+var _DELVE_SPRITE_POOL = Object.values ? Object.values(MOB_SPRITES) : (function() {
+  var _v = []; for (var _k in MOB_SPRITES) _v.push(MOB_SPRITES[_k]); return _v;
+}());
+
+// All available backgrounds cycled during delve
+var _DELVE_BG_POOL = [1,2,3,4,5]; // ACT_BACKGROUNDS keys
+var _delveBgIdx = 0; // current index into _DELVE_BG_POOL
 
 // Per-sprite Y offset in pixels (positive = lower / sink into ground)
 var MOB_SPRITE_OFFSETS = {
@@ -2007,7 +2116,7 @@ var CLASSES = {
       // ── T2: Schemes (pick one like warrior techniques) ──
       { id: 'lucky',      name: 'High Roller',        desc: 'Scheme: Killing blows roll a lucky loot item (+2 rolls at 20pts). +2% T1 dmg/pt.',          spellMin: 0, spellMax: 0, spdMod: 1, spdLabel: 'scheme', spdClass: 'med', tier: 2, parent: null, passive: true, technique: true },
       { id: 'pilfer',     name: 'Pilfer',             desc: 'Scheme: Bonus gold on opening hit each fight. +5g per point.',                              spellMin: 0, spellMax: 0, spdMod: 1, spdLabel: 'scheme', spdClass: 'med', tier: 2, parent: null, passive: true, technique: true },
-      { id: 'excavation', name: 'Excavation',         desc: 'Scheme: Magic/rare drops have a chance to reroll and keep the better result. +2% T1 dmg/pt.', spellMin: 0, spellMax: 0, spdMod: 1, spdLabel: 'scheme', spdClass: 'med', tier: 2, parent: null, passive: true, technique: true },
+      { id: 'excavation', name: 'Heist',         desc: 'Scheme: Magic/rare drops have a chance to reroll and keep the better result. +2% T1 dmg/pt.', spellMin: 0, spellMax: 0, spdMod: 1, spdLabel: 'scheme', spdClass: 'med', tier: 2, parent: null, passive: true, technique: true },
       // ── T3: Specializations (pick one — determines T1 skills) ──
       { id: 'assassin',     name: 'Assassin',     desc: 'Specialization: Unlocks Backstab, Blade Dance, Flurry. +1% crit/pt, +0.1× crit mult/pt. All attacks 2.5× crit base.', spellMin: 0, spellMax: 0, spdMod: 1, spdLabel: 'spec', spdClass: 'med', tier: 3, parent: null, passive: true, technique: true, isSpec: true },
       { id: 'toxicologist', name: 'Toxicologist', desc: 'Specialization: Unlocks Taint Blood, Corrosive Compound, Neurotoxin. +20% status effect base, DoT dmg, HP per kill.', spellMin: 0, spellMax: 0, spdMod: 1, spdLabel: 'spec', spdClass: 'med', tier: 3, parent: null, passive: true, technique: true, isSpec: true },
@@ -2745,7 +2854,7 @@ var SKILL_NAMES = { fire:'Fireball', lightning:'Lightning', cold:'Frost Bolt', m
   backstab:'Backstab', bladedance:'Blade Dance', flurry:'Flurry',
   taintblood:'Taint Blood', corrosive:'Corrosive Compound', neurotoxin:'Neurotoxin',
   nullstrike:'Null Strike', spellbreaker:'Spellbreaker', manaburn:'Mana Burn',
-  lucky:'High Roller', pilfer:'Pilfer', excavation:'Excavation',
+  lucky:'High Roller', pilfer:'Pilfer', excavation:'Heist',
   assassin:'Assassin', toxicologist:'Toxicologist', magehunter:'Mage Hunter',
   long_shot:'Long Shot', strafing_shot:'Strafing Shot', mark_prey:'Mark Prey',
   vuln_shot:'Vulnerability Shot', overload_shot:'Overload Shot', execute_shot:'Execute Shot',
@@ -3746,6 +3855,7 @@ var equippedRelic = null;         // { name, effect, maxCharges, chargeCost, dur
 var relicTriggerMode = 'full';    // 'full' | 'boss' | 'expiry'
 var relicActiveUntil = 0;         // timestamp when current relic effect expires
 var relicPending = null;          // relic waiting to replace current if player reviews
+var relicStash   = [];            // owned-but-unequipped relics (the relic stash)
 // ── Relic effect runtime vars ──
 // (hero._relicStatusBoost, hero._relicHpRegen, etc. live on hero object — initialized via clearRelicEffect on load)
 var statsData = {
@@ -3782,6 +3892,24 @@ var respecDiffsGranted = { normal: true, nightmare: false, hell: false };
 var gearDirty = true;
 
 // Debug state
+// ── Delve ─────────────────────────────────────────────────────────────────────
+var delveUnlocked    = false;  // true once Hell Act5 NG+ boss killed
+var delveActive      = false;  // true while inside a delve run
+var delveLevel       = 1;      // current depth (1-based)
+var delveMobsThisLevel = 0;    // kills at current level (5 = complete)
+var _delveBossPhase  = false;  // true while fighting a level-checkpoint boss
+var delveBag         = [];     // items found this run (max 20, priority-sorted)
+var delveGoldEarned  = 0;      // gold earned this run (banked on extract, 50% on death)
+var delveCheckpoints = [];     // cleared checkpoint depths [20, 40, ...]
+var delveStartLevel  = 1;      // chosen starting depth for next run
+var delveAutoDelve   = false;  // auto-continue extract popups
+var delveAutoDelveDelay = 20;  // seconds before auto-continue (setting)
+var _delveExtractTimer  = null;// interval handle for auto-continue countdown
+var _delveExtractSelected = []; // selected item indices in extract popup
+var DELVE_BAG_MAX    = 20;
+var DELVE_MOBS_PER_LEVEL = 5;
+var _DELVE_MOB_NAMES = ['Hollow Shade','Void Marauder','Depth Crawler','Abyss Stalker','Rift Hound','Dread Specter','Obsidian Brute','Cursed Revenant','Dark Effigy','Tomb Warden'];
+// ──────────────────────────────────────────────────────────────────────────────
 var debugOpen      = false;
 var debugTickMult  = 1;
 var debugMfBonus   = 0;
@@ -3917,7 +4045,7 @@ function recalcStats() {
     var ratio = hero.hp / (hero.maxHp || newMax);
     hero.maxHp = newMax;
     hero.hp = Math.min(hero.maxHp, Math.round(hero.maxHp * ratio));
-    if (hero.hp <= 0) hero.hp = hero.maxHp;
+    if (!(hero.hp > 0)) hero.hp = hero.maxHp;
   }
   hero._bonusSpd        = bonusSpd;
   hero._bonusDmg        = bonusDmg;
@@ -4126,6 +4254,7 @@ function totalMf() {
   if (hero.mfBuff && gameNow() < hero.mfBuffEnd) mf += (hero.mfBuffAmount || 5);
   if (farmLoop && farmLoop.mfBonus) mf += farmLoop.mfBonus;
   if (bossLoop && bossLoop.mfBonus) mf += bossLoop.mfBonus;
+  mf += _delveMfBonus();
   mf += debugMfBonus;
   mf += (hero._passiveMf || 0);
   return mf;
@@ -4457,7 +4586,14 @@ function generateItem(isBossLoot, forceSlot, extraMf, ignoreMf) {
 }
 
 function processLoot(item, fromShop) {
-  // Excavation scheme (rogue): chance to reroll magic/rare stats twice, keep better
+  // Delve: route combat drops to the delve bag instead of normal inventory
+  if (delveActive && !fromShop) {
+    _delveAddToBag(item);
+    triggerItemDropAnim(item.rarity);
+    addLog('⛏ Bag: ' + item.name + ' [' + (item.score || 0) + '] (' + delveBag.length + '/' + DELVE_BAG_MAX + ')', 'loot ' + item.rarity);
+    return 'delved';
+  }
+  // Heist scheme (rogue): chance to reroll magic/rare stats twice, keep better
   if (classKey === 'rogue' && hero.activeScheme === 'excavation' && !fromShop) {
     var excPts = hero.skillTree['excavation'] || 0;
     if (excPts > 0) {
@@ -4481,7 +4617,7 @@ function processLoot(item, fromShop) {
           var _newVal = Math.round(_sv + (_r.max - _sv) * qualityBonus);
           if (_newVal > _sv) item.stats[_sk] = _newVal;
         }
-        if (isUnique) addLog('⛏ Excavation: unique quality enhanced!', 'level');
+        if (isUnique) addLog('🗝️ Heist: unique quality enhanced!', 'level');
       }
     }
   }
@@ -4527,7 +4663,7 @@ function processLoot(item, fromShop) {
     }
     uniqueQueue.push({ item: item, fromShop: fromShop || false, price: item._shopPrice || 0 });
     gearDirty = true;
-    addLog('📋 Unique queued for review: '+item.name + (item.uniqueTier === 3 ? ' ✦✦✦ [GOD-TIER]' : item.uniqueTier === 2 ? ' ✦✦ [Tier 2]' : ' ✦ [Tier 1]'), 'loot unique');
+    addLog('📋 Unique queued for review: '+item.name + (item.uniqueTier === 3 ? ' ✦✦✦ [GOD-TIER]' : item.uniqueTier === 2 ? ' ✦✦ [Tier 2]' : ' ✦ [Tier 1]'), 'loot unique', 'item');
     return 'queued';
   }
 
@@ -4655,7 +4791,7 @@ function dropLoot(isBossLoot, isRarePack) {
       var bonusStr = '';
       if (item.skillBonus) bonusStr += ' [+'+item.skillBonus+' to '+item.skillName+']';
       if (item.allSkills)  bonusStr += ' [+'+item.allSkills+' All Skills]';
-      addLog(verb+': '+item.name+bonusStr, 'loot '+item.rarity);
+      addLog(verb+': '+item.name+bonusStr, 'loot '+item.rarity, 'item');
     }
   }
 }
@@ -4721,7 +4857,12 @@ function spawnNextEnemy(simNow) {
 
   var mobsRequired = bossLoop ? BOSS_LOOP_MOB_COUNT : farmLoop ? FARM_LOOP_MOB_COUNT : getEnemiesPerZone();
 
-  if (killCount >= mobsRequired && !bossSpawned) {
+  if (delveActive && !_delveBossPhase && !bossSpawned) {
+    // Delve: always spawn a plain mob — boss/level gating handled by _delveOnMobKill
+    killCount = 0;
+  }
+
+  if (!delveActive && killCount >= mobsRequired && !bossSpawned) {
     if (farmLoop) {
       farmLoop.loopsRemaining--;
       addLog('🌾 Farm loop complete! ('+farmLoop.loopsRemaining+' remaining)', 'zone');
@@ -4822,7 +4963,7 @@ function spawnNextEnemy(simNow) {
     if (!rarePack && rarePackRemaining === 0 && Math.random() < rarePackChance) {
       rarePack = true;
       rarePackRemaining = 3;
-      addLog('★ A RARE PACK appears! Bonus loot ahead!', 'level');
+      addLog('★ A RARE PACK appears! Bonus loot ahead!', 'level', 'event');
       // Show rare pack announcement
       var packEl = document.getElementById('boss-announce');
       var packNameEl = document.getElementById('boss-announce-name');
@@ -4847,10 +4988,17 @@ function spawnNextEnemy(simNow) {
         enemy._elemResist = Math.min(75, ri(10 + actIdx*3, 20 + actIdx*4));
       }
     } else {
+      if (delveActive) {
+        maxHp = Math.round(maxHp * _delveHpMult());
+        name = _DELVE_MOB_NAMES[ri(0, _DELVE_MOB_NAMES.length - 1)];
+      }
       enemy = { name:name, hp:maxHp, maxHp:maxHp, isBoss:false, frozenUntil:0, stunCooldownUntil:0 };
-      if (ngPlusUnlocked) {
-        enemy._physResist = Math.min(75, ri(10 + actIdx*3, 15 + actIdx*3));
-        enemy._elemResist = Math.min(75, ri(10 + actIdx*3, 20 + actIdx*4));
+      if (delveActive) enemy._delveSprite = _DELVE_SPRITE_POOL[ri(0, _DELVE_SPRITE_POOL.length - 1)];
+      if (ngPlusUnlocked || delveActive) {
+        var _physBase = delveActive ? Math.min(65, Math.floor(delveLevel / 3)) : ri(10 + actIdx*3, 15 + actIdx*3);
+        var _elemBase = delveActive ? Math.min(65, Math.floor(delveLevel / 4)) : ri(10 + actIdx*3, 20 + actIdx*4);
+        enemy._physResist = Math.min(75, _physBase);
+        enemy._elemResist = Math.min(75, _elemBase);
       }
       hero._enemyMarked  = false;
       hero._enemyTrapped = 0;
@@ -6212,7 +6360,7 @@ function enemyAttack(now) {
 
   var diff = DIFFICULTY[difficulty];
   var dmg = enemy.isBoss ? ri(12, 22) : ri(3, 9);
-  dmg = Math.round(dmg * diff.enemyDmgMult * (ngPlusUnlocked ? NG_DMG_MULT : 1));
+  dmg = Math.round(dmg * diff.enemyDmgMult * (ngPlusUnlocked ? NG_DMG_MULT : 1) * (delveActive ? _delveDmgMult() : 1));
   var _rawMobDmg = dmg;
 
   // Boss enrage: damage increases over time (+10% per 30s, Nightmare/Hell only)
@@ -6541,11 +6689,104 @@ function clearRelicEffect(r) {
 }
 
 function equipRelic(relic) {
-  if (equippedRelic) clearRelicEffect(equippedRelic);
+  if (equippedRelic) {
+    clearRelicEffect(equippedRelic);
+    relicStash.push(equippedRelic);
+  }
   equippedRelic = relic;
   relicActiveUntil = 0;
-  addLog('⚗ Relic equipped: '+relic.name, 'level');
+  recalcStats();
+  addLog('⚗ Relic equipped: '+relic.name, 'level', 'event');
   renderRelicFrame(gameNow());
+}
+
+// ─── Relic stash management ───
+function toggleRelicStash() {
+  var ov = document.getElementById('relic-stash-overlay');
+  if (!ov) return;
+  if (ov.style.display === 'flex') { ov.style.display = 'none'; return; }
+  renderRelicStash();
+  ov.style.display = 'flex';
+}
+
+function equipFromStash(idx) {
+  if (idx < 0 || idx >= relicStash.length) return;
+  var r = relicStash.splice(idx, 1)[0];
+  equipRelic(r);
+  renderRelicStash();
+  saveGame();
+}
+
+function unequipRelic() {
+  if (!equippedRelic) return;
+  clearRelicEffect(equippedRelic);
+  relicStash.push(equippedRelic);
+  equippedRelic = null;
+  relicActiveUntil = 0;
+  recalcStats();
+  renderRelicFrame(gameNow());
+  renderRelicStash();
+  saveGame();
+}
+
+function discardStashRelic(idx) {
+  if (idx < 0 || idx >= relicStash.length) return;
+  var r = relicStash.splice(idx, 1)[0];
+  addLog('⚗ '+r.name+' discarded from the stash.', 'info');
+  renderRelicStash();
+  saveGame();
+}
+
+function stashPendingRelic() {
+  if (!relicPending) return;
+  relicStash.push(relicPending);
+  addLog('⚗ '+relicPending.name+' stored in the relic stash.', 'level', 'event');
+  relicPending = null;
+  renderShop();
+  saveGame();
+}
+
+function _relicStashBtnHtml() {
+  return '<div style="text-align:center;margin-top:6px;border-top:1px solid #1e1e2a;padding-top:6px;">'
+    + '<button onclick="toggleRelicStash()" style="padding:2px 12px;border:1px solid #3a2a4a;background:#0a060f;color:#9a6aaa;font-family:Georgia,serif;font-size:10px;cursor:pointer;border-radius:2px;">⚗ Stash ('+relicStash.length+')</button>'
+    + '</div>';
+}
+
+function _relicColor(r) { return (r && r.rarity === 'magic') ? '#6fa3ef' : '#e57bf5'; }
+
+function _relicStashRow(r, idx, isEquipped) {
+  var def = RELICS[r.id] || {};
+  var _rc = _relicColor(r);
+  var html = '<div style="border:1px solid '+(isEquipped?'#5a3a8a':'#2a2336')+';border-radius:3px;background:#080612;padding:8px 10px;margin-bottom:6px;">';
+  html += '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">';
+  html += '<div style="font-size:12px;color:'+_rc+';">'+r.name+(isEquipped?' <span style="color:#7aff7a;font-size:9px;">● equipped</span>':'')+'</div>';
+  html += '<div style="display:flex;gap:5px;">';
+  if (isEquipped) {
+    html += '<button class="overlay-btn sec" style="padding:2px 10px;font-size:10px;" onclick="unequipRelic()">Unequip</button>';
+  } else {
+    html += '<button class="overlay-btn" style="padding:2px 10px;font-size:10px;border-color:#7a3aaa;color:#e57bf5;" onclick="equipFromStash('+idx+')">Equip</button>';
+    html += '<button class="overlay-btn sec" style="padding:2px 10px;font-size:10px;" onclick="discardStashRelic('+idx+')">Discard</button>';
+  }
+  html += '</div></div>';
+  html += '<div style="font-size:10px;color:#7a6a9a;margin-top:4px;line-height:1.4;">'+(def.desc||'')+'</div>';
+  html += '<div style="font-size:9px;color:#5a5a6a;margin-top:3px;">Charges '+r.maxCharges+' · Cost '+r.chargeCost+' · '+(r.duration>0?r.duration+'s':'Instant')+'</div>';
+  html += '</div>';
+  return html;
+}
+
+function renderRelicStash() {
+  var el = document.getElementById('relic-stash-content');
+  if (!el) return;
+  var html = '<div style="font-size:10px;color:#7a6a9a;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">Equipped</div>';
+  if (equippedRelic) html += _relicStashRow(equippedRelic, -1, true);
+  else html += '<div style="font-size:11px;color:#4a4a5a;padding:6px 0 10px;">Nothing equipped.</div>';
+  html += '<div style="font-size:10px;color:#7a6a9a;text-transform:uppercase;letter-spacing:1px;margin:14px 0 6px;">Stash ('+relicStash.length+')</div>';
+  if (relicStash.length === 0) {
+    html += '<div style="font-size:11px;color:#4a4a5a;padding:6px 0;">No relics stored. Relics you find or unequip are kept here.</div>';
+  } else {
+    for (var i = 0; i < relicStash.length; i++) html += _relicStashRow(relicStash[i], i, false);
+  }
+  el.innerHTML = html;
 }
 
 function renderRelicFrame(now) {
@@ -6555,7 +6796,8 @@ function renderRelicFrame(now) {
   var r = equippedRelic;
 
   if (!r) {
-    frame.innerHTML = '<div style="text-align:center;color:#4a4a5a;font-size:11px;padding:6px;">⚗ No relic equipped</div>';
+    frame.innerHTML = '<div style="text-align:center;color:#4a4a5a;font-size:11px;padding:6px;">⚗ No relic equipped</div>'
+      + _relicStashBtnHtml();
     return;
   }
 
@@ -6590,11 +6832,12 @@ function renderRelicFrame(now) {
     +';font-family:Georgia,serif;font-size:10px;cursor:'+(canFire?'pointer':'not-allowed')+';border-radius:2px;">Use</button>';
 
   frame.innerHTML = '<div style="font-size:10px;color:#c8a84b;letter-spacing:1px;text-transform:uppercase;margin-bottom:4px;">⚗ Relic</div>'
-    + '<div style="font-size:11px;color:#e57bf5;margin-bottom:3px;cursor:help;" onmouseenter="relicShowTooltip(this)" onmouseleave="hideTooltip()">'+r.name+'</div>'
+    + '<div style="font-size:11px;color:'+_relicColor(r)+';margin-bottom:3px;cursor:help;" onmouseenter="relicShowTooltip(this)" onmouseleave="hideTooltip()">'+r.name+'</div>'
     + '<div id="relic-pips" style="margin-bottom:3px;">'+pips+'</div>'
     + '<div id="relic-charge-count" style="font-size:10px;color:#5a5a6a;margin-bottom:2px;">'+r.charges+' / '+r.maxCharges+' · costs '+r.chargeCost+'</div>'
     + timer + modeRow
-    + '<div style="text-align:center;">'+useBtn+'</div>';
+    + '<div style="text-align:center;">'+useBtn+'</div>'
+    + _relicStashBtnHtml();
 }
 
 function relicShowTooltip(el) {
@@ -6904,8 +7147,9 @@ function gainKill(isBoss, isAoe, simNow) {
   if (farmLoop && farmLoop.packType === 'goblin') goldGain = Math.round(goldGain * 1.30);
   var isRarePackMob = enemy && enemy.isRarePack;
 
+  if (delveActive) xpGain = Math.round(xpGain * _delveXpMult());
   hero.xp   += xpGain;
-  hero.gold += goldGain;
+  if (delveActive) { delveGoldEarned += goldGain; } else { hero.gold += goldGain; }
 
   // Siphon's Edge: heal 2% max HP per kill
   if (_hasUnique("Siphon's Edge") && !dead && !isBoss) {
@@ -7041,21 +7285,41 @@ function gainKill(isBoss, isAoe, simNow) {
         var _mRelicIds = Object.keys(RELICS).filter(function(id) { return !equippedRelic || id !== equippedRelic.id; });
         if (_mRelicIds.length) {
           var _mRelicId = _mRelicIds[ri(0, _mRelicIds.length - 1)];
-          relicPending = makeRelic(_mRelicId);
-          addLog('⚗ A relic emerges from the darkness... ' + relicPending.name + ' [review in the shop]', 'level');
-          triggerItemDropAnim('unique');
+          var _mRelic = makeRelic(_mRelicId);
+          if (delveActive) {
+            _mRelic._isRelic = true;
+            _mRelic.score = 800; // high fixed score so it stays in bag
+            _delveAddToBag(_mRelic);
+            addLog('⚗ ⛏ ' + _mRelic.name + ' found in the depths!', 'loot unique', 'item');
+            triggerItemDropAnim('unique');
+          } else {
+            relicPending = _mRelic;
+            addLog('⚗ A relic emerges from the darkness... ' + relicPending.name + ' [review in the shop]', 'level', 'item');
+            triggerItemDropAnim('unique');
+          }
         }
       }
 
+      // Delve boss: skip normal boss-kill flow entirely
+      if (delveActive && isBoss && _delveBossPhase) {
+        addLog('☠ ' + (enemy ? enemy.name : 'Guardian') + ' defeated!', 'level', 'event');
+        triggerDeathAnim();
+        dropLoot(true, false); // loot routes to delveBag via processLoot intercept
+        var _delveBossDepth = delveLevel;
+        enemy = null;
+        _delveOnBossKill(_delveBossDepth, simNow);
+        return;
+      }
+
       if (isBoss) {
-        addLog('☠ '+enemy.name+' defeated! +'+goldGain+' gold', 'level');
+        addLog('☠ '+enemy.name+' defeated! +'+goldGain+' gold', 'level', 'event');
         triggerDeathAnim();
         // Boss gem drop
         if (debugForceGemDrop || Math.random() < GEM_DROP_CHANCE_BOSS) {
           debugForceGemDrop = false;
           var bossGem = GEMS[ri(0, GEMS.length-1)];
           gemInventory[bossGem.id]++; _tabSeenCrafting = false;
-          addLog('💎 '+bossGem.name+' dropped!', 'level');
+          addLog('💎 '+bossGem.name+' dropped!', 'level', 'item');
           triggerGemDropAnim(bossGem.id);
           gearDirty = true;
           if (!gemIntroSeen) setTimeout(showGemIntro, 800);
@@ -7066,7 +7330,7 @@ function gainKill(isBoss, isAoe, simNow) {
           if (_relicIds2.length) {
             var _relicId2 = _relicIds2[ri(0, _relicIds2.length - 1)];
             relicPending = makeRelic(_relicId2);
-            addLog('⚗ '+relicPending.name+' found! [Relic — review in the shop]', 'level');
+            addLog('⚗ '+relicPending.name+' found! [Relic — review in the shop]', 'level', 'item');
             triggerItemDropAnim('unique');
           }
         }
@@ -7100,7 +7364,7 @@ function gainKill(isBoss, isAoe, simNow) {
           if (!hero._actSkillPtsGranted[_milestoneKey]) {
             hero._actSkillPtsGranted[_milestoneKey] = true;
             hero.skillPts++;
-            addLog('✦ Act '+(actIdx+1)+' cleared — +1 skill point!', 'level');
+            addLog('✦ Act '+(actIdx+1)+' cleared — +1 skill point!', 'level', 'event');
             renderSkillTree();
           }
         }
@@ -7111,7 +7375,7 @@ function gainKill(isBoss, isAoe, simNow) {
             var nextDiff = DIFFICULTY_ORDER[nextDiffIdx];
             unlockedDiffs[nextDiff] = true;
             if (!statsData.diffUnlock[nextDiff]) statsData.diffUnlock[nextDiff] = Date.now();
-            addLog('★ '+DIFFICULTY[nextDiff].label+' difficulty unlocked!', 'level');
+            addLog('★ '+DIFFICULTY[nextDiff].label+' difficulty unlocked!', 'level', 'event');
             addLog('↑ Ascending to '+DIFFICULTY[nextDiff].label+' after the shop…', 'zone');
             if (nextDiff === 'nightmare') {
               addLog('🏦 Bank unlocked — share items between characters from the left panel.', 'info');
@@ -7126,20 +7390,26 @@ function gainKill(isBoss, isAoe, simNow) {
             if (!respecDiffsGranted[nextDiff]) {
               respecDiffsGranted[nextDiff] = true;
               respecFreeCharges++;
-              addLog('✦ Respec charge granted for '+DIFFICULTY[nextDiff].label+'!', 'level');
+              addLog('✦ Respec charge granted for '+DIFFICULTY[nextDiff].label+'!', 'level', 'event');
             }
             // +2 skill points for reaching a new difficulty
             if (!hero._diffSkillPtsGranted) hero._diffSkillPtsGranted = {};
             if (!hero._diffSkillPtsGranted[nextDiff]) {
               hero._diffSkillPtsGranted[nextDiff] = true;
               hero.skillPts += 2;
-              addLog('✦ New difficulty unlocked — +2 skill points!', 'level');
+              addLog('✦ New difficulty unlocked — +2 skill points!', 'level', 'event');
               renderSkillTree();
             }
             pendingDiffPromotion = true;
           } else if (difficulty === 'hell' && !ngPlusUnlocked) {
             // Hell Act 5 boss killed with no next difficulty — offer NG+
             setTimeout(function() { showMorePrompt(); }, 1200);
+          }
+          if (ngPlusUnlocked && difficulty === 'hell' && actIdx === 4 && !delveUnlocked) {
+            delveUnlocked = true;
+            renderDelveBtn();
+            addLog('⛏ Delve unlocked — descend into the endless depths.', 'level', 'event');
+            saveGame();
           }
         }
         enemy = null;
@@ -7151,7 +7421,7 @@ function gainKill(isBoss, isAoe, simNow) {
           debugForceGemDrop = false;
           var mobGem = GEMS[ri(0, GEMS.length-1)];
           gemInventory[mobGem.id]++; _tabSeenCrafting = false;
-          addLog('💎 '+mobGem.name+' dropped!', 'level');
+          addLog('💎 '+mobGem.name+' dropped!', 'level', 'item');
           triggerGemDropAnim(mobGem.id);
           gearDirty = true;
           if (!gemIntroSeen) setTimeout(showGemIntro, 800);
@@ -7179,7 +7449,7 @@ function gainKill(isBoss, isAoe, simNow) {
           gainKill(false, true, simNow);
         }
         enemy = null;
-        spawnNextEnemy(simNow);
+        if (delveActive) { _delveOnMobKill(simNow); } else { spawnNextEnemy(simNow); }
       }
     }
   }
@@ -7193,7 +7463,7 @@ function gainKill(isBoss, isAoe, simNow) {
     _tabSeenSkills = false;
     recalcStats();
     hero.hp = hero.maxHp;
-    addLog('▲ Level '+hero.level+'! +1 skill point. HP restored.', 'level');
+    addLog('▲ Level '+hero.level+'! +1 skill point. HP restored.', 'level', 'event');
     renderSkillTree();
     saveGame();
   }
@@ -7203,7 +7473,8 @@ function gainKill(isBoss, isAoe, simNow) {
 function triggerDeath() {
   dead = true;
   enemy = null;
-  addLog('☠ You have died.', 'death');
+  if (delveActive) { _delveOnDeath(); return; }
+  addLog('☠ You have died.', 'death', 'event');
   triggerHeroDeathAnim();
 
   // Track total deaths for feature unlocks
@@ -7248,7 +7519,7 @@ function triggerDeath() {
     _bossSpawnRealTime = 0;  // reset TTK timer on death
     if (bossDeathCounts[bossKey] === (difficulty === 'normal' ? 3 : MERCHANT_DEATH_THRESHOLD)) {
       bossDeathCounts[bossKey] = 0;
-      addLog('A traveling merchant approaches, bearing wares…', 'shop');
+      addLog('Walsh, a traveling merchant, approaches — bearing wares…', 'shop');
       setTimeout(function() { openMerchant(); }, 1200);
     }
   }
@@ -7418,7 +7689,7 @@ function openShop() {
       var item2 = generateItem(true, null, 0, true);
       if (item2.score > item.score) item = item2;
     }
-    // Excavation scheme: push shop item stats toward max
+    // Heist scheme: push shop item stats toward max
     if (classKey === 'rogue' && hero.activeScheme === 'excavation') {
       var _excPts = hero.skillTree['excavation'] || 0;
       if (_excPts > 0 && (item.rarity === 'magic' || item.rarity === 'rare')) {
@@ -7458,9 +7729,10 @@ function renderPendingRelic() {
   if (equippedRelic) {
     html += '<div style="font-size:10px;color:#7a6a5a;margin-bottom:8px;">Currently equipped: <span style="color:#c8a0ff;">'+equippedRelic.name+'</span></div>';
   }
-  html += '<div style="display:flex;gap:6px;">';
-  html += '<button class="overlay-btn" onclick="swapPendingRelic()" style="flex:1;border-color:#7a3aaa;color:#e57bf5;">'+(equippedRelic?'Swap Relic':'Equip Relic')+'</button>';
-  html += '<button class="overlay-btn sec" onclick="discardPendingRelic()" style="flex:1;">Discard</button>';
+  html += '<div style="display:flex;gap:6px;flex-wrap:wrap;">';
+  html += '<button class="overlay-btn" onclick="swapPendingRelic()" style="flex:1;min-width:90px;border-color:#7a3aaa;color:#e57bf5;">'+(equippedRelic?'Equip (stash current)':'Equip Relic')+'</button>';
+  html += '<button class="overlay-btn sec" onclick="stashPendingRelic()" style="flex:1;min-width:64px;">Stash</button>';
+  html += '<button class="overlay-btn sec" onclick="discardPendingRelic()" style="flex:1;min-width:64px;">Discard</button>';
   html += '</div>';
   html += '</div></div>';
   return html;
@@ -7856,7 +8128,7 @@ function renderMerchant() {
   var box = document.getElementById('overlay-box');
   var secsLeft = Math.max(0, Math.ceil((merchantAutoCloseAt - gameNow()) / 1000));
   var rarityColors = { normal:'#7a7a8a', magic:'#6fa3ef', rare:'#ffd700', unique:'#e57bf5' };
-  var html = '<div class="overlay-title">Traveling Merchant</div>';
+  var html = '<div class="overlay-title">Walsh, the Traveling Merchant</div>';
   html += '<div class="overlay-sub">A weathered trader offers wares from the road.<br>Items are fairly priced by their worth.</div>';
   for (var i = 0; i < merchantItems.length; i++) {
     var entry = merchantItems[i];
@@ -7885,7 +8157,7 @@ function renderMerchant() {
       + '</div>'
     + '</div>';
   }
-  html += '<button class="overlay-btn sec" onclick="closeMerchant()" style="margin-top:8px;">Send him away</button>';
+  html += '<button class="overlay-btn sec" onclick="closeMerchant()" style="margin-top:8px;">Send Walsh away</button>';
   html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-top:8px;">'
     + '<div style="font-size:11px;color:#5a5a6a;">Leaves in <span id="merchant-countdown">'+secsLeft+'</span>s...</div>'
     + '<button class="shop-pause-btn" onclick="toggleShopPause()" style="padding:3px 12px;border:1px solid #5a4a8a;background:#0e0a1a;color:#c8a0ff;font-family:Georgia,serif;font-size:11px;cursor:pointer;border-radius:2px;animation:pausePulse 2s ease-in-out infinite;">&#x23F8; Pause</button>'
@@ -8181,6 +8453,359 @@ function cancelFarmLoop() {
   _resumeAfterLoop(_fd, _fa);
   closeFarmLoopMenu();
 }
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// DELVE SYSTEM
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// ── Scaling ───────────────────────────────────────────
+function _delveHpMult() {
+  var l = delveLevel - 1;
+  if (l <= 0) return 1;
+  if (l <= 20)  return 1 + l * 0.12;
+  if (l <= 60)  return 3.4 + (l - 20) * 0.18;
+  if (l <= 100) return 10.6 + (l - 60) * 0.28;
+  return 21.8 + (l - 100) * 0.45;
+}
+function _delveDmgMult() { return 1 + (delveLevel - 1) * 0.08; }
+function _delveMfBonus() { return delveActive ? Math.min(500, delveLevel * 3) : 0; }
+function _delveXpMult()  { return 1 + (delveLevel - 1) * 0.06; }
+function _delveExtractItemCount() {
+  if (delveLevel >= 160) return 4;
+  if (delveLevel >= 90)  return 3;
+  if (delveLevel >= 60)  return 2;
+  return 1;
+}
+
+// ── Entry / Exit ──────────────────────────────────────
+function openDelveMenu() {
+  if (bossLoop || farmLoop) return;
+  if (delveActive) { _showDelveExtractPopup(); return; }
+  _renderDelveStartMenu();
+  document.getElementById('delve-menu').style.display = 'flex';
+}
+
+function closeDelveMenu() {
+  document.getElementById('delve-menu').style.display = 'none';
+}
+
+function _renderDelveStartMenu() {
+  var cb = document.getElementById('delve-auto-check');
+  if (cb) cb.checked = delveAutoDelve;
+  var ti = document.getElementById('delve-timer-input');
+  if (ti) ti.value = delveAutoDelveDelay;
+
+  var picker = document.getElementById('delve-checkpoint-picker');
+  if (!picker) return;
+  var html = '<div style="font-size:11px;color:#8a7a6a;margin-bottom:6px;">Starting depth</div><div style="display:flex;flex-wrap:wrap;gap:5px;">';
+
+  function _cpBtn(label, level) {
+    var sel = (delveStartLevel === level) ? ';border-color:#c8a044;color:#c8a044' : '';
+    return '<button onclick="delveStartLevel='+level+';_renderDelveStartMenu()" style="padding:4px 10px;border:1px solid #3a2a1a;background:#0c0a06;color:#9a8060;font-family:Georgia,serif;font-size:11px;cursor:pointer;border-radius:2px'+sel+'">'+label+'</button>';
+  }
+  html += _cpBtn('Depth 1', 1);
+  for (var _ci = 0; _ci < delveCheckpoints.length; _ci++) {
+    html += _cpBtn('Depth ' + (delveCheckpoints[_ci] + 1), delveCheckpoints[_ci] + 1);
+  }
+  html += '</div>';
+  picker.innerHTML = html;
+}
+
+function startDelve() {
+  if (delveActive) return;
+  closeDelveMenu();
+  if (bossLoop) cancelBossLoop();
+  if (farmLoop) cancelFarmLoop();
+
+  delveBag = [];
+  delveGoldEarned = 0;
+  delveMobsThisLevel = 0;
+  _delveBossPhase = false;
+  _delveExtractSelected = [];
+  _delveBgIdx = 0;
+  delveLevel = Math.max(1, delveStartLevel);
+  delveActive = true;
+
+  dead = false;
+  enemy = null;
+  killCount = 0;
+  bossSpawned = false;
+  rarePack = false;
+
+  addLog('⛏ Descending to Depth ' + delveLevel + '…', 'zone');
+  _updateDelveHud();
+  renderDelveBtn();
+  spawnNextEnemy();
+}
+
+function exitDelve(byDeath, rescuedItem) {
+  if (_delveExtractTimer) { clearInterval(_delveExtractTimer); _delveExtractTimer = null; }
+  delveActive = false;
+  _delveBossPhase = false;
+
+  if (byDeath) {
+    var goldKept = Math.floor(delveGoldEarned * 0.50);
+    hero.gold += goldKept;
+    if (rescuedItem) processLoot(rescuedItem);
+    addLog('☠ Delve ended at Depth ' + delveLevel + ' — ' + goldKept + 'g recovered' + (rescuedItem ? ', ' + rescuedItem.name + ' rescued' : '') + '.', 'death');
+  } else {
+    addLog('⛏ Extracted safely from Depth ' + delveLevel + '.', 'zone');
+  }
+
+  delveBag = [];
+  delveGoldEarned = 0;
+  _updateDelveHud();
+  renderDelveBtn();
+  saveGame();
+  if (!byDeath) spawnNextEnemy();
+}
+
+// ── Bag ───────────────────────────────────────────────
+function _delveAddToBag(item) {
+  if (!item) return;
+  if (!item.score) item.score = Math.round(itemScore(item.stats, item.skillBonus, item.allSkills));
+  delveBag.push(item);
+  delveBag.sort(function(a, b) { return priorityScore(b) - priorityScore(a); });
+  if (delveBag.length > DELVE_BAG_MAX) {
+    var dropped = delveBag.splice(DELVE_BAG_MAX);
+    for (var _di = 0; _di < dropped.length; _di++) {
+      addLog('⛏ Bag full — dropped: ' + dropped[_di].name, 'info');
+    }
+  }
+  _updateDelveHud();
+}
+
+// ── HUD ───────────────────────────────────────────────
+function _updateDelveHud() {
+  var zn = document.getElementById('zone-name');
+  var zf = document.getElementById('zone-flavor');
+  if (!delveActive) {
+    var _act = ACTS[actIdx];
+    if (zn) zn.textContent = DIFFICULTY[difficulty].label + ' — ' + (_act ? _act.name : '');
+    if (zf) zf.textContent = _act ? (_act.flavor || '') : '';
+    var _zp = document.getElementById('zone-progress');
+    if (_zp) _zp.textContent = bossSpawned ? 'Boss' : 'Mob ' + (killCount + 1) + '/' + getEnemiesPerZone();
+    return;
+  }
+  if (zn) zn.textContent = '⛏ The Depths';
+  if (zf) zf.textContent = 'Bag: ' + delveBag.length + '/' + DELVE_BAG_MAX + ' items' + (delveCheckpoints.length ? '  ·  Best: Depth ' + Math.max.apply(null, delveCheckpoints) : '');
+  _updateDelveMobProgress();
+  renderDelveBtn();
+}
+
+function _updateDelveMobProgress() {
+  var zp = document.getElementById('zone-progress');
+  if (!zp || !delveActive) return;
+  if (_delveBossPhase) {
+    zp.textContent = 'Depth ' + delveLevel + ' — Boss';
+  } else {
+    zp.textContent = 'Depth ' + delveLevel + ' — Mob ' + delveMobsThisLevel + '/' + DELVE_MOBS_PER_LEVEL;
+  }
+}
+
+function renderDelveBtn() {
+  var btn = document.getElementById('delve-btn');
+  if (!btn) return;
+  btn.style.display = delveUnlocked ? '' : 'none';
+  if (delveActive) {
+    btn.textContent = '⛏ Depth ' + delveLevel;
+    btn.style.color = '#c8a044';
+  } else {
+    btn.textContent = '⛏ Delve';
+    btn.style.color = '#c8a04488';
+  }
+}
+
+// ── Combat hooks ──────────────────────────────────────
+function _delveOnMobKill(simNow) {
+  delveMobsThisLevel++;
+  _updateDelveMobProgress();
+
+  if (delveMobsThisLevel >= DELVE_MOBS_PER_LEVEL) {
+    var completedLevel = delveLevel;
+    delveMobsThisLevel = 0;
+
+    var needsBoss = (completedLevel % 20 === 0) && (delveCheckpoints.indexOf(completedLevel) === -1);
+    if (needsBoss) {
+      _delveBossPhase = true;
+      _updateDelveMobProgress();
+      _delveSpawnBoss(simNow, completedLevel);
+      return;
+    }
+
+    if (completedLevel % 5 === 0) {
+      // Don't increment yet — continueDelve advances to the next depth
+      _updateDelveHud();
+      _showDelveExtractPopup();
+    } else {
+      delveLevel = completedLevel + 1;
+      _updateDelveHud();
+      spawnNextEnemy(simNow);
+    }
+  } else {
+    spawnNextEnemy(simNow);
+  }
+}
+
+function _delveOnBossKill(depth, simNow) {
+  if (delveCheckpoints.indexOf(depth) === -1) {
+    delveCheckpoints.push(depth);
+    delveCheckpoints.sort(function(a, b) { return a - b; });
+    addLog('🏆 Checkpoint ' + depth + ' unlocked!', 'level', 'event');
+  }
+  _delveBossPhase = false;
+  bossSpawned = false;
+  delveMobsThisLevel = 0;
+  // Don't increment yet — continueDelve advances to depth+1
+  _updateDelveHud();
+  _showDelveExtractPopup();
+}
+
+function _delveSpawnBoss(simNow, depth) {
+  var now = simNow || gameNow();
+  var baseHp = Math.round(ri(400, 500) * _delveHpMult() * 5);
+  var bossName = '⚔ Depth ' + depth + ' Guardian';
+  enemy = { name: bossName, maxHp: baseHp, hp: baseHp, isBoss: true, spawnTime: now, _bleeds: [], frozenUntil: 0, stunCooldownUntil: 0 };
+  enemy._delveSprite = _DELVE_SPRITE_POOL[ri(0, _DELVE_SPRITE_POOL.length - 1)];
+  bossSpawned = true;
+  _bossSpawnRealTime = Date.now();
+  heroNextAtk = now + heroAttackInterval();
+  enemyNextAtk = now + Math.round(BOSS_MS);
+  addLog('⚔ ' + bossName + ' — ' + baseHp + ' HP', 'death');
+  _updateEnemyScene();
+}
+
+// ── Delve death ───────────────────────────────────────
+function _delveOnDeath() {
+  var rescued = null;
+  if (delveBag.length > 0) {
+    var top5 = delveBag.slice(0, 5);
+    var totalW = 0;
+    for (var _wi = 0; _wi < top5.length; _wi++) totalW += (top5[_wi].score || 1) + 1;
+    var _roll = Math.random() * totalW, _acc = 0;
+    for (var _pi = 0; _pi < top5.length; _pi++) {
+      _acc += (top5[_pi].score || 1) + 1;
+      if (_roll < _acc) { rescued = top5[_pi]; break; }
+    }
+    if (!rescued) rescued = top5[0];
+  }
+
+  exitDelve(true, rescued);
+
+  dead = false;
+  hero.hp = hero.maxHp;
+  hero.rage = 0;
+  enemy = null;
+  bossSpawned = false;
+  killCount = 0;
+
+  var _dov = document.getElementById('death-overlay');
+  if (_dov) _dov.style.display = 'none';
+  addLog('Returned to ' + DIFFICULTY[difficulty].label + ' — ' + ACTS[actIdx].name + '.', 'zone');
+  spawnNextEnemy();
+}
+
+// ── Extract popup ─────────────────────────────────────
+function _showDelveExtractPopup() {
+  hero.gold += delveGoldEarned;
+  delveGoldEarned = 0;
+
+  _delveExtractSelected = [];
+  var el = document.getElementById('delve-extract-level');
+  if (el) el.textContent = delveLevel;
+  var _eck = document.getElementById('delve-extract-auto-check');
+  if (_eck) _eck.checked = delveAutoDelve;
+  var _eti = document.getElementById('delve-extract-timer-input');
+  if (_eti) _eti.value = delveAutoDelveDelay;
+  _renderDelveExtractSlots();
+
+  document.getElementById('delve-extract').style.display = 'flex';
+
+  if (delveAutoDelve) {
+    var secsLeft = delveAutoDelveDelay;
+    var cdEl = document.getElementById('delve-extract-countdown');
+    if (cdEl) cdEl.textContent = 'Auto-continuing in ' + secsLeft + 's…';
+    _delveExtractTimer = setInterval(function() {
+      secsLeft--;
+      if (cdEl) cdEl.textContent = secsLeft > 0 ? 'Auto-continuing in ' + secsLeft + 's…' : '';
+      if (secsLeft <= 0) { clearInterval(_delveExtractTimer); _delveExtractTimer = null; continueDelve(); }
+    }, 1000);
+  } else {
+    var cdEl = document.getElementById('delve-extract-countdown');
+    if (cdEl) cdEl.textContent = '';
+  }
+}
+
+function _renderDelveExtractSlots() {
+  var slotsEl = document.getElementById('delve-extract-slots');
+  var infoEl  = document.getElementById('delve-extract-pick-info');
+  var maxPick = _delveExtractItemCount();
+  if (!slotsEl) return;
+
+  var html = '';
+  if (delveBag.length === 0) {
+    html = '<div style="color:#5a4a3a;font-size:12px;grid-column:1/-1;padding:8px 0;">Bag is empty — no items to extract.</div>';
+  } else {
+    for (var _bi = 0; _bi < delveBag.length; _bi++) {
+      var _it = delveBag[_bi];
+      var _sel = _delveExtractSelected.indexOf(_bi) > -1;
+      var _bc = _sel ? '#c8a044' : '#2a2020';
+      var _bg = _sel ? '#1a1200' : '#080604';
+      var _nc = _it.rarity === 'unique' ? '#c8a4ff' : _it.rarity === 'rare' ? '#cccc44' : _it.rarity === 'magic' ? '#7a9aee' : '#aaaaaa';
+      var _sl = _it.stats ? statLine(_it.stats) : '';
+      html += '<div onclick="_delveToggleItem('+_bi+','+maxPick+')" style="cursor:pointer;padding:6px 8px;border:1px solid '+_bc+';background:'+_bg+';border-radius:2px;">';
+      html += '<div style="font-size:11px;color:'+_nc+';white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+_it.name+'</div>';
+      if (_sl) html += '<div style="font-size:10px;color:#5a5050;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+_sl+'</div>';
+      html += '<div style="font-size:10px;color:#7a6040;">⭐ '+(_it.score||0)+'</div>';
+      html += '</div>';
+    }
+  }
+  slotsEl.innerHTML = html;
+  if (infoEl) infoEl.textContent = 'Pick up to ' + maxPick + ' item' + (maxPick > 1 ? 's' : '') + ' to take with you. (' + _delveExtractSelected.length + '/' + maxPick + ' selected)';
+}
+
+function _delveToggleItem(idx, maxPick) {
+  var pos = _delveExtractSelected.indexOf(idx);
+  if (pos > -1) { _delveExtractSelected.splice(pos, 1); }
+  else if (_delveExtractSelected.length < maxPick) { _delveExtractSelected.push(idx); }
+  _renderDelveExtractSlots();
+}
+
+function confirmDelveExtract() {
+  if (_delveExtractTimer) { clearInterval(_delveExtractTimer); _delveExtractTimer = null; }
+  document.getElementById('delve-extract').style.display = 'none';
+  delveActive = false;
+  for (var _si = 0; _si < _delveExtractSelected.length; _si++) {
+    var _it2 = delveBag[_delveExtractSelected[_si]];
+    if (_it2) {
+      if (_it2._isRelic) {
+        relicPending = _it2;
+        addLog('⚗ ' + _it2.name + ' extracted — review it in the next shop.', 'loot unique', 'item');
+      } else {
+        var _res = processLoot(_it2);
+        if (_res !== 'discard') {
+          var _verb = _res === 'equipped' ? '⚡ Equipped' : '📦 Vaulted';
+          addLog(_verb + ': ' + _it2.name, 'loot ' + _it2.rarity);
+        }
+      }
+    }
+  }
+  delveActive = true;
+  exitDelve(false);
+}
+
+function continueDelve() {
+  if (_delveExtractTimer) { clearInterval(_delveExtractTimer); _delveExtractTimer = null; }
+  document.getElementById('delve-extract').style.display = 'none';
+  delveLevel++;
+  _delveBgIdx = (_delveBgIdx + 1) % _DELVE_BG_POOL.length;
+  addLog('⛏ Pressing deeper — Depth ' + delveLevel + '…', 'zone');
+  _updateDelveHud();
+  updateSceneBackground();
+  spawnNextEnemy();
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
 
 function selectFarmLoop(diff, idx) {
   var loopCost = farmPackType !== 'any' ? FARM_LOOP_COST * 2 : FARM_LOOP_COST;
@@ -8669,7 +9294,7 @@ function tameBountyPet() {
   bountyPendingPet = null;
   var pet = PETS.find(function(p) { return p.id === enc.petId; });
   var adj = getPetAdjective(enc.roll);
-  addLog('🐾 '+pet.name+' tamed! ['+adj+' · '+enc.roll+'% · '+pet.rarity+']', 'level');
+  addLog('🐾 '+pet.name+' tamed! ['+adj+' · '+enc.roll+'% · '+pet.rarity+']', 'level', 'event');
   saveGame();
   _startBountyFight();
 }
@@ -8721,7 +9346,7 @@ function releaseAndTame(releaseIdx) {
   hero.petRoster.push({ id: enc.petId, roll: enc.roll, name: '' });
   bountyPendingPet = null;
   var newPet = PETS.find(function(p) { return p.id === enc.petId; });
-  addLog('🐾 Released '+relName+'. '+newPet.name+' tamed! ['+getPetAdjective(enc.roll)+' · '+enc.roll+'%]', 'level');
+  addLog('🐾 Released '+relName+'. '+newPet.name+' tamed! ['+getPetAdjective(enc.roll)+' · '+enc.roll+'%]', 'level', 'event');
   document.getElementById('overlay').classList.remove('active');
   recalcStats();
   saveGame();
@@ -8791,7 +9416,7 @@ function completeBounty() {
   if (b.rewardType === 'gold') {
     var g = b.rewardData.gold;
     hero.gold += g;
-    addLog('📋 Bounty complete! +'+g+'g', 'level');
+    addLog('📋 Bounty complete! +'+g+'g', 'level', 'event');
   } else if ((b.rewardType === 'item' || b.rewardType === 'unique') && b.rewardData) {
     var result = processLoot(b.rewardData, false);
     var bonusStr = '';
@@ -8916,7 +9541,7 @@ function doRespec() {
 
   if (respecFreeCharges > 0) {
     respecFreeCharges--;
-    addLog('✦ Respec used ('+respecFreeCharges+' free charge'+(respecFreeCharges!==1?'s':'')+' remaining). '+totalPts+' points refunded.', 'level');
+    addLog('✦ Respec used ('+respecFreeCharges+' free charge'+(respecFreeCharges!==1?'s':'')+' remaining). '+totalPts+' points refunded.', 'level', 'event');
   } else {
     var cost = respecGoldCost * Math.pow(2, respecPaidCount);
     if (hero.gold < cost) {
@@ -8925,7 +9550,7 @@ function doRespec() {
     }
     hero.gold -= cost;
     respecPaidCount++;
-    addLog('✦ Respec purchased for '+cost+'g. '+totalPts+' points refunded.', 'level');
+    addLog('✦ Respec purchased for '+cost+'g. '+totalPts+' points refunded.', 'level', 'event');
   }
 
   for (var j = 0; j < ids.length; j++) {
@@ -9209,10 +9834,37 @@ function _updatePetButton() {
 }
 
 var logWrap = null;
+var eventLogWrap = null;
+var itemLogWrap = null;
 var logMax  = 200;
+var _activeLogTab = 'combat';
 
-function addLog(msg, cls) {
+function setLogTab(tab) {
+  _activeLogTab = tab;
+  var lw = document.getElementById('log-wrap');
+  var ew = document.getElementById('event-log-wrap');
+  var iw = document.getElementById('item-log-wrap');
+  var tb = document.getElementById('log-tab-combat');
+  var te = document.getElementById('log-tab-event');
+  var ti = document.getElementById('log-tab-item');
+  if (!lw) return;
+  lw.style.display = 'none';
+  if (ew) ew.style.display = 'none';
+  if (iw) iw.style.display = 'none';
+  [tb, te, ti].forEach(function(b) { if (b) { b.style.color='#5a5a6a'; b.style.borderBottomColor='transparent'; } });
+  if (tab === 'event') {
+    if (ew) ew.style.display = 'flex'; if (te) { te.style.color='#c8a84b'; te.style.borderBottomColor='#c8a84b'; }
+  } else if (tab === 'item') {
+    if (iw) iw.style.display = 'flex'; if (ti) { ti.style.color='#c8a84b'; ti.style.borderBottomColor='#c8a84b'; }
+  } else {
+    lw.style.display = 'flex'; if (tb) { tb.style.color='#c8a84b'; tb.style.borderBottomColor='#c8a84b'; }
+  }
+}
+
+function addLog(msg, cls, logType) {
   if (!logWrap) logWrap = document.getElementById('log-wrap');
+  if (!eventLogWrap) eventLogWrap = document.getElementById('event-log-wrap');
+  if (!itemLogWrap)  itemLogWrap  = document.getElementById('item-log-wrap');
 
   // Minimal verbosity: suppress routine combat noise
   if (settingsLogVerbosity === 'minimal') {
@@ -9288,6 +9940,18 @@ function addLog(msg, cls) {
   logWrap.appendChild(el);
   while (logWrap.children.length > logMax) logWrap.removeChild(logWrap.firstChild);
   logWrap.scrollTop = logWrap.scrollHeight;
+
+  var _sideLog = logType === 'event' ? eventLogWrap : logType === 'item' ? itemLogWrap : null;
+  if (_sideLog) {
+    var _sideEl = el.cloneNode(true);
+    _sideEl.addEventListener('mouseenter', function() {
+      _sideEl.classList.remove('unique-drop', 'tier3');
+      _sideEl.innerHTML = _sideEl.querySelector('span') ? _sideEl.querySelector('span').textContent : _sideEl.textContent;
+    }, { once: true });
+    _sideLog.appendChild(_sideEl);
+    while (_sideLog.children.length > logMax) _sideLog.removeChild(_sideLog.firstChild);
+    _sideLog.scrollTop = _sideLog.scrollHeight;
+  }
 }
 
 // ═══════════════════════════════════════════════════
@@ -9646,9 +10310,9 @@ function renderUI(now) {
   var mobsRequired = bossLoop ? BOSS_LOOP_MOB_COUNT : farmLoop ? FARM_LOOP_MOB_COUNT : getEnemiesPerZone();
   document.getElementById('zone-progress').textContent = bossSpawned
     ? (enemy && enemy.isBoss ? 'Boss fight!' : 'Act complete')
-    : (bossLoop ? '⚡ Guardian ' + killCount + ' / ' + mobsRequired
-      : farmLoop ? '🌾 Mob ' + killCount + ' / ' + mobsRequired
-      : 'Mob ' + killCount + ' / ' + mobsRequired);
+    : (bossLoop ? '⚡ Guardian ' + (killCount + 1) + ' / ' + mobsRequired
+      : farmLoop ? '🌾 Mob ' + (killCount + 1) + ' / ' + mobsRequired
+      : 'Mob ' + (killCount + 1) + ' / ' + mobsRequired);
   var _subEl = document.getElementById('zone-progress-sub');
   if (_subEl) {
     if (bossLoop) {
@@ -10072,7 +10736,7 @@ function rerollVaultItem(slot, idx) {
   // Re-sort vault
   hero.vault[slot] = sortAndTrim(hero.vault[slot], slot);
   gearDirty = true;
-  addLog('✦ Reforged '+oldName+' with '+gem.name+': '+statLine(newStats), 'level');
+  addLog('✦ Reforged '+oldName+' with '+gem.name+': '+statLine(newStats), 'level', 'item');
   if (rightPanelTab === 'crafting') renderGemPanel();
 }
 
@@ -10287,7 +10951,7 @@ function doEnchant() {
   gearDirty = true;
   saveGame();
 
-  addLog('✦ Enchanted! Kept: '+statLineForStat(_enchantLockedStat, lockedVal)+'. New stats: '+statLine(newStats), 'level');
+  addLog('✦ Enchanted! Kept: '+statLineForStat(_enchantLockedStat, lockedVal)+'. New stats: '+statLine(newStats), 'level', 'item');
 
   _enchantSelSlot = null; _enchantSelIdx = null; _enchantLockedStat = null;
   if (rightPanelTab === 'crafting' && craftingSubTab === 'enchanting') {
@@ -10911,11 +11575,11 @@ function keepQueuedUnique(idx) {
     hero.equipped[slot] = entry.item;
     if (old) { hero.vault[slot].push(old); hero.vault[slot] = sortAndTrim(hero.vault[slot], slot); }
     recalcStats();
-    addLog('⚡ Kept & equipped: '+entry.item.name, 'loot unique');
+    addLog('⚡ Kept & equipped: '+entry.item.name, 'loot unique', 'item');
   } else {
     hero.vault[slot].push(entry.item);
     hero.vault[slot] = sortAndTrim(hero.vault[slot], slot);
-    addLog('📦 Kept unique: '+entry.item.name, 'loot unique');
+    addLog('📦 Kept unique: '+entry.item.name, 'loot unique', 'item');
   }
   gearDirty = true;
   if (!uniqueQueue.length) { closeUniqueQueue(); return; }
@@ -10941,11 +11605,11 @@ function buyQueuedUnique(idx) {
     if (equipped) { hero.vault[slot].push(equipped); hero.vault[slot] = sortAndTrim(hero.vault[slot], slot); }
     hero.equipped[slot] = entry.item;
     recalcStats();
-    addLog('⚡ Purchased & equipped: '+entry.item.name, 'loot unique');
+    addLog('⚡ Purchased & equipped: '+entry.item.name, 'loot unique', 'item');
   } else {
     hero.vault[slot].push(entry.item);
     hero.vault[slot] = sortAndTrim(hero.vault[slot], slot);
-    addLog('📦 Purchased & vaulted: '+entry.item.name, 'loot unique');
+    addLog('📦 Purchased & vaulted: '+entry.item.name, 'loot unique', 'item');
   }
   gearDirty = true;
   if (!uniqueQueue.length) { closeUniqueQueue(); return; }
@@ -12264,6 +12928,11 @@ function debugJumpHellAct5() {
   unlockedDiffs.nightmare = true;
   hero.shopUsedThisAct = false;
   hero.topOffUsed = false;
+  // Unlock relics and other Hell-gated features
+  if (!relicSystemUnlocked) { relicSystemUnlocked = true; setTimeout(injectRelicFrame, 100); }
+  ngPlusUnlocked = true;
+  delveUnlocked  = true;
+  renderDelveBtn();
   addLog('[DBG] Jumped to Hell Act 5.', 'info');
   spawnNextEnemy();
   renderUI(gameNow());
@@ -15872,6 +16541,8 @@ function _updateEnemyScene() {
     var _bHash = 0;
     for (var _bi = 0; _bi < (enemy.name || '').length; _bi++) _bHash += enemy.name.charCodeAt(_bi);
     spriteUrl = BOUNTY_SPRITES[_bHash % BOUNTY_SPRITES.length];
+  } else if (enemy._delveSprite) {
+    spriteUrl = enemy._delveSprite;
   } else {
     var _baseName = (enemy.name || '').replace(/^★\s*/, '');
     spriteUrl = (_baseName && MOB_SPRITES[_baseName]) ? MOB_SPRITES[_baseName] : null;
@@ -15893,6 +16564,15 @@ function _updateEnemyScene() {
 
 function updateSceneBackground() {
   if (!_pScene) return;
+  if (delveActive) {
+    var _dBgKey = _DELVE_BG_POOL[_delveBgIdx % _DELVE_BG_POOL.length];
+    if (ACT_BG_ANIMATED[_dBgKey]) {
+      _pScene.setBackgroundAnimated(ACT_BG_ANIMATED[_dBgKey]);
+    } else {
+      _pScene.setBackground(ACT_BACKGROUNDS[_dBgKey] || null);
+    }
+    return;
+  }
   var actNum = actIdx + 1;
   if (ACT_BG_ANIMATED[actNum]) {
     _pScene.setBackgroundAnimated(ACT_BG_ANIMATED[actNum]);
@@ -16212,6 +16892,12 @@ function saveGame() {
       relicActiveUntil:    relicActiveUntil,
       voidAccumDmg:        hero._voidAccumDmg || 0,
       relicPending:        relicPending,
+      relicStash:          relicStash,
+      // Delve
+      delveUnlocked:           delveUnlocked,
+      delveCheckpoints:        delveCheckpoints,
+      delveAutoDelve:          delveAutoDelve,
+      delveAutoDelveDelay:     delveAutoDelveDelay,
       // Bounty board
       currentBounty:     currentBounty,
       bountyAutoAccept:  bountyAutoAccept,
@@ -16357,6 +17043,12 @@ function loadGame() {
     relicActiveUntil    = state.relicActiveUntil    || 0;
     hero._voidAccumDmg  = state.voidAccumDmg        || 0;
     relicPending        = state.relicPending         || null;
+    relicStash = (state.relicStash || []).map(function(_rr) {
+      if (!_rr || !RELICS[_rr.id]) return null;
+      var _fresh = makeRelic(_rr.id);
+      if (_rr.charges != null) _fresh.charges = Math.min(_fresh.maxCharges, _rr.charges);
+      return _fresh;
+    }).filter(function(_x) { return _x; });
     // Always clear all relic effects on load — reapply only if still active
     if (equippedRelic) clearRelicEffect(equippedRelic);
     if (equippedRelic && relicActiveUntil > gameNow()) {
@@ -16378,6 +17070,12 @@ function loadGame() {
     settingsFloatDmg        = state.settingsFloatDmg        !== false;
     settingsHideHelpPopups  = state.settingsHideHelpPopups  || false;
 
+    // Delve
+    delveUnlocked      = state.delveUnlocked      || false;
+    delveCheckpoints   = state.delveCheckpoints   || [];
+    delveAutoDelve     = state.delveAutoDelve      || false;
+    delveAutoDelveDelay= state.delveAutoDelveDelay || 20;
+    setTimeout(renderDelveBtn, 100);
     // Bounty board
     currentBounty    = state.currentBounty    || null;
     bountyAutoAccept = state.bountyAutoAccept  || false;
@@ -16408,7 +17106,7 @@ function loadGame() {
         setTimeout(function() { _showOfflineLocked(_elapsed); }, 600);
       }
     } else {
-      addLog('✦ Game loaded. Welcome back.', 'level');
+      addLog('✦ Game loaded. Welcome back.', 'level', 'event');
     }
 
     return Math.min(3, state.gameSpeed || 1);
