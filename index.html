@@ -2112,7 +2112,7 @@ var CLASSES = {
       // ── T1: Assassin skills ──
       { id: 'backstab',   name: 'Backstab',          desc: 'Auto-fires as opener each spawn. Always crits. Positioning delay reduces with pts.',           spellMin: 18, spellMax: 28, spdMod: 1.0,  spdLabel: 'opener', spdClass: 'slow', tier: 1, parent: null, spec: 'assassin' },
       { id: 'bladedance', name: 'Blade Dance',        desc: 'Medium speed. Increases bleed chance. Bleeding enemies take +10% more damage.',             spellMin: 12, spellMax: 20, spdMod: 1.0,  spdLabel: 'normal', spdClass: 'med',  tier: 1, parent: null, spec: 'assassin' },
-      { id: 'flurry',     name: 'Flurry',             desc: '3 rapid hits. Speeds up every 3 casts. Speed stacks drop on mob kill.',                     spellMin: 6,  spellMax: 10, spdMod: 0.90, spdLabel: 'fast',   spdClass: 'fast', tier: 1, parent: null, spec: 'assassin' },
+      { id: 'flurry',     name: 'Flurry',             desc: '3 rapid hits. Each cast adds a speed stack (max 5). Stacks drop on mob kill.',                     spellMin: 6,  spellMax: 10, spdMod: 0.90, spdLabel: 'fast',   spdClass: 'fast', tier: 1, parent: null, spec: 'assassin' },
       // ── T1: Toxicologist skills ──
       { id: 'taintblood', name: 'Taint Blood',        desc: 'Slow heavy hit. Always applies bleed and stacking poison DoT.',                             spellMin: 18, spellMax: 28, spdMod: 1.20, spdLabel: 'slow',   spdClass: 'slow', tier: 1, parent: null, spec: 'toxicologist' },
       { id: 'corrosive',  name: 'Corrosive Compound', desc: 'Medium hit. On bleed target: adds stacking damage increase (5% + 0.5%/pt per stack).',     spellMin: 12, spellMax: 20, spdMod: 1.0,  spdLabel: 'normal', spdClass: 'med',  tier: 1, parent: null, spec: 'toxicologist' },
@@ -5056,17 +5056,13 @@ function spawnNextEnemy(simNow) {
   // Rogue Assassin: reset opener state and apply positioning delay
   var _spawnExtraDelay = _heroRespawnDelay;
   _heroRespawnDelay = 0;
-  if (classKey === 'rogue' && hero.rogueSpec === 'assassin' && !enemy.isBoss) {
+  if (classKey === 'rogue' && hero.rogueSpec === 'assassin') {
     hero._rogueHasOpened = false;
     var backstabPts = hero.skillTree['backstab'] || 0;
     var posDelay = Math.max(0, 1500 - backstabPts * 75);  // 1500ms at 0pts, 0ms at 20pts
-    heroNextAtk = spawnTime + posDelay + _spawnExtraDelay + heroAttackInterval();
-    if (posDelay > 0 && _pScene && !settingsReduceAnims) _pScene.playRogueCircling(Math.round(posDelay / gameSpeed));
-  } else if (classKey === 'rogue' && hero.rogueSpec === 'assassin' && enemy.isBoss) {
-    hero._rogueHasOpened = false;
-    var backstabPts = hero.skillTree['backstab'] || 0;
-    var posDelay = Math.max(0, 1500 - backstabPts * 75);
-    heroNextAtk = spawnTime + posDelay + _spawnExtraDelay + heroAttackInterval();
+    // Opener strikes when the positioning circle ends — no extra attack interval on top,
+    // otherwise the "Assassinated!" landed a full windup late and the boss often hit first.
+    heroNextAtk = spawnTime + posDelay + _spawnExtraDelay;
     if (posDelay > 0 && _pScene && !settingsReduceAnims) _pScene.playRogueCircling(Math.round(posDelay / gameSpeed));
   } else {
     heroNextAtk = spawnTime + _spawnExtraDelay + heroAttackInterval();
@@ -5268,6 +5264,10 @@ function getMageHunterElement() {
 
 function heroAttack(now) {
   if (_warriorGreeting) { heroNextAtk = now + heroAttackInterval(); return; }
+  // Never swing at a dead or absent enemy — guards against a stale heroNextAtk
+  // firing one extra hit (e.g. Flurry's 3-hit burst) after a DoT/AoE already killed
+  // the mob and before the next spawn resets the timer.
+  if (!enemy || enemy.hp <= 0) return;
 
   // Compute hit-frame visual delay for warrior animations
   // Scale to actual animation duration so alignment holds at any attack speed
@@ -6088,9 +6088,7 @@ function heroAttack(now) {
     var baseCrit = 0.05 + (hero._assassinCritBonus || 0) / 100;
     if (!hero._flurryHitCount) hero._flurryHitCount = 0;
     hero._flurryHitCount++;
-    if (hero._flurryHitCount % 3 === 0) {
-      hero._flurryStacks = Math.min(5, (hero._flurryStacks || 0) + 1);
-    }
+    hero._flurryStacks = Math.min(5, (hero._flurryStacks || 0) + 1);
     var totalDmg = 0, critCount = 0;
     for (var _fh = 0; _fh < 3; _fh++) {
       var hitDmg = Math.round(base / 3);
@@ -7799,7 +7797,7 @@ function renderShop() {
     var bonusStr = '';
     if (item.skillBonus) bonusStr += ' [+'+item.skillBonus+' '+item.skillName+']';
     if (item.allSkills)  bonusStr += ' [+'+item.allSkills+' All Skills]';
-    html += '<div class="shop-item" style="opacity:'+(entry.sold?'0.4':'1')+'">'
+    html += '<div class="shop-item" data-shopidx="'+i+'" style="opacity:'+(entry.sold?'0.4':'1')+'">'
       + '<div style="display:flex;justify-content:space-between;align-items:flex-start;">'
         + '<div>'
           + '<div class="shop-item-name" style="color:'+color+'">'+item.name+bonusStr+(!entry.sold ? upgradeTag(item) : '')+'</div>'
@@ -7885,7 +7883,30 @@ function renderShop() {
     + '</div>';
 
   box.innerHTML = html;
+  _attachShopCompareTooltips(box, function(idx) {
+    return shopItems[idx] && shopItems[idx].item;
+  });
   document.getElementById('overlay').classList.add('active');
+}
+
+// Attach equipped-vs-shop comparison tooltips to any .shop-item[data-shopidx] in a box.
+// getItem(idx) returns the item for that shop slot.
+function _attachShopCompareTooltips(box, getItem) {
+  if (!box) return;
+  var nodes = box.querySelectorAll('.shop-item[data-shopidx]');
+  for (var _si = 0; _si < nodes.length; _si++) {
+    (function(el) {
+      el.style.cursor = 'help';
+      el.addEventListener('mouseenter', function() {
+        var idx  = parseInt(el.dataset.shopidx);
+        var item = getItem(idx);
+        scheduleTooltip(function() {
+          if (item) showTooltip(itemCompareTooltipHtml(item));
+        });
+      });
+      el.addEventListener('mouseleave', hideTooltip);
+    })(nodes[_si]);
+  }
 }
 
 function _mfBlessTotalCost(n) {
@@ -8201,7 +8222,7 @@ function renderMerchant() {
     var bonusStr = '';
     if (item.skillBonus) bonusStr += ' [+'+item.skillBonus+' '+item.skillName+']';
     if (item.allSkills)  bonusStr += ' [+'+item.allSkills+' All Skills]';
-    html += '<div class="shop-item" style="opacity:'+(entry.sold?'0.4':'1')+'">'
+    html += '<div class="shop-item" data-shopidx="'+i+'" style="opacity:'+(entry.sold?'0.4':'1')+'">'
       + '<div style="display:flex;justify-content:space-between;align-items:flex-start;">'
         + '<div>'
           + '<div class="shop-item-name" style="color:'+color+'">'+item.name+bonusStr+(!entry.sold?upgradeTag(item):'')+'</div>'
@@ -8226,6 +8247,9 @@ function renderMerchant() {
     + '<button class="shop-pause-btn" onclick="toggleShopPause()" style="padding:3px 12px;border:1px solid #5a4a8a;background:#0e0a1a;color:#c8a0ff;font-family:Georgia,serif;font-size:11px;cursor:pointer;border-radius:2px;animation:pausePulse 2s ease-in-out infinite;">&#x23F8; Pause</button>'
     + '</div>';
   box.innerHTML = html;
+  _attachShopCompareTooltips(box, function(idx) {
+    return merchantItems[idx] && merchantItems[idx].item;
+  });
   document.getElementById('overlay').classList.add('active');
 }
 
@@ -9103,10 +9127,10 @@ function generateBounty() {
     // Generate two items at the bounty zone's power, keep the better one (lucky roll)
     var _savedDiff2 = difficulty, _savedAct2 = actIdx;
     difficulty = zone.diff; actIdx = zone.actIdx;
-    var _mf = tier.rarity === 'rare' ? 15 : (tier.rarity === 'epic' ? 30 : 0);
-    var _boss = tier.rarity === 'epic';
-    var bItemA = generateItem(_boss, null, _mf, true);
-    var bItemB = generateItem(_boss, null, _mf, true);
+    var _tierMf = { common: 40, uncommon: 60, rare: 80, epic: 120, desolation: 150 };
+    var _mf = _tierMf[tier.rarity] || 40;
+    var bItemA = generateItem(true, null, _mf);
+    var bItemB = generateItem(true, null, _mf);
     difficulty = _savedDiff2; actIdx = _savedAct2;
     rewardData = (priorityScore(bItemA) >= priorityScore(bItemB)) ? bItemA : bItemB;
   } else {
@@ -10299,13 +10323,39 @@ function renderUI(now) {
   var sunderEl  = document.getElementById('stat-sunder');
   if (sunderRow) sunderRow.style.display = ngPlusUnlocked ? '' : 'none';
   if (sunderEl)  sunderEl.textContent = (hero._sunder || 0) + '%';
-  // Crit chance — base crit + gear crit
+  // Crit chance — mirrors actual heroAttack logic per class
   var critEl = document.getElementById('stat-crit');
   if (critEl) {
-    var _baseCrit = classKey === 'ranger' ? 1.5 : 0;
+    var _ckSk   = getActiveSkill();
+    var _ckId   = _ckSk ? _ckSk.id : '';
+    var _ckStat = getSkillStats();  // same call heroAttack uses for sk
     var _gearCrit = hero._critChance || 0;
-    var _totalCrit = (_baseCrit + _gearCrit).toFixed(1);
-    critEl.textContent = _totalCrit + '%' + (_baseCrit > 0 ? ' (base '+_baseCrit+'%)' : '');
+    var _baseCrit = 0;
+    var _alwaysCrit = false;
+    if (classKey === 'warrior') {
+      _baseCrit = 2.5 + (_ckStat.critChance || 0) * 100;
+    } else if (classKey === 'rogue') {
+      if (_ckId === 'backstab') {
+        _alwaysCrit = true;
+      } else if (_ckId === 'bladedance' || _ckId === 'flurry') {
+        _baseCrit = 5 + (hero._assassinCritBonus || 0);
+      } else {
+        _baseCrit = 5;
+      }
+    } else if (classKey === 'ranger') {
+      _baseCrit = 1.5 + (_ckStat.critChance || 0) * 100;
+    } else {
+      _baseCrit = (_ckStat.critChance || 0) * 100;
+    }
+    if (_alwaysCrit) {
+      critEl.textContent = 'Always' + (_gearCrit > 0 ? ' (+'+_gearCrit+'% gear crit)' : '');
+    } else {
+      var _totalCrit = (_baseCrit + _gearCrit).toFixed(1);
+      var _parts = [];
+      if (_baseCrit > 0) _parts.push(_baseCrit.toFixed(1)+'% base');
+      if (_gearCrit  > 0) _parts.push(_gearCrit+'% gear');
+      critEl.textContent = _totalCrit + '%' + (_parts.length > 1 ? ' ('+_parts.join(', ')+')' : '');
+    }
   }
   // Cast cooldown — cap 600ms
   if (cdEl) {
