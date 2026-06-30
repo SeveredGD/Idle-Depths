@@ -286,6 +286,12 @@
   .help-p { font-size:14px;color:#a09080;line-height:1.7;margin-bottom:14px; }
   .vault-slot-header { font-size:10px;color:#5a5a7a;text-transform:uppercase;letter-spacing:1px;padding:8px 6px 3px;border-bottom:1px solid #1a1a2a;margin-bottom:1px;display:flex;align-items:center;gap:5px; }
   .vault-slot-header:first-child { padding-top:2px; }
+  .vault-slot-header.collapsible { cursor:pointer;user-select:none;justify-content:space-between; }
+  .vault-slot-header.collapsible:hover { color:#8a8aaa; }
+  .vault-slot-header .vsh-left { display:flex;align-items:center;gap:5px; }
+  .vault-slot-header .vsh-right { display:flex;align-items:center;gap:6px;color:#4a4a6a;letter-spacing:0; }
+  .vault-slot-header .vsh-chev { font-size:8px;transition:transform 0.15s;display:inline-block; }
+  .vault-slot-header.collapsed .vsh-chev { transform:rotate(-90deg); }
   .vault-row { cursor:grab; }
   .vault-row:active { cursor:grabbing; }
   /* Long-press drag ready indicator */
@@ -1552,6 +1558,7 @@
           <button id="speed-inc" onclick="setGameSpeed(gameSpeed+1)" style="padding:3px 7px;border:1px solid #2a2a3a;background:#0a0a14;color:#8a7a6a;font-family:Georgia,serif;font-size:11px;cursor:pointer;border-radius:2px;">+</button>
         </div>
         <button id="pause-btn" onclick="togglePause()" style="padding:4px 14px;border:1px solid #5a4a8a;background:#0e0a1a;color:#c8a0ff;font-family:Georgia,serif;font-size:12px;cursor:pointer;border-radius:2px;transition:all 0.15s;animation:pausePulse 2s ease-in-out infinite;">⏸ Pause</button>
+        <button id="recap-btn" onclick="showLastRecap()" title="View your last death recap" style="display:none;padding:4px 12px;border:1px solid #5a2a2a;background:#140808;color:#c87a7a;font-family:Georgia,serif;font-size:12px;cursor:pointer;border-radius:2px;transition:all 0.15s;">💀 Recap</button>
       </div>
     </div>
 
@@ -1595,6 +1602,7 @@
             <button id="boss-loop-btn" onclick="openBossLoopMenu()" style="padding:4px 10px;border:1px solid #3a2a1a;background:#0f0a06;color:#c8a84b88;font-family:Georgia,serif;font-size:12px;cursor:pointer;border-radius:2px;transition:all 0.15s;">🎯 Target Boss</button>
             <button id="farm-loop-btn" onclick="openFarmLoopMenu()" style="padding:4px 10px;border:1px solid #1a3a1a;background:#060f06;color:#7aaa5a88;font-family:Georgia,serif;font-size:12px;cursor:pointer;border-radius:2px;transition:all 0.15s;">🌾 Farm Zone</button>
             <button id="delve-btn" onclick="openDelveMenu()" style="display:none;padding:4px 10px;border:1px solid #3a2a0a;background:#0f0a00;color:#c8a04488;font-family:Georgia,serif;font-size:12px;cursor:pointer;border-radius:2px;transition:all 0.15s;">⛏ Delve</button>
+            <button id="vault-shop-btn" onclick="openVaultShop()" style="display:none;padding:4px 10px;border:1px solid #2a1a3a;background:#0a060f;color:#a878d088;font-family:Georgia,serif;font-size:12px;cursor:pointer;border-radius:2px;transition:all 0.15s;">🛒 Shop</button>
           </div>
           <div style="background:#00000099;border:1px solid #1a2a3a;border-radius:3px;padding:4px 8px;display:flex;align-items:center;gap:8px;pointer-events:auto;">
             <button id="topoff-btn" onclick="doTopOff()" style="padding:3px 10px;border:1px solid #1a2a3a;background:#060a0f;color:#5a9aca88;font-family:Georgia,serif;font-size:12px;cursor:pointer;border-radius:2px;transition:all 0.15s;" title="Heal to full (25g, once per act)">💊 Top Off</button>
@@ -1602,11 +1610,20 @@
           </div>
         </div>
       </div>
+      <!-- Last Death Recap viewer -->
+      <div id="last-recap-overlay" style="display:none;position:absolute;inset:0;z-index:27;align-items:center;justify-content:center;background:#000000aa;backdrop-filter:blur(2px);">
+        <div style="background:#100808;border:1px solid #5a1a1a88;border-radius:4px;padding:16px 18px;min-width:300px;max-width:360px;font-family:Georgia,serif;">
+          <div id="last-recap-body" style="margin-bottom:12px;"></div>
+          <button onclick="closeLastRecap()" style="width:100%;padding:7px 0;border:1px solid #5a2a2a;background:#1a0808;color:#c87a7a;font-family:Georgia,serif;font-size:12px;cursor:pointer;border-radius:2px;letter-spacing:1px;" onmouseover="this.style.background='#2a0c0c'" onmouseout="this.style.background='#1a0808'">Close</button>
+        </div>
+      </div>
+
       <!-- Death overlay -->
       <div id="death-overlay" style="display:none;position:absolute;inset:0;z-index:20;align-items:center;justify-content:center;background:#00000088;backdrop-filter:blur(2px);">
         <div style="text-align:center;font-family:Georgia,serif;">
           <div id="death-overlay-title" style="font-size:38px;color:#c85a5a;letter-spacing:4px;text-shadow:0 0 24px #c85a5a88;margin-bottom:8px;">You Died</div>
-          <div id="death-overlay-sub" style="font-size:13px;color:#8a5a5a;letter-spacing:1px;margin-bottom:24px;font-style:italic;"></div>
+          <div id="death-overlay-sub" style="font-size:13px;color:#8a5a5a;letter-spacing:1px;margin-bottom:14px;font-style:italic;"></div>
+          <div id="death-recap" style="display:none;margin:0 auto 20px;max-width:300px;text-align:left;background:#140808;border:1px solid #5a1a1a55;border-radius:4px;padding:12px 14px;"></div>
           <div style="font-size:13px;color:#5a4a4a;margin-bottom:8px;letter-spacing:1px;text-transform:uppercase;">Respawning in</div>
           <div id="death-overlay-countdown" style="font-size:72px;font-weight:bold;color:#c85a5a88;line-height:1;text-shadow:0 0 32px #c85a5a44;">5</div>
           <div style="margin-top:20px;">
@@ -1626,10 +1643,11 @@
           <div style="text-align:left;background:#080604;border:1px solid #3a2a0a;border-radius:3px;padding:14px 16px;margin-bottom:16px;">
             <div style="font-size:12px;color:#a09070;line-height:1.9;">
               <div style="margin-bottom:10px;"><span style="color:#c8a044;">How it works</span> — Each depth is cleared by killing a handful of enemies. Every few depths you reach an extraction point where you can take your finds and leave, or press deeper.</div>
-              <div style="margin-bottom:10px;"><span style="color:#c8a044;">Bosses &amp; checkpoints</span> — Every twentieth depth a guardian blocks your path. Defeat it to unlock a checkpoint. On future runs you can start from any checkpoint you've cleared, skipping past already-beaten bosses.</div>
+              <div style="margin-bottom:10px;"><span style="color:#c8a044;">Bosses &amp; checkpoints</span> — Every twentieth depth a guardian blocks your path. Before the fight you choose: <span style="color:#e0a0a0;">heal half your HP and face it</span>, or <span style="color:#c8a044;">extract with your loot</span> and live to delve another day. Defeat the guardian to unlock a checkpoint — on future runs you can start from any checkpoint you've cleared, skipping past already-beaten bosses.</div>
+              <div style="margin-bottom:10px;"><span style="color:#7aaa5a;">Second wind</span> — Every tenth depth restores you to full HP. Enemy damage ramps the deeper you go, so these breathers — and the heal before each guardian — are your lifeline.</div>
               <div style="margin-bottom:10px;"><span style="color:#c8a044;">Loot &amp; the bag</span> — Drops go into your delve bag rather than your vault. The bag holds a limited number of items; if it fills up, the lowest-value item is dropped to make room. At an extraction point you choose which items to carry out — the rest are lost.</div>
               <div style="margin-bottom:10px;"><span style="color:#c8a044;">Death</span> — If you die, a random item from the top of your bag is rescued for you. Half the gold you earned that run is recovered. All experience gained during the run is kept.</div>
-              <div style="margin-bottom:10px;"><span style="color:#c8a044;">Scaling rewards</span> — Magic find, experience, and enemy difficulty all scale with depth. There is no floor cap — the deeper you go, the richer the rewards and the more brutal the enemies. Depth 200 is theoretically reachable but effectively a wall.</div>
+              <div style="margin-bottom:10px;"><span style="color:#c8a044;">Scaling rewards</span> — Magic find, experience, and enemy power all scale with depth, with no floor cap. Damage climbs gently at first, then sharply — by the deepest reaches it's survivability, not kill speed, that walls you. Riches and ruin both grow the further you press.</div>
               <div style="color:#5a4a3a;font-style:italic;font-size:11px;">Gold and gems earned during a delve are banked the moment you reach an extraction point, regardless of whether you extract or continue.</div>
             </div>
           </div>
@@ -1664,7 +1682,7 @@
       <div id="delve-extract" style="display:none;position:absolute;inset:0;z-index:26;align-items:center;justify-content:center;background:#00000099;backdrop-filter:blur(2px);">
         <div style="background:#0c0a08;border:1px solid #5a3a1a;border-radius:4px;padding:18px 22px;min-width:340px;max-width:460px;font-family:Georgia,serif;">
           <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px;">
-            <span style="font-size:15px;color:#c8a044;letter-spacing:1px;">⛏ Depth <span id="delve-extract-level">0</span> — Extract?</span>
+            <span style="font-size:15px;color:#c8a044;letter-spacing:1px;">⛏ Depth <span id="delve-extract-level">0</span><span id="delve-extract-title-suffix"> — Extract?</span></span>
             <span id="delve-extract-countdown" style="font-size:11px;color:#5a4a3a;"></span>
           </div>
           <div style="font-size:11px;color:#5a4a3a;margin-bottom:12px;">Gold, gems &amp; XP are already banked. Select items to carry out — the rest stay in the depths.</div>
@@ -1678,7 +1696,24 @@
           </div>
           <div style="display:flex;gap:8px;">
             <button onclick="confirmDelveExtract()" style="flex:1;padding:7px 0;border:1px solid #c8a044;background:#1a1208;color:#c8a044;font-family:Georgia,serif;font-size:12px;cursor:pointer;border-radius:2px;" onmouseover="this.style.background='#2a1e0a'" onmouseout="this.style.background='#1a1208'">Extract &amp; Leave</button>
-            <button onclick="continueDelve()" style="flex:1;padding:7px 0;border:1px solid #3a5a2a;background:#0a120a;color:#7aaa5a;font-family:Georgia,serif;font-size:12px;cursor:pointer;border-radius:2px;" onmouseover="this.style.background='#0f1e0f'" onmouseout="this.style.background='#0a120a'">Continue Deeper</button>
+            <button id="delve-extract-continue-btn" onclick="_delveContinueOrBoss()" style="flex:1;padding:7px 0;border:1px solid #3a5a2a;background:#0a120a;color:#7aaa5a;font-family:Georgia,serif;font-size:12px;cursor:pointer;border-radius:2px;" onmouseover="this.style.background='#0f1e0f'" onmouseout="this.style.background='#0a120a'">Continue Deeper</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Vault Expansion Shop -->
+      <div id="vault-shop" style="display:none;position:absolute;inset:0;z-index:26;align-items:center;justify-content:center;background:#00000099;backdrop-filter:blur(2px);">
+        <div style="background:#0a080c;border:1px solid #4a2a6a;border-radius:4px;padding:18px 22px;min-width:360px;max-width:440px;font-family:Georgia,serif;color:#c0a8d0;">
+          <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px;">
+            <span style="font-size:16px;color:#b888e0;letter-spacing:1px;">🛒 Vault Expansion</span>
+            <span style="font-size:12px;color:#8a7a4a;">⬡ <span id="vault-shop-gold">0</span></span>
+          </div>
+          <div style="font-size:11px;color:#6a5a7a;margin-bottom:14px;">Purchase extra stash slots — 20,000 gold each. Every purchase adds one permanent vault slot for that item type, up to +3 per type.</div>
+          <div id="vault-shop-list" style="display:flex;flex-direction:column;gap:6px;margin-bottom:12px;"></div>
+          <button id="vault-bossshop-btn" onclick="openBossShopFromVault()" style="width:100%;padding:8px 0;margin-bottom:6px;border:1px solid #5a4a8a;background:#0e0a1a;color:#c8a0ff;font-family:Georgia,serif;font-size:12px;cursor:pointer;border-radius:2px;letter-spacing:1px;" onmouseover="this.style.background='#150f26'" onmouseout="this.style.background='#0e0a1a'">🛍 Open Item Shop</button>
+          <div id="vault-bossshop-hint" style="font-size:10px;color:#6a5a7a;margin-bottom:12px;text-align:center;">Each visit spends one shop pass. Earn passes by defeating bosses (max 10).</div>
+          <div style="display:flex;justify-content:flex-end;">
+            <button onclick="closeVaultShop()" style="padding:7px 18px;border:1px solid #3a3040;background:#0c0a0e;color:#9a80b0;font-family:Georgia,serif;font-size:12px;cursor:pointer;border-radius:2px;">Close</button>
           </div>
         </div>
       </div>
@@ -3500,6 +3535,20 @@ var EQUIP_SLOTS = SLOTS.concat(['ring2']);
 var VAULT_SIZE = 3;
 var VAULT_SIZE_RING = 6; // ring pool is shared across both ring slots (Desolation only)
 function ringVaultCap() { return ngPlusUnlocked ? VAULT_SIZE_RING : VAULT_SIZE; }
+// Purchased extra vault slots (gold sink) — up to +3 per item type, on top of the base cap.
+var VAULT_SLOT_MAX_BOUGHT = 3;
+var VAULT_SLOT_COST = 20000;
+// Shop passes — earned from boss/delve kills once Delve is unlocked, spent to open the on-demand item shop.
+var SHOP_PASS_MAX = 10;
+var vaultCollapsed = {}; // per-slot collapsed state for the vault category UI
+function toggleVaultCategory(slot) {
+  vaultCollapsed[slot] = !vaultCollapsed[slot];
+  renderVault();
+}
+function vaultCap(slot) {
+  var base = (slot === 'ring') ? ringVaultCap() : VAULT_SIZE;
+  return base + ((hero.vaultSlots && hero.vaultSlots[slot]) || 0);
+}
 
 // ── Relic Definitions ─────────────────────────────────────
 var RELICS = {
@@ -3703,6 +3752,8 @@ var hero = {
   bossTechnique: null,   // warrior: technique for bosses
   equipped: { weapon: null, armor: null, ring: null, amulet: null, trinket: null, boots: null, ring2: null },
   vault: { weapon:[], armor:[], ring:[], amulet:[], trinket:[], boots:[], ring2:[] },
+  vaultSlots: { weapon:0, armor:0, ring:0, amulet:0, trinket:0, boots:0 }, // extra bought vault slots per type
+  shopPasses: 0, // earned from boss kills post-delve-unlock; spent to open the on-demand item shop
   mfBuff: false,
   mfBuffEnd: 0,
   shopUsedThisAct: false,
@@ -3961,6 +4012,11 @@ var statsData = {
   totalDeaths:    0,    // total deaths across all runs (for feature unlocks)
 };
 var _bossSpawnRealTime = 0;  // real gameNow() when boss was spawned
+// Per-fight combat tracking (current enemy), reset on each spawn — used for the death recap.
+var _fightStartGame = 0;   // gameNow() when the current enemy spawned
+var _fightDmgTaken  = 0;   // total damage the hero took this fight
+var _fightLastHit   = 0;   // damage of the most recent enemy swing (the killing blow on death)
+var _lastDeathRecapHtml = '';  // most recent death recap, viewable from the Recap button
 var _trapEntryFiring = false; // guard: prevents recursive entry-trap chain when trap kill spawns next mob
 var MERCHANT_DEATH_THRESHOLD = 5; // nightmare/hell; normal uses 3
 var MERCHANT_GOLD_PER_SCORE  = 3;
@@ -3992,6 +4048,7 @@ var delveActive      = false;  // true while inside a delve run
 var delveLevel       = 1;      // current depth (1-based)
 var delveMobsThisLevel = 0;    // kills at current level (5 = complete)
 var _delveBossPhase  = false;  // true while fighting a level-checkpoint boss
+var _delveBossPending = null;  // depth of a guardian awaiting the player's choice (heal+fight / extract)
 var delveBag         = [];     // items found this run (max 20, priority-sorted)
 var delveGoldEarned  = 0;      // gold earned this run (banked on extract, 50% on death)
 var delveCheckpoints = [];     // cleared checkpoint depths [20, 40, ...]
@@ -4763,7 +4820,7 @@ function processLoot(item, fromShop) {
   var uniqueProtected = equipped && equipped.rarity === 'unique' && item.rarity !== 'unique';
   var isUpgrade = !isLocked && !uniqueProtected && score > equippedScore;
   var vaultScores = currentVault.map(function(v) { return priorityScore(v); });
-  var _slotCap = (slot === 'ring') ? ringVaultCap() : VAULT_SIZE;
+  var _slotCap = vaultCap(slot);
   var fitsVault = currentVault.length < _slotCap || score > Math.min.apply(null, vaultScores);
 
   // Uniques that don't fit go to review queue instead of discarding
@@ -4837,7 +4894,7 @@ function _trackSessionDrop(item, score, wasDiscarded) {
 }
 
 function forceIntoVault(slot, item, currentVault) {
-  var _fCap = (slot === 'ring') ? ringVaultCap() : VAULT_SIZE;
+  var _fCap = vaultCap(slot);
   if (currentVault.length < _fCap) {
     currentVault.push(item);
     hero.vault[slot] = sortAndTrim(currentVault, slot);
@@ -4856,7 +4913,7 @@ function forceIntoVault(slot, item, currentVault) {
 }
 
 function sortAndTrim(arr, slotHint) {
-  var cap = (slotHint === 'ring') ? ringVaultCap() : VAULT_SIZE;
+  var cap = vaultCap(slotHint);
   return arr.sort(function(a,b) { return priorityScore(b) - priorityScore(a); }).slice(0, cap);
 }
 
@@ -5059,6 +5116,12 @@ function spawnNextEnemy(simNow) {
       showBountyIntro();
       return;
     }
+    // Endgame: once Delve is unlocked, boss kills bank a shop pass (granted on the kill)
+    // instead of popping the timed Act Shop — advance directly and shop on-demand.
+    if (delveUnlocked) {
+      _advanceAfterBossShop();
+      return;
+    }
     openShop();
     return;
   } else {
@@ -5217,6 +5280,11 @@ function spawnNextEnemy(simNow) {
   }
 
   enemyNextAtk = spawnTime + Math.round((enemy.isBoss ? BOSS_MS : MOB_MS));
+
+  // Reset per-fight combat tracking for the death recap
+  _fightStartGame = spawnTime;
+  _fightDmgTaken = 0;
+  _fightLastHit = 0;
 
   // Hunter Long Shot: delay enemy's first attack by 2500ms if Long Shot is active skill
   if (classKey === 'ranger' && hero.rangerDiscipline === 'hunter') {
@@ -6575,8 +6643,10 @@ function enemyAttack(now) {
     }
   }
 
+  var _swingDmg = 0;
   if (!debugGodMode) {
     hero.hp = Math.max(0, hero.hp - dmg);
+    _swingDmg += dmg;
     if (dmg > 0) {
       triggerEnemyHitAnim();
       if (classKey === 'warrior') gainRage(2);
@@ -6604,6 +6674,7 @@ function enemyAttack(now) {
       // reducedDmg (flat) applies to all damage types — subtract from the elemental rider too
       var _elemDmg   = Math.max(1, Math.round(_rawMobDmg * _elemPct * (1 - _resist / 100)) - (hero._reducedDmg || 0));
       hero.hp = Math.max(0, hero.hp - _elemDmg);
+      _swingDmg += _elemDmg;
       var _elemLabel = _elemType.charAt(0).toUpperCase() + _elemType.slice(1);
       addLog('  ↳ '+_elemLabel+' damage: '+_elemDmg+(_resist > 0 ? ' ('+_resist+'% resisted)' : ''), ZONE_ELEM_COLOR[_elemType] || 'dmg');
     }
@@ -6627,6 +6698,7 @@ function enemyAttack(now) {
   // Glass Cannon: take 2× damage (second application — total 2×)
   if (_hasUnique('Glass Cannon') && dmg > 0 && !debugGodMode) {
     hero.hp = Math.max(0, hero.hp - dmg);
+    _swingDmg += dmg;
   }
   // Martyrdom Plate: below 25% HP triggers 3× damage buff for 8s, once per combat
   if (_hasUnique('Martyrdom Plate') && !hero._martyrdomUsed && hero.hp > 0 && hero.hp <= hero.maxHp * 0.25) {
@@ -6635,6 +6707,9 @@ function enemyAttack(now) {
     addLog('🩸 Martyrdom ignites — 3× damage for 8s!', 'crit');
     triggerStatusFlash('#ff4444');
   }
+
+  // Record this swing for the death recap
+  if (_swingDmg > 0) { _fightDmgTaken += _swingDmg; _fightLastHit = _swingDmg; }
 
   if (hero.hp <= 0) {
     // Last Stand technique intercept
@@ -7416,8 +7491,8 @@ function gainKill(isBoss, isAoe, simNow) {
             addLog('⚗ ⛏ ' + _mRelic.name + ' found in the depths!', 'loot unique', 'item');
             triggerItemDropAnim('unique');
           } else {
-            relicPending = _mRelic;
-            addLog('⚗ A relic emerges from the darkness... ' + relicPending.name + ' [review in the shop]', 'level', 'item');
+            relicStash.push(_mRelic);
+            addLog('⚗ A relic emerges from the darkness... ' + _mRelic.name + ' [stored in the relic stash]', 'level', 'item');
             triggerItemDropAnim('unique');
           }
         }
@@ -7452,8 +7527,9 @@ function gainKill(isBoss, isAoe, simNow) {
           var _relicIds2 = Object.keys(RELICS).filter(function(id) { return !equippedRelic || id !== equippedRelic.id; });
           if (_relicIds2.length) {
             var _relicId2 = _relicIds2[ri(0, _relicIds2.length - 1)];
-            relicPending = makeRelic(_relicId2);
-            addLog('⚗ '+relicPending.name+' found! [Relic — review in the shop]', 'level', 'item');
+            var _bossRelic = makeRelic(_relicId2);
+            relicStash.push(_bossRelic);
+            addLog('⚗ '+_bossRelic.name+' found! [Relic — stored in the relic stash]', 'level', 'item');
             triggerItemDropAnim('unique');
           }
         }
@@ -7535,6 +7611,7 @@ function gainKill(isBoss, isAoe, simNow) {
             saveGame();
           }
         }
+        if (delveUnlocked) _grantShopPass(); // endgame: boss kills bank a shop pass instead of opening the timed shop
         enemy = null;
         bossSpawned = true;
         spawnNextEnemy(simNow);
@@ -7594,6 +7671,7 @@ function gainKill(isBoss, isAoe, simNow) {
 }
 
 function triggerDeath() {
+  var _killer = enemy;  // snapshot for the death recap before nulling
   dead = true;
   enemy = null;
   if (delveActive) { _delveOnDeath(); return; }
@@ -7690,8 +7768,52 @@ function triggerDeath() {
         _dsub.textContent = 'Restarting ' + DIFFICULTY[difficulty].label + ' Act ' + (actIdx + 1);
       }
     }
+    var _recapEl = document.getElementById('death-recap');
+    if (_killer) {
+      _lastDeathRecapHtml = _buildDeathRecapHtml(_killer);
+      if (_recapEl) { _recapEl.innerHTML = _lastDeathRecapHtml; _recapEl.style.display = 'block'; }
+      var _rcBtn = document.getElementById('recap-btn');
+      if (_rcBtn) _rcBtn.style.display = '';
+    } else if (_recapEl) {
+      _recapEl.style.display = 'none';
+    }
     _dov.style.display = 'flex';
   }
+}
+
+function _buildDeathRecapHtml(killer) {
+  var dur    = Math.max(0.1, (gameNow() - _fightStartGame) / 1000);
+  var dealt  = killer ? Math.max(0, Math.round((killer.maxHp || 0) - (killer.hp || 0))) : 0;
+  var taken  = Math.round(_fightDmgTaken);
+  var dpsOut = Math.round(dealt / dur);
+  var dpsIn  = Math.round(taken / dur);
+  var blow   = Math.round(_fightLastHit);
+  var name   = (killer && killer.name) ? killer.name : 'the enemy';
+  function _row(label, val, color) {
+    return '<div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px;">'
+      + '<span style="color:#9a7a7a;">' + label + '</span>'
+      + '<span style="color:' + (color || '#e0c0c0') + ';font-weight:bold;">' + val + '</span></div>';
+  }
+  var html = '<div style="font-size:11px;color:#c85a5a;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;text-align:center;">Fight Recap</div>';
+  html += '<div style="font-size:11px;color:#9a7a7a;text-align:center;margin-bottom:10px;">Killed by <span style="color:#e0a0a0;">' + name + '</span></div>';
+  html += _row('Killing blow',  blow.toLocaleString());
+  html += _row('Damage taken',  taken.toLocaleString() + ' &middot; ' + dpsIn.toLocaleString() + '/s');
+  html += _row('Damage dealt',  dealt.toLocaleString() + ' &middot; ' + dpsOut.toLocaleString() + '/s', '#a0d0a0');
+  html += _row('Fight length',  dur.toFixed(1) + 's');
+  return html;
+}
+
+function showLastRecap() {
+  if (!_lastDeathRecapHtml) return;
+  var body = document.getElementById('last-recap-body');
+  if (body) body.innerHTML = _lastDeathRecapHtml;
+  var ov = document.getElementById('last-recap-overlay');
+  if (ov) ov.style.display = 'flex';
+}
+
+function closeLastRecap() {
+  var ov = document.getElementById('last-recap-overlay');
+  if (ov) ov.style.display = 'none';
 }
 
 // Resume at furthest reached act/difficulty after a loop ends or is cancelled
@@ -7763,6 +7885,7 @@ function doRespawn() {
 // ═══════════════════════════════════════════════════
 
 var shopAutoCloseAt = 0;
+var shopBrowseMode = false; // true when the act shop is opened on-demand from the vault shop (no progression on close)
 var shopItems = [];  // purchasable items in the act shop
 var shopPaused = false;
 var shopRerollCount = 0;  // reroll count per shop open (resets each shop)
@@ -7780,12 +7903,13 @@ function toggleShopPause() {
   }
 }
 
-function openShop() {
+function openShop(browse) {
+  shopBrowseMode = !!browse;
   shopOpen = true;
   shopPaused = false;
   shopAutoCloseAt = Date.now() + (settingsShopTimer || 15) * 1000;
   var stp = document.getElementById('shop-timer-panel');
-  if (stp) stp.style.display = 'block';
+  if (stp) stp.style.display = shopBrowseMode ? 'none' : 'block';
   shopRerollCount = 0;
   shopStolen = false;
   // Generate 3 purchasable items for the act shop (same as merchant)
@@ -7888,10 +8012,9 @@ function renderShop() {
   var secsLeft = Math.max(0, Math.ceil((shopAutoCloseAt - Date.now()) / 1000));
   var rarityColors = { normal:'#7a7a8a', magic:'#6fa3ef', rare:'#ffd700', unique:'#e57bf5' };
 
-  var html = '<div class="overlay-title">Act Shop</div>'
-    + '<div class="overlay-sub">The boss is slain. Spend wisely, adventurer.</div>'
-    + renderBountyBoard()
-    + renderPendingRelic();
+  var html = '<div class="overlay-title">'+(shopBrowseMode ? 'Shop' : 'Act Shop')+'</div>'
+    + '<div class="overlay-sub">'+(shopBrowseMode ? 'Browse the wares at your leisure.' : 'The boss is slain. Spend wisely, adventurer.')+'</div>'
+    + renderBountyBoard();
 
   // Purchasable items
   var canSteal = classKey === 'rogue' && hero.activeScheme === 'pilfer' && !shopStolen;
@@ -7968,7 +8091,7 @@ function renderShop() {
     + '<div class="shop-item-desc" style="color:#8a7aaa;">Gem shards can be applied to vault items in the <strong style="color:#c8a0ff;">Crafting</strong> tab. Lock a stat with enchanting, then reforge the rest.</div>'
     + '<br><button class="overlay-btn" style="border-color:#5a4a8a;color:#c8a0ff;" onclick="closeShop();setRightTab(\'crafting\');setCraftingSubTab(\'reforging\');">Go to Crafting →</button>'
     + '</div>'
-    + '<button class="overlay-btn sec" onclick="closeShop()">Leave shop → Next Act</button>'
+    + '<button class="overlay-btn sec" onclick="closeShop()">'+(shopBrowseMode ? 'Close shop' : 'Leave shop → Next Act')+'</button>'
     // Hell-only reroll button
     + (difficulty === 'hell' ? (function() {
         var rerollCost = (shopRerollCount + 1) * 150;
@@ -7981,13 +8104,18 @@ function renderShop() {
           + (!canAffordReroll ? 'disabled style="opacity:0.4;cursor:not-allowed;border-color:#8b3a3a;color:#c85a3a;"' : '')
           + '>Reroll Shop</button></div>';
       })() : '')
-    + '<div style="display:flex;align-items:center;justify-content:space-between;margin-top:14px;padding:10px 14px;background:#0a0a14;border:1px solid #5a4a8a44;border-radius:3px;">'
-    + '<div style="display:flex;align-items:center;gap:10px;">'
-    +   '<div style="font-size:36px;font-weight:bold;color:#c8a0ff;font-family:Georgia,serif;min-width:48px;text-align:center;line-height:1;" id="shop-countdown">'+secsLeft+'</div>'
-    +   '<div style="font-size:12px;color:#5a5a7a;line-height:1.4;">seconds until<br>next act begins</div>'
-    + '</div>'
-    + '<button class="shop-pause-btn" onclick="toggleShopPause()" style="padding:6px 16px;border:1px solid #5a4a8a;background:#0e0a1a;color:#c8a0ff;font-family:Georgia,serif;font-size:13px;cursor:pointer;border-radius:2px;animation:pausePulse 2s ease-in-out infinite;">&#x23F8; Pause</button>'
-    + '</div>';
+    + (shopBrowseMode
+        ? '<div style="display:flex;align-items:center;justify-content:space-between;margin-top:14px;padding:10px 14px;background:#0a0a14;border:1px solid #5a4a8a44;border-radius:3px;">'
+          + '<div style="font-size:12px;color:#5a5a7a;line-height:1.4;">Combat is paused while you browse.</div>'
+          + '<button class="shop-pause-btn" onclick="closeShop()" style="padding:6px 16px;border:1px solid #5a4a8a;background:#0e0a1a;color:#c8a0ff;font-family:Georgia,serif;font-size:13px;cursor:pointer;border-radius:2px;">Done</button>'
+          + '</div>'
+        : '<div style="display:flex;align-items:center;justify-content:space-between;margin-top:14px;padding:10px 14px;background:#0a0a14;border:1px solid #5a4a8a44;border-radius:3px;">'
+          + '<div style="display:flex;align-items:center;gap:10px;">'
+          +   '<div style="font-size:36px;font-weight:bold;color:#c8a0ff;font-family:Georgia,serif;min-width:48px;text-align:center;line-height:1;" id="shop-countdown">'+secsLeft+'</div>'
+          +   '<div style="font-size:12px;color:#5a5a7a;line-height:1.4;">seconds until<br>next act begins</div>'
+          + '</div>'
+          + '<button class="shop-pause-btn" onclick="toggleShopPause()" style="padding:6px 16px;border:1px solid #5a4a8a;background:#0e0a1a;color:#c8a0ff;font-family:Georgia,serif;font-size:13px;cursor:pointer;border-radius:2px;animation:pausePulse 2s ease-in-out infinite;">&#x23F8; Pause</button>'
+          + '</div>');
 
   box.innerHTML = html;
   _attachShopCompareTooltips(box, function(idx) {
@@ -8173,6 +8301,16 @@ function rerollHellShop() {
 }
 
 function closeShop() {
+  // Browse mode (opened on-demand from the vault shop): just dismiss, no progression / pilfer.
+  if (shopBrowseMode) {
+    shopBrowseMode = false;
+    shopOpen = false;
+    shopPaused = false;
+    document.getElementById('overlay').classList.remove('active');
+    var _stp = document.getElementById('shop-timer-panel');
+    if (_stp) _stp.style.display = 'none';
+    return;
+  }
   // Pilfer: if rogue has Pilfer active and hasn't stolen yet, auto-steal best item on close
   if (classKey === 'rogue' && hero.activeScheme === 'pilfer' && !shopStolen) {
     var unsold = shopItems.filter(function(e) { return !e.sold; });
@@ -8213,6 +8351,13 @@ function closeShop() {
   // Bounty already accepted — shop UI dismissed but bounty owns progression from here
   if (bountyActive) return;
 
+  _advanceAfterBossShop();
+}
+
+// Post-boss progression (act advance, diff promotion, loadout swap, next spawn).
+// Shared by closeShop (pre-delve timed shop) and the suppressed endgame path where
+// boss kills bank a shop pass instead of opening the timed shop.
+function _advanceAfterBossShop() {
   if (bossLoop) {
     // Refill HP on boss kill during target boss loop
     if (hero.hp < hero.maxHp) {
@@ -8661,8 +8806,20 @@ function _delveHpMult() {
   if (l <= 100) return 10.6 + (l - 60) * 0.28;
   return 21.8 + (l - 100) * 0.45;
 }
-function _delveDmgMult() { return 1 + (delveLevel - 1) * 0.08; }
-function _delveMfBonus() { return delveActive ? Math.min(500, delveLevel * 3) : 0; }
+function _delveDmgMult() {
+  // Smooth quadratic ramp: gentle early, ~x25 around depth 250.
+  var l = delveLevel - 1;
+  if (l <= 0) return 1;
+  return 1 + l * 0.045 + l * l * 0.0002;
+}
+// Every 10th depth grants a "second wind" — full heal (the damage curve makes this matter).
+function _delveHealCheck() {
+  if (!delveActive || delveLevel <= 0 || delveLevel % 10 !== 0) return;
+  var healed = hero.maxHp - hero.hp;
+  hero.hp = hero.maxHp;
+  addLog('⛏ Depth ' + delveLevel + ' — second wind! ' + (healed > 0 ? '+' + healed + ' HP, restored to full.' : 'HP already full.'), 'level', 'event');
+}
+function _delveMfBonus() { return delveActive ? Math.min(250, delveLevel * 1.5) : 0; }
 function _delveXpMult()  { return 1 + (delveLevel - 1) * 0.06; }
 function _delveExtractItemCount() {
   if (delveLevel >= 160) return 4;
@@ -8808,6 +8965,114 @@ function renderDelveBtn() {
     btn.textContent = '⛏ Delve';
     btn.style.color = '#c8a04488';
   }
+  var sbtn = document.getElementById('vault-shop-btn');
+  if (sbtn) {
+    sbtn.style.display = delveUnlocked ? '' : 'none';
+    if (delveUnlocked) sbtn.textContent = '🛒 Shop (' + ((typeof hero.shopPasses === 'number') ? hero.shopPasses : 0) + ')';
+  }
+}
+
+// ── Vault Expansion Shop (gold sink) ──────────────────
+var VAULT_SHOP_SLOTS = ['weapon','armor','ring','amulet','trinket','boots'];
+var VAULT_SHOP_LABELS = { weapon:'Weapon', armor:'Armor', ring:'Ring', amulet:'Amulet', trinket:'Trinket', boots:'Boots' };
+var VAULT_SHOP_ICONS = { weapon:'⚔', armor:'🛡', ring:'💍', amulet:'📿', trinket:'🏺', boots:'👟' };
+
+function openVaultShop() {
+  if (!delveUnlocked) return;
+  renderVaultShop();
+  document.getElementById('vault-shop').style.display = 'flex';
+}
+
+function closeVaultShop() {
+  document.getElementById('vault-shop').style.display = 'none';
+}
+
+function openBossShopFromVault() {
+  if (!delveUnlocked) return; // item shop is a delve-unlock reward
+  if (!hero.shopPasses || hero.shopPasses <= 0) {
+    addLog('🎟 No shop passes — defeat a boss to earn one.', 'info');
+    renderVaultShop();
+    return;
+  }
+  hero.shopPasses--;
+  _updateShopPassUi();
+  saveBank();
+  closeVaultShop();
+  openShop(true); // browse mode — same act shop, but closing it doesn't advance progression
+}
+
+// Grant a shop pass for a boss/delve kill (only matters once Delve is unlocked).
+function _grantShopPass() {
+  if (!delveUnlocked) return;
+  if (typeof hero.shopPasses !== 'number') hero.shopPasses = 0;
+  if (hero.shopPasses >= SHOP_PASS_MAX) return;
+  hero.shopPasses++;
+  addLog('🎟 Shop pass earned ('+hero.shopPasses+'/'+SHOP_PASS_MAX+').', 'level');
+  _updateShopPassUi();
+}
+
+function _updateShopPassUi() {
+  var passes = (typeof hero.shopPasses === 'number') ? hero.shopPasses : 0;
+  var sbtn = document.getElementById('vault-shop-btn');
+  if (sbtn) sbtn.textContent = '🛒 Shop' + (delveUnlocked ? ' (' + passes + ')' : '');
+  // Refresh the in-overlay button if the vault shop is open
+  var ov = document.getElementById('vault-shop');
+  if (ov && ov.style.display !== 'none') renderVaultShop();
+}
+
+function renderVaultShop() {
+  var gd = document.getElementById('vault-shop-gold');
+  if (gd) gd.textContent = hero.gold;
+  var passes = (typeof hero.shopPasses === 'number') ? hero.shopPasses : 0;
+  var bsBtn = document.getElementById('vault-bossshop-btn');
+  if (bsBtn) {
+    bsBtn.textContent = '🛍 Open Item Shop (' + passes + ' pass' + (passes === 1 ? '' : 'es') + ')';
+    var noPass = passes <= 0;
+    bsBtn.disabled = noPass;
+    bsBtn.style.opacity = noPass ? '0.45' : '1';
+    bsBtn.style.cursor = noPass ? 'not-allowed' : 'pointer';
+  }
+  var list = document.getElementById('vault-shop-list');
+  if (!list) return;
+  var html = '';
+  for (var i = 0; i < VAULT_SHOP_SLOTS.length; i++) {
+    var slot = VAULT_SHOP_SLOTS[i];
+    var bought = (hero.vaultSlots && hero.vaultSlots[slot]) || 0;
+    var maxed = bought >= VAULT_SLOT_MAX_BOUGHT;
+    var canAfford = hero.gold >= VAULT_SLOT_COST;
+    var cap = vaultCap(slot);
+    var icon = VAULT_SHOP_ICONS[slot] || '';
+    var btn;
+    if (maxed) {
+      btn = '<span style="font-size:11px;color:#6a8a5a;padding:5px 10px;">MAXED</span>';
+    } else {
+      var dis = canAfford ? '' : ';opacity:0.45;cursor:not-allowed';
+      btn = '<button ' + (canAfford ? 'onclick="buyVaultSlot(\'' + slot + '\')"' : 'disabled') +
+        ' style="padding:5px 10px;border:1px solid #5a3a7a;background:#160c20;color:#c0a0e0;font-family:Georgia,serif;font-size:11px;cursor:pointer;border-radius:2px' + dis + '">Buy ⬡20,000</button>';
+    }
+    html += '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:6px 8px;background:#0e0a12;border:1px solid #2a1a3a;border-radius:3px;">' +
+      '<span style="font-size:12px;color:#c0a8d0;">' + icon + ' ' + VAULT_SHOP_LABELS[slot] + '</span>' +
+      '<span style="display:flex;align-items:center;gap:10px;">' +
+        '<span style="font-size:11px;color:#7a6a8a;">cap ' + cap + ' <span style="color:#9a7ac0;">(+' + bought + '/' + VAULT_SLOT_MAX_BOUGHT + ')</span></span>' +
+        btn +
+      '</span></div>';
+  }
+  list.innerHTML = html;
+}
+
+function buyVaultSlot(slot) {
+  if (!hero.vaultSlots) hero.vaultSlots = {};
+  var bought = hero.vaultSlots[slot] || 0;
+  if (bought >= VAULT_SLOT_MAX_BOUGHT) return;
+  if (hero.gold < VAULT_SLOT_COST) return;
+  hero.gold -= VAULT_SLOT_COST;
+  hero.vaultSlots[slot] = bought + 1;
+  addLog('🛒 Purchased a ' + VAULT_SHOP_LABELS[slot] + ' vault slot (now ' + vaultCap(slot) + ' total).', 'info');
+  var cgd = document.getElementById('combat-gold-display'); if (cgd) cgd.textContent = hero.gold;
+  var gdsp = document.getElementById('gold-display'); if (gdsp) gdsp.textContent = hero.gold;
+  renderVaultShop();
+  if (typeof renderVault === 'function') renderVault();
+  saveBank();
 }
 
 // ── Combat hooks ──────────────────────────────────────
@@ -8821,9 +9086,11 @@ function _delveOnMobKill(simNow) {
 
     var needsBoss = (completedLevel % 20 === 0) && (delveCheckpoints.indexOf(completedLevel) === -1);
     if (needsBoss) {
-      _delveBossPhase = true;
+      // Pause before the guardian — let the player heal & fight, or extract with their loot.
+      _delveBossPending = completedLevel;
       _updateDelveMobProgress();
-      _delveSpawnBoss(simNow, completedLevel);
+      _updateDelveHud();
+      _showDelveExtractPopup();
       return;
     }
 
@@ -8833,6 +9100,7 @@ function _delveOnMobKill(simNow) {
       _showDelveExtractPopup();
     } else {
       delveLevel = completedLevel + 1;
+      _delveHealCheck();
       _updateDelveHud();
       spawnNextEnemy(simNow);
     }
@@ -8850,6 +9118,7 @@ function _delveOnBossKill(depth, simNow) {
   _delveBossPhase = false;
   bossSpawned = false;
   delveMobsThisLevel = 0;
+  _grantShopPass(); // delve guardian kill banks a shop pass
   // Don't increment yet — continueDelve advances to depth+1
   _updateDelveHud();
   _showDelveExtractPopup();
@@ -8907,6 +9176,12 @@ function _showDelveExtractPopup() {
   _delveExtractSelected = [];
   var el = document.getElementById('delve-extract-level');
   if (el) el.textContent = delveLevel;
+  // Boss-floor mode: the "continue" button becomes "Heal 50% & Fight"
+  var _bossMode = (_delveBossPending != null);
+  var _suf = document.getElementById('delve-extract-title-suffix');
+  if (_suf) _suf.textContent = _bossMode ? ' — Guardian Ahead' : ' — Extract?';
+  var _contBtn = document.getElementById('delve-extract-continue-btn');
+  if (_contBtn) _contBtn.textContent = _bossMode ? '❤ Heal 50% & Fight' : 'Continue Deeper';
   var _eck = document.getElementById('delve-extract-auto-check');
   if (_eck) _eck.checked = delveAutoDelve;
   var _eti = document.getElementById('delve-extract-timer-input');
@@ -8922,7 +9197,7 @@ function _showDelveExtractPopup() {
     _delveExtractTimer = setInterval(function() {
       secsLeft--;
       if (cdEl) cdEl.textContent = secsLeft > 0 ? 'Auto-continuing in ' + secsLeft + 's…' : '';
-      if (secsLeft <= 0) { clearInterval(_delveExtractTimer); _delveExtractTimer = null; continueDelve(); }
+      if (secsLeft <= 0) { clearInterval(_delveExtractTimer); _delveExtractTimer = null; _delveContinueOrBoss(); }
     }, 1000);
   } else {
     var cdEl = document.getElementById('delve-extract-countdown');
@@ -8967,14 +9242,15 @@ function _delveToggleItem(idx, maxPick) {
 
 function confirmDelveExtract() {
   if (_delveExtractTimer) { clearInterval(_delveExtractTimer); _delveExtractTimer = null; }
+  _delveBossPending = null;
   document.getElementById('delve-extract').style.display = 'none';
   delveActive = false;
   for (var _si = 0; _si < _delveExtractSelected.length; _si++) {
     var _it2 = delveBag[_delveExtractSelected[_si]];
     if (_it2) {
       if (_it2._isRelic) {
-        relicPending = _it2;
-        addLog('⚗ ' + _it2.name + ' extracted — review it in the next shop.', 'loot unique', 'item');
+        relicStash.push(_it2);
+        addLog('⚗ ' + _it2.name + ' extracted — stored in the relic stash.', 'loot unique', 'item');
       } else {
         var _res = processLoot(_it2);
         if (_res !== 'discard') {
@@ -8988,12 +9264,33 @@ function confirmDelveExtract() {
   exitDelve(false);
 }
 
+// Second button on the delve popup: fight the pending guardian (heal 50% first), or descend.
+function _delveContinueOrBoss() {
+  if (_delveBossPending != null) _delveFightBoss();
+  else continueDelve();
+}
+
+function _delveFightBoss() {
+  if (_delveExtractTimer) { clearInterval(_delveExtractTimer); _delveExtractTimer = null; }
+  var ex = document.getElementById('delve-extract');
+  if (ex) ex.style.display = 'none';
+  var depth = _delveBossPending;
+  _delveBossPending = null;
+  // Heal for half (of max HP), capped at full
+  var before = hero.hp;
+  hero.hp = Math.min(hero.maxHp, hero.hp + Math.round(hero.maxHp * 0.5));
+  addLog('⛏ You steel yourself — recovered ' + (hero.hp - before) + ' HP. The guardian awakens!', 'level', 'event');
+  _delveBossPhase = true;
+  _delveSpawnBoss(gameNow(), depth);
+}
+
 function continueDelve() {
   if (_delveExtractTimer) { clearInterval(_delveExtractTimer); _delveExtractTimer = null; }
   document.getElementById('delve-extract').style.display = 'none';
   delveLevel++;
   _delveBgIdx = (_delveBgIdx + 1) % _DELVE_BG_POOL.length;
   addLog('⛏ Pressing deeper — Depth ' + delveLevel + '…', 'zone');
+  _delveHealCheck();
   _updateDelveHud();
   updateSceneBackground();
   spawnNextEnemy();
@@ -11404,9 +11701,16 @@ function renderVault() {
 
     var icon  = SLOT_ICONS[slot] || '?';
     var label = SLOT_LABELS[slot] || slot;
+    var isCollapsed = !!vaultCollapsed[slot];
+    var cap = vaultCap(slot);
 
-    // Slot group header
-    centerRows += '<div class="vault-slot-header"><span class="gr-icon" style="opacity:0.6;">'+icon+'</span> '+label+'</div>';
+    // Slot group header (clickable to collapse/expand)
+    centerRows += '<div class="vault-slot-header collapsible'+(isCollapsed?' collapsed':'')+'" onclick="toggleVaultCategory(\''+slot+'\')">'
+      + '<span class="vsh-left"><span class="gr-icon" style="opacity:0.6;">'+icon+'</span> '+label+'</span>'
+      + '<span class="vsh-right"><span>'+vault.length+'/'+cap+'</span><span class="vsh-chev">▼</span></span>'
+      + '</div>';
+
+    if (isCollapsed) continue;
 
     for (var j = 0; j < vault.length; j++) {
       var v = vault[j];
@@ -11799,7 +12103,7 @@ function renderUniqueQueue() {
 
     var equippedScore2 = hero.equipped[item.slot] ? priorityScore(hero.equipped[item.slot]) : -1;
     var wouldEquip = priorityScore(item) > equippedScore2 && !itemLocks[item.slot];
-    var vaultHasRoom = hero.vault[item.slot].length < ((item.slot === 'ring') ? ringVaultCap() : VAULT_SIZE);
+    var vaultHasRoom = hero.vault[item.slot].length < vaultCap(item.slot);
     var canKeep = wouldEquip || vaultHasRoom;
     var keepLabel = wouldEquip ? 'Keep (equips)' : 'Keep';
     var keepTitle = canKeep ? '' : 'Vault full — discard a '+item.slot+' first';
@@ -11852,7 +12156,7 @@ function keepQueuedUnique(idx) {
   if (!entry) return;
   var slot = entry.item.slot;
   // Check if vault has space — if not, player must discard something first
-  var _qCap = (slot === 'ring') ? ringVaultCap() : VAULT_SIZE;
+  var _qCap = vaultCap(slot);
   var vaultFull = hero.vault[slot].length >= _qCap && !hero.equipped[slot] === false;
   var equippedScore = hero.equipped[slot] ? priorityScore(hero.equipped[slot]) : -1;
   var itemScore_ = priorityScore(entry.item);
@@ -11887,7 +12191,7 @@ function buyQueuedUnique(idx) {
   var equipped = hero.equipped[slot];
   var equippedScore = equipped ? priorityScore(equipped) : -1;
   var wouldEquip = !itemLocks[slot] && priorityScore(entry.item) > equippedScore;
-  var _bCap = (slot === 'ring') ? ringVaultCap() : VAULT_SIZE;
+  var _bCap = vaultCap(slot);
   if (!wouldEquip && hero.vault[slot].length >= _bCap) {
     addLog('⚠ Vault full for '+slot+' — discard something first.', 'info');
     return;
@@ -17800,13 +18104,58 @@ var BANK_KEY     = 'idledepths_bank';    // shared across all classes
 var BANK_SIZE    = 20;                   // max items in bank
 var bank         = [];                   // array of items (each has _lvlReq, slot, etc.)
 
+// ── Robust save envelope: checksum + light obfuscation (deters casual editing) ──
+// Format: "EPOCH1:" + base64( xor( utf8( "<checksum>|<json>" ) ) ). Plain "{...}" JSON
+// is still accepted for backward-compat and re-saved in the new format on next write.
+var _SAVE_PREFIX = 'EPOCH1:';
+var _SAVE_KEY_BYTES = (function() { var k = 'ep0ch-d3lv3-s4ve-k3y-v1', b = []; for (var i = 0; i < k.length; i++) b.push(k.charCodeAt(i)); return b; })();
+function _cyrb53(str) {
+  var h1 = 0xdeadbeef, h2 = 0x41c6ce57;
+  for (var i = 0, ch; i < str.length; i++) {
+    ch = str.charCodeAt(i);
+    h1 = Math.imul(h1 ^ ch, 2654435761);
+    h2 = Math.imul(h2 ^ ch, 1597334677);
+  }
+  h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909);
+  h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909);
+  return (4294967296 * (2097151 & h2) + (h1 >>> 0)).toString(36);
+}
+function _xorBytes(bytes) {
+  var out = new Uint8Array(bytes.length), kl = _SAVE_KEY_BYTES.length;
+  for (var i = 0; i < bytes.length; i++) out[i] = bytes[i] ^ _SAVE_KEY_BYTES[i % kl];
+  return out;
+}
+function _b64FromBytes(bytes) { var s = ''; for (var i = 0; i < bytes.length; i++) s += String.fromCharCode(bytes[i]); return btoa(s); }
+function _bytesFromB64(b64) { var s = atob(b64), a = new Uint8Array(s.length); for (var i = 0; i < s.length; i++) a[i] = s.charCodeAt(i); return a; }
+function _encodeSave(obj) {
+  var payload = JSON.stringify(obj);
+  var body = _cyrb53(payload) + '|' + payload;
+  return _SAVE_PREFIX + _b64FromBytes(_xorBytes(new TextEncoder().encode(body)));
+}
+// → { ok:true, obj } | { ok:false, tampered:true } | { ok:false }
+function _decodeSave(str) {
+  try {
+    if (typeof str !== 'string' || !str) return { ok: false };
+    str = str.trim();
+    if (str.charAt(0) === '{') return { ok: true, obj: JSON.parse(str), legacy: true };
+    if (str.indexOf(_SAVE_PREFIX) !== 0) return { ok: false };
+    var body = new TextDecoder().decode(_xorBytes(_bytesFromB64(str.slice(_SAVE_PREFIX.length))));
+    var sep = body.indexOf('|');
+    if (sep < 0) return { ok: false };
+    var sum = body.slice(0, sep), payload = body.slice(sep + 1);
+    if (_cyrb53(payload) !== sum) return { ok: false, tampered: true };
+    return { ok: true, obj: JSON.parse(payload) };
+  } catch (e) { return { ok: false }; }
+}
+
 function saveBank() {
-  try { localStorage.setItem(BANK_KEY, JSON.stringify(bank)); } catch(e) {}
+  try { localStorage.setItem(BANK_KEY, _encodeSave(bank)); } catch(e) {}
 }
 function loadBank() {
   try {
     var raw = localStorage.getItem(BANK_KEY);
-    bank = raw ? JSON.parse(raw) : [];
+    var dec = _decodeSave(raw);
+    bank = (dec.ok && Array.isArray(dec.obj)) ? dec.obj : [];
   } catch(e) { bank = []; }
 }
 var _autosaveInterval = null;
@@ -17841,6 +18190,8 @@ function saveGame() {
         bossStance:    hero.bossStance    || null,
         equipped:      hero.equipped,
         vault:         hero.vault,
+        vaultSlots:    hero.vaultSlots,
+        shopPasses:    hero.shopPasses,
         mfBuff:        hero.mfBuff,
         mfBuffEnd:     hero.mfBuffEnd,
         mfBuffAmount:  hero.mfBuffAmount || 5,
@@ -17916,7 +18267,7 @@ function saveGame() {
       settingsHideHelpPopups:  settingsHideHelpPopups,
       settingsClassicSkills:   settingsClassicSkills,
     };
-    localStorage.setItem(SAVE_KEY, JSON.stringify(state));
+    localStorage.setItem(SAVE_KEY, _encodeSave(state));
   } catch(e) {
     // localStorage unavailable or full — fail silently
   }
@@ -17926,7 +18277,18 @@ function loadGame() {
   try {
     var raw = localStorage.getItem(SAVE_KEY);
     if (!raw) return false;
-    var state = JSON.parse(raw);
+    var dec = _decodeSave(raw);
+    if (!dec.ok) {
+      if (dec.tampered) {
+        // Auto-backup the suspect save before refusing, so nothing is silently lost
+        try { localStorage.setItem(SAVE_KEY + '_corrupt_' + Date.now(), raw); } catch(e) {}
+        addLog('⚠ Save failed its integrity check — it looks modified. Backed up; starting fresh. Use Import in Settings to restore a valid save.', 'death', 'event');
+      } else {
+        addLog('⚠ Save data unreadable — starting fresh.', 'info');
+      }
+      return false;
+    }
+    var state = dec.obj;
     if (!state || state.v !== SAVE_VERSION) {
       localStorage.removeItem(SAVE_KEY);
       addLog('⚠ Save data outdated — starting fresh.', 'info');
@@ -17960,6 +18322,9 @@ function loadGame() {
     if (hero.equipped.boots  === undefined) hero.equipped.boots  = null;
     if (hero.equipped.ring2  === undefined) hero.equipped.ring2  = null;
     hero.vault          = h.vault          || hero.vault;
+    hero.vaultSlots     = h.vaultSlots     || hero.vaultSlots || {};
+    (function(){ var _vs=['weapon','armor','ring','amulet','trinket','boots']; for (var _i=0;_i<_vs.length;_i++){ if (typeof hero.vaultSlots[_vs[_i]] !== 'number') hero.vaultSlots[_vs[_i]] = 0; } })();
+    hero.shopPasses     = (typeof h.shopPasses === 'number') ? h.shopPasses : (hero.shopPasses || 0);
     if (!hero.vault.boots)  hero.vault.boots  = [];
     // Merge legacy ring2 vault into ring vault (ring pool now holds both slots, cap 6)
     if (h.vault && h.vault.ring2 && h.vault.ring2.length) {
@@ -18525,6 +18890,68 @@ function executeWipeAll() {
 
 function wipeSave() {
   confirmWipeSave();
+}
+
+// ── Export / Import save (bundle = current character save + shared bank) ──
+function _downloadText(filename, text) {
+  try {
+    var blob = new Blob([text], { type: 'text/plain' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click();
+    setTimeout(function() { document.body.removeChild(a); URL.revokeObjectURL(url); }, 100);
+  } catch (e) {}
+}
+
+function exportSave() {
+  try {
+    saveGame(); saveBank();
+    var dec = _decodeSave(localStorage.getItem(SAVE_KEY) || '');
+    if (!dec.ok) { addLog('⚠ Nothing to export yet.', 'info'); return; }
+    var bundle = { fmt: 'epoch-bundle', v: SAVE_VERSION, cls: classKey, ts: Date.now(), save: dec.obj, bank: bank };
+    var blob = _encodeSave(bundle);
+    var fn = 'epoch-' + classKey + '-' + new Date().toISOString().slice(0, 10) + '.sav';
+    _downloadText(fn, blob);
+    try { if (navigator.clipboard) navigator.clipboard.writeText(blob); } catch (e) {}
+    addLog('💾 Save exported → ' + fn + ' (also copied to clipboard).', 'level', 'event');
+  } catch (e) { addLog('⚠ Export failed.', 'info'); }
+}
+
+function _handleImportFile(ev) {
+  var f = ev.target && ev.target.files && ev.target.files[0];
+  if (!f) return;
+  var r = new FileReader();
+  r.onload = function() { _confirmImport(String(r.result || '')); };
+  r.readAsText(f);
+  ev.target.value = '';
+}
+
+function _confirmImport(str) {
+  var dec = _decodeSave((str || '').trim());
+  if (!dec.ok) {
+    alert(dec.tampered ? 'That save failed its integrity check — it was modified or corrupted.' : 'That doesn’t look like a valid Epoch save.');
+    return;
+  }
+  var b = dec.obj;
+  var save, bnk = null, cls = classKey;
+  if (b && b.fmt === 'epoch-bundle' && b.save) { save = b.save; bnk = b.bank || null; cls = b.cls || classKey; }
+  else if (b && b.hero) { save = b; }                 // bare class state
+  else { alert('That doesn’t look like a valid Epoch save.'); return; }
+  if (save.v !== SAVE_VERSION) { alert('That save is from a different game version and can’t be imported.'); return; }
+  if (!confirm('Import this save? It will OVERWRITE your current ' + (cls.charAt(0).toUpperCase() + cls.slice(1)) + ' progress' + (bnk ? ' and shared bank' : '') + '. This cannot be undone.')) return;
+  try {
+    localStorage.setItem('idledepths_save_' + cls, _encodeSave(save));
+    if (bnk) localStorage.setItem(BANK_KEY, _encodeSave(bnk));
+    localStorage.setItem('idledepths_class', cls);
+    setTimeout(function() { location.reload(); }, 400);
+  } catch (e) { alert('Import failed — storage error.'); }
+}
+
+function importSaveFromText() {
+  var ta = document.getElementById('import-save-text');
+  if (ta && ta.value.trim()) _confirmImport(ta.value);
+  else alert('Paste a save string first, or use the file picker.');
 }
 
 // ── Hero figure SVG swap by class ──
@@ -19336,6 +19763,8 @@ function _gameTick() {
 
     // Shop auto-close
     if (shopOpen) {
+      // Browse mode: stay open until the user closes it — pause combat, no countdown.
+      if (shopBrowseMode) { renderUI(now); return; }
       if (shopPaused || bountyActive || enchantOverlayOpen || _gambleOverlayOpen) shopAutoCloseAt += _lastRealDelta;
       var _shopCdVal = (shopPaused || bountyActive || enchantOverlayOpen || _gambleOverlayOpen) ? (bountyActive ? '🏹' : (enchantOverlayOpen ? '🔮' : (_gambleOverlayOpen ? '🎲' : '⏸'))) : Math.max(0, Math.ceil((shopAutoCloseAt - Date.now()) / 1000));
       var cd = document.getElementById('shop-countdown');
@@ -19707,6 +20136,28 @@ init();
         <div style="font-size:12px;color:#d4c9a8;">More?</div>
       </div>
       <button onclick="closeSettings();showMorePrompt();" style="padding:3px 12px;border:1px solid #2a2a3a;background:#0a0a0f;color:#d4c9a8;font-family:Georgia,serif;font-size:11px;cursor:pointer;border-radius:2px;">More?</button>
+    </div>
+
+    <div style="font-size:12px;color:#c8a84b;text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid #c8a84b33;padding-bottom:3px;margin-bottom:6px;margin-top:4px;">Save Data</div>
+    <div style="font-size:10px;color:#5a5a6a;margin-bottom:10px;">Back up your progress to a file, or restore from one. Saves are checksummed — hand-edited saves are refused.</div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+      <div>
+        <div style="font-size:12px;color:#d4c9a8;">Export save</div>
+        <div style="font-size:10px;color:#5a5a6a;">Downloads a .sav of this character + bank (also copied to clipboard)</div>
+      </div>
+      <button onclick="exportSave()" style="padding:3px 14px;border:1px solid #3a5a3a;background:#0a140a;color:#7aaa5a;font-family:Georgia,serif;font-size:11px;cursor:pointer;border-radius:2px;">⬇ Export</button>
+    </div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+      <div>
+        <div style="font-size:12px;color:#d4c9a8;">Import save</div>
+        <div style="font-size:10px;color:#5a5a6a;">Load a .sav file — overwrites current progress</div>
+      </div>
+      <button onclick="document.getElementById('import-save-file').click()" style="padding:3px 14px;border:1px solid #5a4a8a;background:#0e0a1a;color:#c8a0ff;font-family:Georgia,serif;font-size:11px;cursor:pointer;border-radius:2px;">⬆ From file</button>
+    </div>
+    <input type="file" id="import-save-file" accept=".sav,.txt" style="display:none;" onchange="_handleImportFile(event)">
+    <div style="display:flex;gap:6px;align-items:flex-start;margin-bottom:14px;">
+      <textarea id="import-save-text" placeholder="…or paste a save string here" style="flex:1;height:34px;resize:vertical;background:#0a0a14;border:1px solid #2a2a3a;color:#8a8a9a;font-family:'Courier New',monospace;font-size:10px;border-radius:2px;padding:5px;"></textarea>
+      <button onclick="importSaveFromText()" style="padding:3px 12px;border:1px solid #5a4a8a;background:#0e0a1a;color:#c8a0ff;font-family:Georgia,serif;font-size:11px;cursor:pointer;border-radius:2px;white-space:nowrap;">Import text</button>
     </div>
 
     <div style="font-size:12px;color:#c85a5a;text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid #5a1a1a33;padding-bottom:3px;margin-bottom:12px;margin-top:4px;">Danger Zone</div>
