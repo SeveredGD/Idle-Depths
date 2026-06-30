@@ -1051,6 +1051,24 @@
     animation: footstepFade 1.8s ease-out forwards;
     text-shadow: 0 0 20px #c8a0ff;
   }
+  /* Scattered bounty-hunt icons during the 10s countdown */
+  .bounty-hunt-icon {
+    position: absolute;
+    pointer-events: none;
+    z-index: 76;
+    width: 60px; height: 60px;
+    background-repeat: no-repeat;
+    background-size: 300% 300%; /* 3×3 sheet */
+    filter: drop-shadow(0 0 8px #c8a0ffaa) drop-shadow(0 0 16px #7a3aff66);
+    animation: bountyIconPop 1.7s ease-out forwards;
+  }
+  @keyframes bountyIconPop {
+    0%   { opacity: 0; transform: rotate(var(--rot)) scale(0.35); }
+    18%  { opacity: 1; transform: rotate(var(--rot)) scale(1.05); }
+    30%  { opacity: 1; transform: rotate(var(--rot)) scale(1); }
+    78%  { opacity: 1; transform: rotate(var(--rot)) scale(1); }
+    100% { opacity: 0; transform: rotate(var(--rot)) scale(0.85); }
+  }
   /* ── Bounty hunt countdown overlay ── */
   #bounty-hunt-overlay {
     display: none;
@@ -10666,7 +10684,7 @@ function renderUI(now) {
   // HP
   var hpPct = hero.maxHp > 0 ? Math.max(0, Math.round(hero.hp / hero.maxHp * 100)) : 0;
   _prevHeroHpPct = _updateGhostBar('hp-bar-ghost', 'hp-bar', hpPct, _prevHeroHpPct, _heroGhostTimer, function(t){ _heroGhostTimer = t; });
-  document.getElementById('hp-text').textContent = hero.hp + ' / ' + hero.maxHp;
+  document.getElementById('hp-text').textContent = (Math.round(hero.hp * 100) / 100) + ' / ' + (Math.round(hero.maxHp * 100) / 100);
   // Rage (warrior only)
   if (classKey === 'warrior') {
     var ragePct = Math.round((hero.rage || 0) / RAGE_MAX * 100);
@@ -10918,7 +10936,7 @@ function renderUI(now) {
     if (_enemyHpShowAt === 0 || gameNow() >= _enemyHpShowAt) {
       var ePct = Math.max(0, Math.round(enemy.hp / enemy.maxHp * 100));
       _prevEnemyHpPct = _updateGhostBar('enemy-hp-ghost', 'enemy-hp-bar', ePct, _prevEnemyHpPct, _enemyGhostTimer, function(t){ _enemyGhostTimer = t; });
-      document.getElementById('enemy-hp-text').textContent = enemy.hp + ' / ' + enemy.maxHp;
+      document.getElementById('enemy-hp-text').textContent = (Math.round(enemy.hp * 100) / 100) + ' / ' + (Math.round(enemy.maxHp * 100) / 100);
     }
     var statusEl = document.getElementById('status-line');
     var statusTags = [];
@@ -14541,7 +14559,7 @@ var CombatScene = new Phaser.Class({
           if (!self.anims.exists(c.anim)) {
             self.anims.create({ key: c.anim, frames: self.anims.generateFrameNumbers(c.key, { start: 0, end: c.n - 1 }), frameRate: 30, repeat: 0 });
           }
-          if (c.key === 'hero-sorc-ice') self._sorcInitIdleSprite();
+          if (c.key === 'hero-sorc-fire') self._sorcInitIdleSprite();
         };
         si.src = c.src;
       })(cfg);
@@ -14561,10 +14579,11 @@ var CombatScene = new Phaser.Class({
 
   _sorcInitIdleSprite: function() {
     if (this.heroImg) this.heroImg.setVisible(false);
-    if (!this.textures.exists('hero-sorc-ice')) return;
-    var scale = 220 / SORC_FRAME_H;
+    if (!this.textures.exists('hero-sorc-fire')) return;
+    // Idle = fireball frame 0 at the fireball's scale, so casting fire returns to idle with no pop.
+    var scale = 220 / SORC_FRAME_H * 0.9;
     if (!this.sorcAnimSprite) {
-      this.sorcAnimSprite = this.add.sprite(HERO_X, GROUND_Y, 'hero-sorc-ice')
+      this.sorcAnimSprite = this.add.sprite(HERO_X, GROUND_Y, 'hero-sorc-fire')
         .setOrigin(0.5, 1).setDepth(3).setScale(scale).setFrame(0);
     } else {
       this._sorcRestoreIdle();
@@ -14574,9 +14593,9 @@ var CombatScene = new Phaser.Class({
   _sorcRestoreIdle: function() {
     if (this.heroImg) this.heroImg.setVisible(false);
     if (!this.sorcAnimSprite) return;
-    if (this.textures.exists('hero-sorc-ice')) {
-      var scale = 220 / SORC_FRAME_H;
-      this.sorcAnimSprite.setTexture('hero-sorc-ice', 0)
+    if (this.textures.exists('hero-sorc-fire')) {
+      var scale = 220 / SORC_FRAME_H * 0.9;
+      this.sorcAnimSprite.setTexture('hero-sorc-fire', 0)
         .setScale(scale).setPosition(HERO_X, GROUND_Y).setVisible(true);
     } else {
       if (this.heroImg) this.heroImg.setVisible(true);
@@ -18105,19 +18124,48 @@ function _startBountyFootsteps() {
     scene.appendChild(fp);
     setTimeout(function() { if (fp.parentNode) fp.parentNode.removeChild(fp); }, 2800);
 
+    // Scatter 1–2 random bounty-hunt icons (random frame, position & rotation)
+    var _iconN = 1 + (Math.random() < 0.5 ? 1 : 0);
+    for (var _ii = 0; _ii < _iconN; _ii++) _spawnBountyHuntIcon(scene, sceneW, sceneH);
+
     _step++;
   }, 600);
+
+  // Initial scatter so the screen isn't empty for the first tick
+  for (var _b0 = 0; _b0 < 3; _b0++) _spawnBountyHuntIcon(scene, sceneW, sceneH);
+}
+
+var BOUNTY_HUNT_ICON_URL = 'https://severedgd.github.io/gamesprites/icons/bount_hunt_icons.png';
+var BOUNTY_HUNT_ICON_FRAMES = 8; // 3×3 sheet, 8 used frames (0-7)
+
+function _spawnBountyHuntIcon(scene, sceneW, sceneH) {
+  if (!scene) return;
+  var frame = (Math.random() * BOUNTY_HUNT_ICON_FRAMES) | 0;
+  var col = frame % 3, row = (frame / 3) | 0;
+  var pos = (col * 50) + '% ' + (row * 50) + '%'; // 3×3 → step 50%
+  var x = sceneW * (0.06 + Math.random() * 0.82);
+  var y = sceneH * (0.08 + Math.random() * 0.74);
+  var rot = (Math.random() * 360) | 0;
+  var el = document.createElement('div');
+  el.className = 'bounty-hunt-icon';
+  el.style.left = x + 'px';
+  el.style.top  = y + 'px';
+  el.style.backgroundImage = "url('" + BOUNTY_HUNT_ICON_URL + "')";
+  el.style.backgroundPosition = pos;
+  el.style.setProperty('--rot', rot + 'deg');
+  scene.appendChild(el);
+  setTimeout(function() { if (el.parentNode) el.parentNode.removeChild(el); }, 1800);
 }
 
 function _stopBountyFootsteps() {
   if (_bountyFootstepInterval) { clearInterval(_bountyFootstepInterval); _bountyFootstepInterval = null; }
   var overlay = document.getElementById('bounty-hunt-overlay');
   if (overlay) overlay.classList.remove('active');
-  // Clean up any remaining footstep elements
+  // Clean up any remaining footstep + bounty-icon elements
   var scene = document.getElementById('combat-scene');
   if (scene) {
-    var fps = scene.querySelectorAll('.bounty-footstep');
-    for (var i = 0; i < fps.length; i++) fps[i].parentNode.removeChild(fps[i]);
+    var leftovers = scene.querySelectorAll('.bounty-footstep, .bounty-hunt-icon');
+    for (var i = 0; i < leftovers.length; i++) leftovers[i].parentNode.removeChild(leftovers[i]);
   }
 }
 
