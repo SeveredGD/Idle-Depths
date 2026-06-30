@@ -859,6 +859,28 @@
   .sk-badge.med   { background: #1a2a1a; color: #7aaa7a; border: 1px solid #2a4a2a; }
   .sk-badge.fast  { background: #0a1a2a; color: #7ac8e8; border: 1px solid #1a3a5a; }
   .skill-btn .sk-desc { font-size: 10px; color: #5a5a6a; margin-top: 2px; }
+
+  /* Sorceress icon skill picker — element columns */
+  .sorc-cols { display: flex; gap: 4px; }
+  .sorc-col  { flex: 1; min-width: 0; }
+  .sorc-colh { font-size: 9px; letter-spacing: 0.5px; text-transform: uppercase; text-align: center; padding-bottom: 3px; margin-bottom: 5px; border-bottom: 1px solid #2a2a3a; }
+  .sorc-cell { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 6px 2px; border: 1px solid transparent; border-radius: 4px; background: transparent; cursor: pointer; margin-bottom: 5px; font-family: Georgia, serif; transition: all 0.12s; }
+  .sorc-cell:hover:not(.locked) { background: #111120; border-color: #3a3a5a; }
+  .sorc-cell.active { border-color: #c8a84b; background: #1a1510; }
+  .sorc-cell.locked { opacity: 0.4; cursor: not-allowed; }
+  .sorc-ic   { width: 34px; height: 34px; border-radius: 6px; background-repeat: no-repeat; background-size: 300% 300%; border: 1px solid #00000066; }
+  .sorc-cell.active .sorc-ic { box-shadow: 0 0 0 2px #c8a84b66; }
+  .sorc-cn   { font-size: 9px; line-height: 1.1; text-align: center; color: #b0a890; min-height: 20px; display: flex; align-items: center; justify-content: center; }
+  .sorc-cell.active .sorc-cn { color: #e8d8a8; }
+  .sorc-cs   { font-size: 8px; color: #5a5a6a; text-align: center; }
+
+  /* Sorceress passives — wide banner icons stacked vertically (always on) */
+  .sorc-pstack { display: flex; flex-direction: column; gap: 6px; }
+  .sorc-prow   { width: 100%; border: 1px solid #c8a84b; border-radius: 4px; background: #15110a; overflow: hidden; cursor: default; }
+  .sorc-pic    { display: block; width: 100%; height: 0; padding-bottom: 52.27%; background-repeat: no-repeat; background-size: 200% 200%; }
+  .sorc-pcap   { display: flex; justify-content: space-between; align-items: center; padding: 3px 8px; border-top: 1px solid #2a2418; }
+  .sorc-pnm    { font-size: 11px; color: #e8d8a8; }
+  .sorc-pst    { font-size: 9px; color: #7aaa5a; }
   .skill-btn .sk-pts  { font-size: 10px; color: #c8a84b88; }
 
   /* ── Skill tree ── */
@@ -2088,6 +2110,9 @@ var ROG_TOXDEATH_SHEET      = _REPO + 'Rogue%20Animations/toxicologist_death.png
 var ROG_TOXDEATH_FRAMES     = 30; var ROG_TOXDEATH_FRAME_W = 228, ROG_TOXDEATH_FRAME_H = 111;
 var ROG_TOXIDLE_SHEET       = _REPO + 'Rogue%20Animations/rogue_toxicologist_idle.png';
 var ROG_TOXIDLE_FRAMES      = 1;  var ROG_TOXIDLE_FRAME_W  = 228, ROG_TOXIDLE_FRAME_H  = 128;
+// Toxicologist sheets have ~28 empty rows below the feet; at the 309px tox scale that floats
+// the character ~68px above the ground. Sink the whole tox stance (idle + skills) to the mob line.
+var ROG_TOX_GROUND_YOFF     = 63;
 // Sorceress skill animations — all 228×128
 var SORC_FRAME_W = 228, SORC_FRAME_H = 128;
 var SORC_FIRE_SHEET      = _REPO + 'Sorceress%20Animations/sorceress_fireball.png';
@@ -4084,7 +4109,7 @@ function xpForLevel(lvl) {
 function recalcStats() {
   var bonusDmg = 0, bonusHp = 0, bonusSpd = 0, bonusRegen = 0, bonusReduce = 0;
   var bonusBlock = 0, bonusShield = 0, bonusCooldown = 0;
-  var bonusXpGain = 0, bonusGoldFind = 0;
+  var bonusXpGain = 0, bonusGoldFind = 0, bonusMf = 0;
   var bonusFireDmg = 0, bonusLightDmg = 0, bonusColdDmg = 0, bonusMagicDmg = 0;
   var bonusLightCrit = 0, bonusAoe = 0, bonusStatusEffect = 0, bonusResist = 0;
   var bonusThorns = 0, bonusCritMulti = 0, bonusSunder = 0;
@@ -4102,6 +4127,7 @@ function recalcStats() {
       bonusCooldown     += e.stats.castCooldown     || 0;
       bonusXpGain       += e.stats.xpGain          || 0;
       bonusGoldFind     += e.stats.goldFind         || 0;
+      bonusMf           += e.stats.mf               || 0;
       bonusFireDmg      += e.stats.fireDmg          || 0;
       bonusLightDmg     += e.stats.lightDmg         || 0;
       bonusColdDmg      += e.stats.coldDmg          || 0;
@@ -4127,16 +4153,24 @@ function recalcStats() {
   }
   hero._bonusSpd        = bonusSpd;
   hero._bonusDmg        = bonusDmg;
-  var _passiveRegen = classKey==='sorceress' ? (hero.skillTree['warmth']||0)*0.5 : 0;
+  // Sorceress passives also grant a 0.5%/pt multiplier to the matching ITEM-sourced stat
+  // (Warmth→hpRegen, Energy Shield→spellShield, Inner Fortune→mf). Multiplies gear only,
+  // never the passive's own flat bonus.
+  var _warmthPts = classKey==='sorceress' ? (hero.skillTree['warmth']||0) : 0;
+  var _esPts     = classKey==='sorceress' ? (hero.skillTree['energyshield']||0) : 0;
+  var _fortunePts= classKey==='sorceress' ? (hero.skillTree['fortune']||0) : 0;
+  var _passiveRegen = _warmthPts * 0.5;
   // Warrior Last Stand regen: +0.2/pt at >=40 rage (dynamic — applied in _gameTick)
-  hero._hpRegen         = bonusRegen + _passiveRegen;
+  hero._hpRegen         = Math.round((bonusRegen * (1 + _warmthPts * 0.005) + _passiveRegen) * 100) / 100;
   hero._reducedDmg      = Math.min(50, bonusReduce + (hero.level - 1));
   var _passiveBlock = classKey==='rogue' ? (hero.skillTree['evasion']||0)*1.5 : classKey==='warrior' ? 5 : classKey==='ranger' ? 3 : 0;
   hero._blockChanceRaw  = bonusBlock + _passiveBlock;
   hero._blockChance     = Math.min(hero._blockChanceRaw, 40);
-  var _passiveShield = classKey==='sorceress' ? 10 + (hero.skillTree['energyshield']||0)*3.5 : classKey==='rogue' ? (hero.skillTree['shadowveil']||0)*3.5 : 0;
-  hero._spellShield     = bonusShield + _passiveShield;
-  hero._passiveMf       = classKey==='sorceress' ? (hero.skillTree['fortune']||0) : (hero.skillTree['plunder']||0);
+  var _passiveShield = classKey==='sorceress' ? 10 + _esPts*3.5 : classKey==='rogue' ? (hero.skillTree['shadowveil']||0)*3.5 : 0;
+  hero._spellShield     = Math.round((bonusShield * (1 + _esPts * 0.005) + _passiveShield) * 100) / 100;
+  hero._passiveMf       = classKey==='sorceress'
+                            ? Math.round((_fortunePts + bonusMf * _fortunePts * 0.005) * 100) / 100
+                            : (hero.skillTree['plunder']||0);
   // Execute global dmg bonus
   hero._techniqueDmgBonus = (classKey==='warrior' && hero.activeTechnique==='execute') ? (hero.skillTree['execute']||0) : 0;
   hero._castCooldown    = bonusCooldown;
@@ -6454,7 +6488,11 @@ function enemyAttack(now) {
     if (_enrageSecs > 0) {
       var _enrageMult = 1 + _enrageSecs * 0.10;
       dmg = Math.round(dmg * _enrageMult);
-      if (_enrageSecs === 1) addLog('⚠ Boss enrages! (+10% dmg)', 'crit');
+      // Announce only once per new tier — not on every swing inside the tier
+      if (_enrageSecs > (enemy._enrageLevel || 0)) {
+        enemy._enrageLevel = _enrageSecs;
+        addLog('⚠ Boss enrages! (+'+(_enrageSecs * 10)+'% dmg)', 'crit');
+      }
     }
   }
 
@@ -10435,9 +10473,11 @@ function renderUI(now) {
     if (blockOvercap) { blockEl.className = 'stat-val stat-overcapped'; blockEl.title = 'Overcapped by '+(rawBlock-40)+'% — block is capped at 40%'; }
     else { blockEl.className = 'stat-val'; blockEl.title = ''; }
   }
-  if (shieldEl) shieldEl.textContent = hero._shieldCurrent > 0
-    ? (hero._shieldCurrent + ' / ' + (hero._spellShield || 0))
-    : (hero._spellShield  || 0);
+  if (shieldEl) {
+    var _shCur = Math.round((hero._shieldCurrent || 0) * 100) / 100;
+    var _shMax = Math.round((hero._spellShield || 0) * 100) / 100;
+    shieldEl.textContent = _shCur > 0 ? (_shCur + ' / ' + _shMax) : _shMax;
+  }
   if (xpEl)     xpEl.textContent     = (hero._xpGain       || 0) + '%';
   if (gfEl)     gfEl.textContent     = (hero._goldFind      || 0) + '%';
   var seEl = document.getElementById('stat-statuseffect');
@@ -11878,6 +11918,90 @@ function discardQueuedUnique(idx) {
   renderUniqueQueue();
 }
 
+// Sorceress skill icons — single 3x3 sheet (186px frames). idx → grid position.
+var SORC_SKILL_ICONS_URL = _REPO + 'icons/sorc_skills_icons.png';
+var SORC_SKILL_ICON_IDX = { blizzard:0, cold:1, lightnova:2, chainlight:3, meteor:4, frostfire:5, lightning:6, iceshard:7, fire:8 };
+var SORC_SKILL_ELEMENT  = { fire:'fire', meteor:'fire', frostfire:'fire', lightning:'storm', chainlight:'storm', lightnova:'storm', cold:'frost', blizzard:'frost', iceshard:'frost' };
+var SORC_ELEM_META = { fire:{ label:'Fire', color:'#e0794a' }, storm:{ label:'Storm', color:'#e8c84a' }, frost:{ label:'Frost', color:'#6fb8d4' } };
+// Sorceress passive icons — square, 2x2 sheet (422x422 frames, 3 icons). Always on; tiled side-by-side.
+var SORC_PASSIVE_ICONS_URL = _REPO + 'icons/sorc_passive_icons.png';
+var SORC_PASSIVE_ICON_IDX  = { energyshield:0, warmth:1, fortune:2 };
+
+// Rogue skill icons — 3x3 sheet (184px frames). idx 8 = nullstrike.
+var ROGUE_SKILL_ICONS_URL = _REPO + 'icons/rogue_skill_icons.png';
+var ROGUE_SKILL_ICON_IDX = { backstab:0, spellbreaker:1, manaburn:2, nullstrike:3, neurotoxin:4, corrosive:5, taintblood:6, flurry:7, bladedance:8 };
+var ROGUE_SPEC_META = { assassin:{ label:'Assassin', color:'#c8a84b' }, toxicologist:{ label:'Toxicologist', color:'#7aaa5a' }, magehunter:{ label:'Mage Hunter', color:'#7ac8e8' } };
+// Rogue schemes + specializations icons — 3x2 sheet (188px). Assassin reuses the backstab T1 icon.
+var ROGUE_SPECS_ICONS_URL = _REPO + 'icons/rogue_specs_icons.png';
+var ROGUE_SPECS_ICON_IDX  = { toxicologist:0, magehunter:1, lucky:2, pilfer:3, excavation:4 };
+function _rogueSpecsIconStyle(id) {
+  if (id === 'assassin') {
+    var bi = ROGUE_SKILL_ICON_IDX['backstab'];
+    return 'background-image:url('+ROGUE_SKILL_ICONS_URL+');background-size:300% 300%;background-position:'+((bi % 3) * 50)+'% '+(Math.floor(bi / 3) * 50)+'%;';
+  }
+  var idx = ROGUE_SPECS_ICON_IDX[id];
+  if (idx == null) return '';
+  return 'background-image:url('+ROGUE_SPECS_ICONS_URL+');background-size:300% 200%;background-position:'+((idx % 3) * 50)+'% '+(Math.floor(idx / 3) * 100)+'%;';
+}
+
+// Warrior skill icons — 3x3 sheet (186px); leapslam lives in its own standalone image.
+var WARRIOR_SKILL_ICONS_URL = _REPO + 'icons/warrior_skills_icons.png';
+var WARRIOR_LEAP_ICON_URL   = _REPO + 'icons/leap_slam_warrior_icon.png';
+var WARRIOR_SKILL_ICON_IDX  = { laststand:0, consecutivestrike:1, infusedstrike:2, bash:3, thrust:4, slash:5, itemfind:6, mortalstrike:7, execute:8 };
+
+// Ranger skill + discipline icons — 5x5 sheet (185px). Includes the 3 discipline icons.
+var RANGER_SKILL_ICONS_URL = _REPO + 'icons/hunter_icons.png';
+var RANGER_SKILL_ICON_IDX  = {
+  mark_prey:0, execute_shot:1, long_shot:3, freezing_trap:4, explosive_trap:5,
+  vuln_shot:6, chain_trap:7, hunter:8, arcanearcher:9, trapper:12,
+  strafing_shot:13, overload_shot:18
+};
+var RANGER_DISC_META = { hunter:{ label:'Hunter', color:'#7aaa5a' }, arcanearcher:{ label:'Arcane Archer', color:'#c878f0' }, trapper:{ label:'Trapper', color:'#c8843a' } };
+function _rangerIconStyle(id) {
+  var idx = RANGER_SKILL_ICON_IDX[id];
+  if (idx == null) return '';
+  return 'background-image:url('+RANGER_SKILL_ICONS_URL+');background-size:500% 500%;background-position:'+((idx % 5) * 25)+'% '+(Math.floor(idx / 5) * 25)+'%;';
+}
+
+// Tooltip for sorceress passives — shows flat bonus + the 0.5%/pt item-stat multiplier,
+// with the live before→after value for the currently equipped gear.
+function sorcPassiveTooltipHtml(skill) {
+  var pts = hero.skillTree[skill.id] || 0;
+  var mult = pts * 0.5; // percent
+  var gearRegen = 0, gearShield = 0, gearMf = 0;
+  for (var i = 0; i < EQUIP_SLOTS.length; i++) {
+    var e = hero.equipped[EQUIP_SLOTS[i]];
+    if (!e) continue;
+    gearRegen  += e.stats.hpRegen     || 0;
+    gearShield += e.stats.spellShield || 0;
+    gearMf     += e.stats.mf          || 0;
+  }
+  var title, flatLine, gearVal, statLabel;
+  if (skill.id === 'warmth') {
+    title = 'Warmth'; statLabel = 'HP regen';
+    flatLine = '+' + (pts * 0.5).toFixed(1) + ' HP/s flat regen';
+    gearVal = gearRegen;
+  } else if (skill.id === 'energyshield') {
+    title = 'Energy Shield'; statLabel = 'spell shield';
+    flatLine = '+' + (10 + pts * 3.5).toFixed(1) + ' flat spell shield';
+    gearVal = gearShield;
+  } else {
+    title = 'Inner Fortune'; statLabel = 'Magic Find';
+    flatLine = '+' + pts + ' flat Magic Find';
+    gearVal = gearMf;
+  }
+  var after = gearVal * (1 + mult / 100);
+  var html = '<div class="tt-title" style="color:#7ac8e8;">' + title + '</div>';
+  html += '<div class="tt-sub">Passive · always active · ' + pts + '/' + SKILL_MAX + ' pts</div>';
+  html += '<div style="font-size:11px;color:#a09080;line-height:1.7;margin-top:5px;">';
+  html += '&#9670; ' + flatLine + '<br>';
+  html += '&#9670; +' + mult.toFixed(1) + '% to gear ' + statLabel
+        + ' <span style="color:#7aaa5a;">(' + (Math.round(gearVal * 10) / 10) + ' &rarr; ' + (Math.round(after * 10) / 10) + ')</span><br>';
+  html += '<span style="color:#5a5a6a;">0.5% per point — applies to item-sourced ' + statLabel + ' only.</span>';
+  html += '</div>';
+  return html;
+}
+
 function renderSkillPicker() {
   var tab = hero.activeSkillTab || 1;
   var allTabSkills = cls.skills.filter(function(s) { return (s.tier || 1) === tab; });
@@ -11920,6 +12044,35 @@ function renderSkillPicker() {
     var schemesLocked = false;
     var needsPick = !hero.activeScheme;
     var sh = tabHtml;
+    // Icon-tile layout (Schemes) — falls through to classic cards when Classic Menus is on
+    if (!settingsClassicSkills.rogue) {
+      sh += '<div class="sorc-colh" style="color:#c8843a;border-bottom-color:#c8843a44;">Schemes</div><div class="sorc-cols">';
+      for (var _sk = 0; _sk < schemes.length; _sk++) {
+        var _scm = schemes[_sk];
+        var _scPts = hero.skillTree[_scm.id] || 0;
+        var _scActive = hero.activeScheme === _scm.id;
+        var _scSub = (_scActive ? '● active' : 'inactive') + (_scPts > 0 ? ' · ' + _scPts + 'pt' + (_scPts > 1 ? 's' : '') : '');
+        sh += '<div class="sorc-col"><button class="sorc-cell'+(_scActive?' active':'')+'" data-sid="'+_scm.id+'" onclick="setActiveScheme(\''+_scm.id+'\')">'
+          + '<span class="sorc-ic" style="'+_rogueSpecsIconStyle(_scm.id)+'"></span>'
+          + '<span class="sorc-cn">'+_scm.name+'</span>'
+          + '<span class="sorc-cs">'+_scSub+'</span>'
+          + '</button></div>';
+      }
+      sh += '</div>';
+      var _pickerSc = document.getElementById('skill-picker');
+      if (_pickerSc) {
+        _pickerSc.innerHTML = sh;
+        var _sccells = _pickerSc.querySelectorAll('.sorc-cell');
+        for (var _scc = 0; _scc < _sccells.length; _scc++) {
+          (function(cell) {
+            var _scsk = cls.skills.filter(function(s){ return s.id === cell.dataset.sid; })[0];
+            cell.addEventListener('mouseenter', function() { scheduleTooltip(function() { if (_scsk) showTooltip(skillTooltipHtml(_scsk)); }); });
+            cell.addEventListener('mouseleave', hideTooltip);
+          })(_sccells[_scc]);
+        }
+      }
+      return;
+    }
     if (false) {
       sh += '<div style="font-size:9px;color:'+(needsPick?'#c8843a':'#5a5a6a')+';margin-bottom:6px;font-style:italic;">'+(needsPick?'⚠ Choose an active scheme — it will persist until changed.':'Pick one active scheme. Level them in the Skill Tree.')+'</div>';
     }
@@ -11949,6 +12102,35 @@ function renderSkillPicker() {
     var specs = cls.skills.filter(function(s) { return s.tier === 3 && s.isSpec; });
     var specColors = { assassin:'#c8a84b', toxicologist:'#7aaa5a', magehunter:'#7ac8e8' };
     var sh = tabHtml;
+    // Icon-tile layout (Specializations) — falls through to classic cards when Classic Menus is on
+    if (!settingsClassicSkills.rogue) {
+      sh += '<div class="sorc-colh" style="color:#c8a84b;border-bottom-color:#c8a84b44;">Specialization</div><div class="sorc-cols">';
+      for (var _spk = 0; _spk < specs.length; _spk++) {
+        var _spc = specs[_spk];
+        var _spPts = hero.skillTree[_spc.id] || 0;
+        var _spActive = hero.rogueSpec === _spc.id;
+        var _spSub = (_spActive ? '● active' : 'select') + (_spPts > 0 ? ' · ' + _spPts + 'pt' + (_spPts > 1 ? 's' : '') : '');
+        sh += '<div class="sorc-col"><button class="sorc-cell'+(_spActive?' active':'')+'" data-sid="'+_spc.id+'" onclick="selectRogueSpec(\''+_spc.id+'\')">'
+          + '<span class="sorc-ic" style="'+_rogueSpecsIconStyle(_spc.id)+'"></span>'
+          + '<span class="sorc-cn">'+_spc.name+'</span>'
+          + '<span class="sorc-cs">'+_spSub+'</span>'
+          + '</button></div>';
+      }
+      sh += '</div>';
+      var _pickerSp = document.getElementById('skill-picker');
+      if (_pickerSp) {
+        _pickerSp.innerHTML = sh;
+        var _spcells = _pickerSp.querySelectorAll('.sorc-cell');
+        for (var _spc2 = 0; _spc2 < _spcells.length; _spc2++) {
+          (function(cell) {
+            var _spsk = cls.skills.filter(function(s){ return s.id === cell.dataset.sid; })[0];
+            cell.addEventListener('mouseenter', function() { scheduleTooltip(function() { if (_spsk) showTooltip(skillTooltipHtml(_spsk)); }); });
+            cell.addEventListener('mouseleave', hideTooltip);
+          })(_spcells[_spc2]);
+        }
+      }
+      return;
+    }
     sh += '<div style="font-size:9px;color:#5a5a6a;margin-bottom:6px;font-style:italic;">Pick your specialization. Level it in the Skill Tree.</div>';
     for (var si = 0; si < specs.length; si++) {
       var sp = specs[si];
@@ -11984,9 +12166,12 @@ function renderSkillPicker() {
       var dc = disciplines[di];
       var isActive = hero.rangerDiscipline === dc.id;
       var col = dc.color;
+      var _dIcon = (!settingsClassicSkills.ranger) ? _rangerIconStyle(dc.id) : '';
       sh += '<div style="border:1px solid '+(isActive?col:'#2a2a3a')+';border-radius:3px;padding:8px 10px;margin-bottom:6px;background:'+(isActive?'#0a0800':'#0a0a14')+'">';
       sh += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">';
-      sh += '<span style="font-size:12px;color:'+col+';">'+(isActive?'● ':'')+dc.name+'</span>';
+      sh += '<span style="display:flex;align-items:center;gap:8px;font-size:12px;color:'+col+';">'
+        + (_dIcon ? '<span style="width:34px;height:34px;border-radius:6px;border:1px solid #00000066;background-repeat:no-repeat;'+_dIcon+'"></span>' : '')
+        + '<span>'+(isActive?'● ':'')+dc.name+'</span></span>';
       sh += '<button onclick="selectRangerDiscipline(' + "'" + dc.id + "'" + ')" style="padding:2px 8px;border:1px solid '+col+';background:'+(isActive?'#1a1200':'#1a1510')+';color:'+col+';font-family:Georgia,serif;font-size:10px;cursor:pointer;border-radius:2px;">'+(isActive?'● Active':'Choose')+'</button>';
       sh += '</div>';
       sh += '<div style="font-size:9px;color:#5a5a6a;">'+dc.desc+'</div>';
@@ -12042,6 +12227,210 @@ function renderSkillPicker() {
     }
     var picker = document.getElementById('skill-picker');
     if (picker) picker.innerHTML = sh;
+    return;
+  }
+
+  // Sorceress active-skill tabs (1 & 2) — icon tiles grouped into element columns.
+  // Passives (tab 3) fall through to the generic card layout below.
+  // Sorceress passives (tab 3) — square icon tiles, side-by-side, always on. No toggle.
+  if (classKey === 'sorceress' && tab === 3 && !settingsClassicSkills.sorceress) {
+    var _psh = tabHtml + '<div class="sorc-cols">';
+    for (var _pk = 0; _pk < tabSkills.length; _pk++) {
+      var _ps = tabSkills[_pk];
+      var _pgidx = cls.skills.indexOf(_ps);
+      var _ppts = hero.skillTree[_ps.id] || 0;
+      var _pii = SORC_PASSIVE_ICON_IDX[_ps.id];
+      var _picon = 'background-image:url('+SORC_PASSIVE_ICONS_URL+');background-size:200% 200%;background-position:'+((_pii % 2) * 100)+'% '+(Math.floor(_pii / 2) * 100)+'%;';
+      var _psub = '● always on' + (_ppts > 0 ? ' · ' + _ppts + 'pt' + (_ppts > 1 ? 's' : '') : '');
+      _psh += '<div class="sorc-col"><button class="sorc-cell active" data-gidx="'+_pgidx+'" style="cursor:default;">'
+        + '<span class="sorc-ic" style="'+_picon+'"></span>'
+        + '<span class="sorc-cn">'+_ps.name+'</span>'
+        + '<span class="sorc-cs">'+_psub+'</span>'
+        + '</button></div>';
+    }
+    _psh += '</div>';
+    var _pickerP = document.getElementById('skill-picker');
+    if (_pickerP) {
+      _pickerP.innerHTML = _psh;
+      var _pcells = _pickerP.querySelectorAll('.sorc-cell');
+      for (var _pc = 0; _pc < _pcells.length; _pc++) {
+        (function(cell) {
+          var _psk = cls.skills[parseInt(cell.dataset.gidx)];
+          cell.addEventListener('mouseenter', function() { scheduleTooltip(function() { showTooltip(sorcPassiveTooltipHtml(_psk)); }); });
+          cell.addEventListener('mouseleave', hideTooltip);
+        })(_pcells[_pc]);
+      }
+    }
+    return;
+  }
+
+  if (classKey === 'sorceress' && (tab === 1 || tab === 2) && !settingsClassicSkills.sorceress) {
+    var _order = ['fire', 'storm', 'frost'];
+    var sh = tabHtml + '<div class="sorc-cols">';
+    for (var _ci = 0; _ci < _order.length; _ci++) {
+      var _elk = _order[_ci];
+      var _meta = SORC_ELEM_META[_elk];
+      sh += '<div class="sorc-col"><div class="sorc-colh" style="color:'+_meta.color+';border-bottom-color:'+_meta.color+'44;">'+_meta.label+'</div>';
+      var _colSkills = tabSkills.filter(function(s) { return SORC_SKILL_ELEMENT[s.id] === _elk; });
+      for (var _k = 0; _k < _colSkills.length; _k++) {
+        var _s = _colSkills[_k];
+        var _gidx = cls.skills.indexOf(_s);
+        var _pts = hero.skillTree[_s.id] || 0;
+        var _isActive = _gidx === hero.activeSkillIdx;
+        var _locked = (_s.tier === 2) && isT2Locked(_s);
+        var _ii = SORC_SKILL_ICON_IDX[_s.id];
+        var _bgPos = ((_ii % 3) * 50) + '% ' + (Math.floor(_ii / 3) * 50) + '%';
+        var _sub = _locked ? '🔒 locked' : (_s.spdLabel + (_pts > 0 ? ' · ' + _pts + 'pt' + (_pts > 1 ? 's' : '') : ''));
+        sh += '<button class="sorc-cell'+(_isActive?' active':'')+(_locked?' locked':'')+'" data-gidx="'+_gidx+'"'
+          + (_locked ? ' disabled' : ' onclick="selectSkill('+_gidx+')"') + '>'
+          + '<span class="sorc-ic" style="background-image:url('+SORC_SKILL_ICONS_URL+');background-position:'+_bgPos+';"></span>'
+          + '<span class="sorc-cn">'+_s.name+'</span>'
+          + '<span class="sorc-cs">'+_sub+'</span>'
+          + '</button>';
+      }
+      sh += '</div>';
+    }
+    sh += '</div>';
+    var _picker = document.getElementById('skill-picker');
+    if (_picker) {
+      _picker.innerHTML = sh;
+      var _cells = _picker.querySelectorAll('.sorc-cell');
+      for (var _cj = 0; _cj < _cells.length; _cj++) {
+        (function(cell) {
+          var _skill = cls.skills[parseInt(cell.dataset.gidx)];
+          cell.addEventListener('mouseenter', function() { scheduleTooltip(function() { showTooltip(skillTooltipHtml(_skill)); }); });
+          cell.addEventListener('mouseleave', hideTooltip);
+        })(_cells[_cj]);
+      }
+    }
+    return;
+  }
+
+  // Rogue active-skill tab (1) — icon tiles for the chosen spec. Schemes (2) and
+  // Specializations (3) keep their own renders above.
+  if (classKey === 'rogue' && tab === 1 && !settingsClassicSkills.rogue) {
+    var sh = tabHtml;
+    var _pickerR = document.getElementById('skill-picker');
+    if (!tabSkills.length) {
+      sh += '<div style="font-size:9px;color:#c8843a;margin-top:4px;font-style:italic;text-align:center;">Choose a specialization in the Specializations tab to unlock skills.</div>';
+      if (_pickerR) _pickerR.innerHTML = sh;
+      return;
+    }
+    var _sm = ROGUE_SPEC_META[hero.rogueSpec] || { label:'', color:'#c8a84b' };
+    sh += '<div class="sorc-colh" style="color:'+_sm.color+';border-bottom-color:'+_sm.color+'44;">'+_sm.label+'</div>';
+    sh += '<div class="sorc-cols">';
+    for (var _rk = 0; _rk < tabSkills.length; _rk++) {
+      var _rs = tabSkills[_rk];
+      var _rgidx = cls.skills.indexOf(_rs);
+      var _rpts = hero.skillTree[_rs.id] || 0;
+      var _rActive = _rgidx === hero.activeSkillIdx;
+      var _rOpener = _rs.id === 'backstab';
+      var _rii = ROGUE_SKILL_ICON_IDX[_rs.id];
+      var _rbg = ((_rii % 3) * 50) + '% ' + (Math.floor(_rii / 3) * 50) + '%';
+      var _rsub = _rOpener ? 'opener' : (_rs.spdLabel + (_rpts > 0 ? ' · ' + _rpts + 'pt' + (_rpts > 1 ? 's' : '') : ''));
+      sh += '<div class="sorc-col"><button class="sorc-cell'+(_rActive?' active':'')+'" data-gidx="'+_rgidx+'"'
+        + (_rOpener ? '' : ' onclick="selectSkill('+_rgidx+')"') + '>'
+        + '<span class="sorc-ic" style="background-image:url('+ROGUE_SKILL_ICONS_URL+');background-position:'+_rbg+';"></span>'
+        + '<span class="sorc-cn">'+_rs.name+'</span>'
+        + '<span class="sorc-cs">'+_rsub+'</span>'
+        + '</button></div>';
+    }
+    sh += '</div>';
+    if (_pickerR) {
+      _pickerR.innerHTML = sh;
+      var _rcells = _pickerR.querySelectorAll('.sorc-cell');
+      for (var _rc = 0; _rc < _rcells.length; _rc++) {
+        (function(cell) {
+          var _rsk = cls.skills[parseInt(cell.dataset.gidx)];
+          cell.addEventListener('mouseenter', function() { scheduleTooltip(function() { showTooltip(skillTooltipHtml(_rsk)); }); });
+          cell.addEventListener('mouseleave', hideTooltip);
+        })(_rcells[_rc]);
+      }
+    }
+    return;
+  }
+
+  // Warrior icon tabs — active skills (1 & 2) and techniques (3, activate/deactivate toggle).
+  if (classKey === 'warrior' && (tab === 1 || tab === 2 || tab === 3) && !settingsClassicSkills.warrior) {
+    var _wTech = (tab === 3);
+    var sh = tabHtml + '<div class="sorc-cols">';
+    for (var _wk = 0; _wk < tabSkills.length; _wk++) {
+      var _ws = tabSkills[_wk];
+      var _wgidx = cls.skills.indexOf(_ws);
+      var _wpts = hero.skillTree[_ws.id] || 0;
+      var _wActive = _wTech ? (hero.activeTechnique === _ws.id) : (_wgidx === hero.activeSkillIdx);
+      var _wLocked = !_wTech && (_ws.tier === 2) && isT2Locked(_ws);
+      var _wIcon;
+      if (_ws.id === 'leapslam') {
+        _wIcon = 'background-image:url('+WARRIOR_LEAP_ICON_URL+');background-size:cover;background-position:center;';
+      } else {
+        var _wi = WARRIOR_SKILL_ICON_IDX[_ws.id];
+        _wIcon = 'background-image:url('+WARRIOR_SKILL_ICONS_URL+');background-position:'+((_wi % 3) * 50)+'% '+(Math.floor(_wi / 3) * 50)+'%;';
+      }
+      var _wsub = _wLocked ? '🔒 locked'
+        : _wTech ? ((_wActive ? '● active' : 'inactive') + (_wpts > 0 ? ' · ' + _wpts + 'pt' + (_wpts > 1 ? 's' : '') : ''))
+        : (_ws.spdLabel + (_wpts > 0 ? ' · ' + _wpts + 'pt' + (_wpts > 1 ? 's' : '') : ''));
+      var _wClick = _wLocked ? '' : (_wTech ? ' onclick="selectTechnique(\''+_ws.id+'\')"' : ' onclick="selectSkill('+_wgidx+')"');
+      sh += '<div class="sorc-col"><button class="sorc-cell'+(_wActive?' active':'')+(_wLocked?' locked':'')+'" data-gidx="'+_wgidx+'"'
+        + (_wLocked ? ' disabled' : '') + _wClick + '>'
+        + '<span class="sorc-ic" style="'+_wIcon+'"></span>'
+        + '<span class="sorc-cn">'+_ws.name+'</span>'
+        + '<span class="sorc-cs">'+_wsub+'</span>'
+        + '</button></div>';
+    }
+    sh += '</div>';
+    var _pickerW = document.getElementById('skill-picker');
+    if (_pickerW) {
+      _pickerW.innerHTML = sh;
+      var _wcells = _pickerW.querySelectorAll('.sorc-cell');
+      for (var _wc = 0; _wc < _wcells.length; _wc++) {
+        (function(cell) {
+          var _wsk = cls.skills[parseInt(cell.dataset.gidx)];
+          cell.addEventListener('mouseenter', function() { scheduleTooltip(function() { showTooltip(skillTooltipHtml(_wsk)); }); });
+          cell.addEventListener('mouseleave', hideTooltip);
+        })(_wcells[_wc]);
+      }
+    }
+    return;
+  }
+
+  // Ranger active-skill tab (1) — icon tiles for the chosen discipline. Discipline (2) and
+  // Forestcraft (3) are handled by their own blocks above.
+  if (classKey === 'ranger' && tab === 1 && !settingsClassicSkills.ranger) {
+    var sh = tabHtml;
+    var _pickerRn = document.getElementById('skill-picker');
+    if (!hero.rangerDiscipline || !tabSkills.length) {
+      sh += '<div style="font-size:9px;color:#c85a1a;margin-top:4px;font-style:italic;text-align:center;">Choose a discipline in the Discipline tab to unlock skills.</div>';
+      if (_pickerRn) _pickerRn.innerHTML = sh;
+      return;
+    }
+    var _rnm = RANGER_DISC_META[hero.rangerDiscipline] || { label:'', color:'#c8a84b' };
+    sh += '<div class="sorc-colh" style="color:'+_rnm.color+';border-bottom-color:'+_rnm.color+'44;">'+_rnm.label+'</div>';
+    sh += '<div class="sorc-cols">';
+    for (var _nk = 0; _nk < tabSkills.length; _nk++) {
+      var _ns = tabSkills[_nk];
+      var _ngidx = cls.skills.indexOf(_ns);
+      var _npts = hero.skillTree[_ns.id] || 0;
+      var _nActive = _ngidx === hero.activeSkillIdx;
+      var _nsub = _ns.spdLabel + (_npts > 0 ? ' · ' + _npts + 'pt' + (_npts > 1 ? 's' : '') : '');
+      sh += '<div class="sorc-col"><button class="sorc-cell'+(_nActive?' active':'')+'" data-gidx="'+_ngidx+'" onclick="selectSkill('+_ngidx+')">'
+        + '<span class="sorc-ic" style="'+_rangerIconStyle(_ns.id)+'"></span>'
+        + '<span class="sorc-cn">'+_ns.name+'</span>'
+        + '<span class="sorc-cs">'+_nsub+'</span>'
+        + '</button></div>';
+    }
+    sh += '</div>';
+    if (_pickerRn) {
+      _pickerRn.innerHTML = sh;
+      var _ncells = _pickerRn.querySelectorAll('.sorc-cell');
+      for (var _nc = 0; _nc < _ncells.length; _nc++) {
+        (function(cell) {
+          var _nsk = cls.skills[parseInt(cell.dataset.gidx)];
+          cell.addEventListener('mouseenter', function() { scheduleTooltip(function() { showTooltip(skillTooltipHtml(_nsk)); }); });
+          cell.addEventListener('mouseleave', hideTooltip);
+        })(_ncells[_nc]);
+      }
+    }
     return;
   }
 
@@ -14213,7 +14602,7 @@ var CombatScene = new Phaser.Class({
     if (isTox && this.textures.exists('hero-rogue-toxidle')) {
       var scale = 309 / ROG_TOXIDLE_FRAME_H;
       this.rogueAnimSprite.setTexture('hero-rogue-toxidle', 0)
-        .setScale(scale).setPosition(HERO_X, GROUND_Y + 5).setVisible(true);
+        .setScale(scale).setPosition(HERO_X, GROUND_Y + ROG_TOX_GROUND_YOFF).setVisible(true);
     } else if (this.textures.exists('hero-rogue-backstab')) {
       var scale = 234 / ROG_BACKSTAB_FRAME_H;
       this.rogueAnimSprite.setTexture('hero-rogue-backstab', 0)
@@ -14248,7 +14637,7 @@ var CombatScene = new Phaser.Class({
     var isTox = (hero.rogueSpec === 'toxicologist');
     var baseH = isTox ? 309 : 234;
     var scale = baseH / frameH;
-    var groundY = GROUND_Y + (yOff || 0);
+    var groundY = GROUND_Y + (yOff != null ? yOff : (isTox ? ROG_TOX_GROUND_YOFF : 0));
     if (this.heroImg) this.heroImg.setVisible(false);
     if (!this.rogueAnimSprite) {
       this.rogueAnimSprite = this.add.sprite(HERO_X, groundY, texKey)
@@ -14415,14 +14804,15 @@ var CombatScene = new Phaser.Class({
     var fps = Math.round(frameCount * 1000 / Math.max(intervalMs, 200));
     var isTox = (hero.rogueSpec === 'toxicologist');
     var scale = (isTox ? 309 : 234) / ROG_TAINTBLOOD_FRAME_H;
+    var _tbY = GROUND_Y + (isTox ? ROG_TOX_GROUND_YOFF : 0);
     if (this.heroImg) this.heroImg.setVisible(false);
     if (!this.rogueAnimSprite) {
-      this.rogueAnimSprite = this.add.sprite(HERO_X, GROUND_Y, texKey).setOrigin(0.5, 1).setDepth(3);
+      this.rogueAnimSprite = this.add.sprite(HERO_X, _tbY, texKey).setOrigin(0.5, 1).setDepth(3);
     }
     this.rogueAnimSprite.off('animationcomplete');
     this.rogueAnimSprite.off('animationupdate');
     this.rogueAnimSprite.setTexture(texKey, 0).setScale(scale)
-      .setPosition(HERO_X, GROUND_Y).setVisible(true);
+      .setPosition(HERO_X, _tbY).setVisible(true);
     this.rogueAnimSprite.play({ key: animKey, frameRate: fps });
     var _orbFired = false;
     this.rogueAnimSprite.on('animationupdate', function(anim, frame) {
@@ -17524,6 +17914,7 @@ function saveGame() {
       settingsReduceAnims:     settingsReduceAnims,
       settingsFloatDmg:        settingsFloatDmg,
       settingsHideHelpPopups:  settingsHideHelpPopups,
+      settingsClassicSkills:   settingsClassicSkills,
     };
     localStorage.setItem(SAVE_KEY, JSON.stringify(state));
   } catch(e) {
@@ -17683,6 +18074,12 @@ function loadGame() {
     settingsReduceAnims     = state.settingsReduceAnims     || false;
     settingsFloatDmg        = state.settingsFloatDmg        !== false;
     settingsHideHelpPopups  = state.settingsHideHelpPopups  || false;
+    if (state.settingsClassicSkills) {
+      settingsClassicSkills.sorceress = !!state.settingsClassicSkills.sorceress;
+      settingsClassicSkills.rogue     = !!state.settingsClassicSkills.rogue;
+      settingsClassicSkills.warrior   = !!state.settingsClassicSkills.warrior;
+      settingsClassicSkills.ranger    = !!state.settingsClassicSkills.ranger;
+    }
 
     // Delve
     delveUnlocked      = state.delveUnlocked      || false;
@@ -17740,6 +18137,8 @@ var settingsShopTimer       = 15;       // shop auto-close seconds: 10|15|20|30
 var settingsReduceAnims     = false;    // reduce particle/shake animations
 var settingsFloatDmg        = true;     // floating combat damage numbers
 var settingsHideHelpPopups  = false;    // suppress tutorial/intro popups
+// Classic Menus — per-class: use the old text skill panels instead of the new icon panels.
+var settingsClassicSkills   = { sorceress:false, rogue:false, warrior:false, ranger:false };
 
 var _sessionKills     = 0;
 var _bonusKillCount   = 0;
@@ -17860,6 +18259,10 @@ function _updateSettingsUI() {
   _setToggle('settings-reduce-anims',   settingsReduceAnims);
   _setToggle('settings-float-dmg',      settingsFloatDmg);
   _setToggle('settings-hide-help',      settingsHideHelpPopups);
+  _setToggle('settings-classic-sorc',   settingsClassicSkills.sorceress);
+  _setToggle('settings-classic-rogue',  settingsClassicSkills.rogue);
+  _setToggle('settings-classic-warrior', settingsClassicSkills.warrior);
+  _setToggle('settings-classic-ranger', settingsClassicSkills.ranger);
 
   var moreBtn = document.getElementById('settings-more-btn');
   if (moreBtn) moreBtn.style.display = (ngPlusDismissed && !ngPlusUnlocked) ? 'flex' : 'none';
@@ -17893,6 +18296,12 @@ function toggleDiscardMag()     { settingsAutoDiscardMag = !settingsAutoDiscardM
 function toggleReduceAnims()    { settingsReduceAnims = !settingsReduceAnims; _updateSettingsUI(); saveGame(); }
 function toggleFloatDmg()       { settingsFloatDmg = !settingsFloatDmg; _updateSettingsUI(); saveGame(); }
 function toggleHideHelpPopups() { settingsHideHelpPopups = !settingsHideHelpPopups; _updateSettingsUI(); saveGame(); }
+function toggleClassicSkills(cls) {
+  settingsClassicSkills[cls] = !settingsClassicSkills[cls];
+  _updateSettingsUI();
+  if (cls === classKey) renderSkillPicker();
+  saveGame();
+}
 function toggleLogVerbosity()   { settingsLogVerbosity = settingsLogVerbosity === 'normal' ? 'minimal' : 'normal'; _updateSettingsUI(); saveGame(); }
 function setShopTimer(secs)     { settingsShopTimer = secs; _updateSettingsUI(); saveGame(); }
 
@@ -19260,6 +19669,37 @@ init();
         <div style="font-size:10px;color:#5a5a6a;">Minimal hides routine kill spam</div>
       </div>
       <button id="settings-log-toggle" onclick="toggleLogVerbosity()" style="padding:3px 14px;font-family:Georgia,serif;font-size:11px;cursor:pointer;border-radius:2px;min-width:60px;">Normal</button>
+    </div>
+
+    <div style="font-size:12px;color:#c8a84b;text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid #c8a84b33;padding-bottom:3px;margin-bottom:6px;margin-top:4px;">Classic Menus</div>
+    <div style="font-size:10px;color:#5a5a6a;margin-bottom:10px;">Use the old text-based skill panels instead of the new icon layout.</div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+      <div>
+        <div style="font-size:12px;color:#d4c9a8;">Sorceress skill menu</div>
+        <div style="font-size:10px;color:#5a5a6a;">Classic text cards for sorceress skills</div>
+      </div>
+      <button id="settings-classic-sorc" onclick="toggleClassicSkills('sorceress')" style="padding:3px 14px;font-family:Georgia,serif;font-size:11px;cursor:pointer;border-radius:2px;min-width:44px;">OFF</button>
+    </div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+      <div>
+        <div style="font-size:12px;color:#d4c9a8;">Rogue skill menu</div>
+        <div style="font-size:10px;color:#5a5a6a;">Classic text cards for rogue skills</div>
+      </div>
+      <button id="settings-classic-rogue" onclick="toggleClassicSkills('rogue')" style="padding:3px 14px;font-family:Georgia,serif;font-size:11px;cursor:pointer;border-radius:2px;min-width:44px;">OFF</button>
+    </div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+      <div>
+        <div style="font-size:12px;color:#d4c9a8;">Warrior skill menu</div>
+        <div style="font-size:10px;color:#5a5a6a;">Classic text cards for warrior skills</div>
+      </div>
+      <button id="settings-classic-warrior" onclick="toggleClassicSkills('warrior')" style="padding:3px 14px;font-family:Georgia,serif;font-size:11px;cursor:pointer;border-radius:2px;min-width:44px;">OFF</button>
+    </div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+      <div>
+        <div style="font-size:12px;color:#d4c9a8;">Ranger skill menu</div>
+        <div style="font-size:10px;color:#5a5a6a;">Classic text cards for ranger skills</div>
+      </div>
+      <button id="settings-classic-ranger" onclick="toggleClassicSkills('ranger')" style="padding:3px 14px;font-family:Georgia,serif;font-size:11px;cursor:pointer;border-radius:2px;min-width:44px;">OFF</button>
     </div>
 
     <div id="settings-more-btn" style="display:none;justify-content:space-between;align-items:center;margin-bottom:16px;">
