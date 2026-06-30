@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Idle Depths</title>
+<title>Everdeep Idle</title>
 <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser.min.js"></script>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -1152,7 +1152,7 @@
   <!-- Class select overlay — shown on first visit, sits above everything -->
   <div id="class-select-overlay" style="display:none;">
     <div class="cs-panel">
-      <div class="cs-title">IDLE DEPTHS</div>
+      <div class="cs-title">EVERDEEP IDLE</div>
       <div class="cs-sub">Choose your class &amp; character slot</div>
       <div class="cs-cards" id="cs-cards"></div>
     </div>
@@ -1165,12 +1165,12 @@
 <div id="help-overlay" style="display:none;position:fixed;inset:0;background:#00000099;z-index:200;align-items:flex-start;justify-content:center;overflow-y:auto;padding:20px 0;" onclick="if(event.target===this)closeHelp()">
   <div style="background:#0d0d18;border:1px solid #c8a84b44;border-radius:4px;padding:32px 40px;max-width:760px;width:100%;font-family:Georgia,serif;color:#d4c9a8;position:relative;">
     <button onclick="closeHelp()" style="position:absolute;top:12px;right:14px;background:none;border:none;color:#5a5a6a;font-size:20px;cursor:pointer;font-family:Georgia,serif;">✕</button>
-    <div style="font-size:22px;color:#c8a84b;margin-bottom:4px;letter-spacing:1px;">IDLE DEPTHS</div>
+    <div style="font-size:22px;color:#c8a84b;margin-bottom:4px;letter-spacing:1px;">EVERDEEP IDLE</div>
     <div style="font-size:13px;color:#5a5a6a;font-style:italic;margin-bottom:20px;">A guide to the descent</div>
 
     <div id="help-sec-basics">
       <div class="help-hdr">The Basics</div>
-      <p class="help-p">Idle Depths is an idle ARPG. Your hero fights automatically — enemies spawn, you attack, they die, loot drops. Your job is to manage skills, gear, and progression to push deeper into harder content.</p>
+      <p class="help-p">Everdeep Idle is an idle ARPG. Your hero fights automatically — enemies spawn, you attack, they die, loot drops. Your job is to manage skills, gear, and progression to push deeper into harder content.</p>
     </div>
 
     <div id="help-sec-death">
@@ -1432,7 +1432,7 @@
 </div>
 
 
-  <span class="game-title">IDLE DEPTHS <span style="font-size:13px;letter-spacing:1px;opacity:0.6;">v1.17</span></span>
+  <span class="game-title">EVERDEEP IDLE <span style="font-size:13px;letter-spacing:1px;opacity:0.6;">v1.0.0</span></span>
 </div>
 
 <!-- Difficulty / act bar -->
@@ -13690,7 +13690,7 @@ function exportStats() {
   }
 
   var lines = [
-    '=== IDLE DEPTHS STAT EXPORT ===',
+    '=== EVERDEEP IDLE STAT EXPORT ===',
     'Class: '+classKey+'  |  Level: '+hero.level+'  |  '+DIFFICULTY[difficulty].label+' Act '+(actIdx+1),
     '',
     '--- HERO STATS ---',
@@ -18963,9 +18963,9 @@ function exportSave() {
     saveGame(); saveBank();
     var dec = _decodeSave(localStorage.getItem(SAVE_KEY) || '');
     if (!dec.ok) { addLog('⚠ Nothing to export yet.', 'info'); return; }
-    var bundle = { fmt: 'epoch-bundle', v: SAVE_VERSION, cls: classKey, ts: Date.now(), save: dec.obj, bank: bank };
+    var bundle = { fmt: 'everdeep-bundle', v: SAVE_VERSION, cls: classKey, ts: Date.now(), save: dec.obj, bank: bank };
     var blob = _encodeSave(bundle);
-    var fn = 'epoch-' + classKey + '-slot' + (SAVE_SLOT + 1) + '-' + new Date().toISOString().slice(0, 10) + '.sav';
+    var fn = 'everdeep-' + classKey + '-slot' + (SAVE_SLOT + 1) + '-' + new Date().toISOString().slice(0, 10) + '.sav';
     _downloadText(fn, blob);
     try { if (navigator.clipboard) navigator.clipboard.writeText(blob); } catch (e) {}
     addLog('💾 Save exported → ' + fn + ' (also copied to clipboard).', 'level', 'event');
@@ -18984,14 +18984,14 @@ function _handleImportFile(ev) {
 function _confirmImport(str) {
   var dec = _decodeSave((str || '').trim());
   if (!dec.ok) {
-    alert(dec.tampered ? 'That save failed its integrity check — it was modified or corrupted.' : 'That doesn’t look like a valid Epoch save.');
+    alert(dec.tampered ? 'That save failed its integrity check — it was modified or corrupted.' : 'That doesn’t look like a valid Everdeep save.');
     return;
   }
   var b = dec.obj;
   var save, bnk = null, cls = classKey;
-  if (b && b.fmt === 'epoch-bundle' && b.save) { save = b.save; bnk = b.bank || null; cls = b.cls || classKey; }
+  if (b && b.fmt === 'everdeep-bundle' && b.save) { save = b.save; bnk = b.bank || null; cls = b.cls || classKey; }
   else if (b && b.hero) { save = b; }                 // bare class state
-  else { alert('That doesn’t look like a valid Epoch save.'); return; }
+  else { alert('That doesn’t look like a valid Everdeep save.'); return; }
   if (save.v !== SAVE_VERSION) { alert('That save is from a different game version and can’t be imported.'); return; }
   if (!confirm('Import this save? It will OVERWRITE your current ' + (cls.charAt(0).toUpperCase() + cls.slice(1)) + ' progress' + (bnk ? ' and shared bank' : '') + '. This cannot be undone.')) return;
   try {
@@ -19236,7 +19236,7 @@ function init() {
   logWrap = document.getElementById('log-wrap');
   var csBtn = document.getElementById('class-switch-btn');
   if (csBtn) csBtn.textContent = '⚔ ' + cls.name;
-  addLog('Welcome to Idle Depths.', 'zone');
+  addLog('Welcome to Everdeep Idle.', 'zone');
   addLog('The ' + cls.name + ' descends into darkness.', 'zone');
 
   // ── Drag & Drop: vault items → equipped panel or hero sprite ──
