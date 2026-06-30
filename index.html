@@ -1946,7 +1946,6 @@ var MOB_SPRITE_NOFLIP = {
   'Spore Tender':     true,
   'Brimstone Fiend':  true,
   'Pit Lurker':       true,
-  'Wrath Spawn':      true,
   'Immolated Thrall': true,
   'Plague Harbinger': true,
   'Act_2_boss':       true,
@@ -3928,6 +3927,14 @@ var LEVEL_CAP      = 50;
 var _gameClock      = Date.now();
 var _clockLastReal  = Date.now();
 var _lastClockDelta = 0;
+var _lastRealDelta  = 0;
+// ── Stall watchdog state ──
+var WATCHDOG_MS         = 30000;   // real ms of zero combat progress (outside pauses/menus) before auto-recover
+var WATCHDOG_DELVE_MS   = 120000;  // longer grace while delving (legit longer waits)
+var _watchdogOkAt       = Date.now();  // last time progress / a legit wait was observed
+var _watchdogLastHp     = null;        // last observed enemy hp (combat-progress probe)
+var _watchdogLastEnemy  = null;        // last observed enemy reference (new-spawn probe)
+var _watchdogLastTick   = Date.now();  // last tick wall-clock (to ignore tab-sleep gaps)
 function gameNow() { return _gameClock; }
 function _advanceClock() {
   var r = Date.now();
@@ -3935,6 +3942,7 @@ function _advanceClock() {
   _clockLastReal = r;
   if (dt < 0) dt = 0;
   else if (dt > 1000) dt = 1000;   // clamp after tab sleep so we don't dump a huge jump
+  _lastRealDelta  = Math.round(dt);
   _lastClockDelta = Math.round(dt * gameSpeed);
   _gameClock += _lastClockDelta;
 }
@@ -6942,7 +6950,7 @@ var _loopIntroPausedCombat = false;
 function showLoopIntro(context) {
   // context: 'kill' | 'boss-death' | 'mob-death'
   if (loopIntroSeen) return;
-  if (settingsHideHelpPopups) { loopIntroSeen = true; return; }
+  if (settingsHideHelpPopups) { loopIntroSeen = true; if (_loopIntroPendingShop) { _loopIntroPendingShop = false; openShop(); } return; }
   loopIntroSeen = true;
   var titleEl = document.getElementById('loop-intro-title');
   var subEl   = document.getElementById('loop-intro-sub');
@@ -6997,7 +7005,7 @@ function dismissGemIntro() {
 var _priorityIntroTimer = null;
 function showPriorityIntro() {
   if (itemPriorityIntroSeen) return;
-  if (settingsHideHelpPopups) { itemPriorityIntroSeen = true; return; }
+  if (settingsHideHelpPopups) { itemPriorityIntroSeen = true; if (_priorityIntroPendingShop) { _priorityIntroPendingShop = false; openShop(); } return; }
   itemPriorityIntroSeen = true;
   var overlay = document.getElementById('priority-intro-overlay');
   if (overlay) overlay.style.display = 'flex';
@@ -7031,7 +7039,7 @@ function dismissLoadoutIntro() {
 
 function showBountyIntro() {
   if (bountyIntroSeen) return;
-  if (settingsHideHelpPopups) { bountyIntroSeen = true; return; }
+  if (settingsHideHelpPopups) { bountyIntroSeen = true; if (_bountyIntroPendingShop) { _bountyIntroPendingShop = false; openShop(); } return; }
   bountyIntroSeen = true;
   var overlay = document.getElementById('bounty-intro-overlay');
   if (overlay) overlay.style.display = 'flex';
@@ -7660,7 +7668,7 @@ function toggleShopPause() {
 function openShop() {
   shopOpen = true;
   shopPaused = false;
-  shopAutoCloseAt = gameNow() + (settingsShopTimer || 15) * 1000;
+  shopAutoCloseAt = Date.now() + (settingsShopTimer || 15) * 1000;
   var stp = document.getElementById('shop-timer-panel');
   if (stp) stp.style.display = 'block';
   shopRerollCount = 0;
@@ -7762,7 +7770,7 @@ function renderShop() {
   var canAffordMf = hero.gold >= mfCost;
   var canAffordGamble = hero.gold >= gambleCost;
   var mfUsed = hero.shopUsedThisAct;
-  var secsLeft = Math.max(0, Math.ceil((shopAutoCloseAt - gameNow()) / 1000));
+  var secsLeft = Math.max(0, Math.ceil((shopAutoCloseAt - Date.now()) / 1000));
   var rarityColors = { normal:'#7a7a8a', magic:'#6fa3ef', rare:'#ffd700', unique:'#e57bf5' };
 
   var html = '<div class="overlay-title">Act Shop</div>'
@@ -18171,10 +18179,71 @@ function _fireCompanionActive(petId, petName, roll, rollPct, now) {
 }
 
 
+function _watchdogTick() {
+  var realNow = Date.now();
+  // Tab was backgrounded / asleep — don't count that gap toward a stall.
+  if (realNow - _watchdogLastTick > 5000) _watchdogOkAt = realNow;
+  _watchdogLastTick = realNow;
+
+  // Any legitimate wait keeps the timer fresh (pauses, menus, shops, death, bounty hunt, overlays).
+  var _ov = document.getElementById('overlay');
+  var _st = document.getElementById('skill-tree-overlay');
+  var _blocked = gamePaused || shopOpen || merchantOpen || dead || bountyActive
+    || bossLoopMenuOpen || farmLoopMenuOpen || enchantOverlayOpen
+    || (_ov && _ov.classList.contains('active'))
+    || (_st && _st.classList.contains('open'))
+    || (classKey === 'rogue'  && !hero.rogueSpec)
+    || (classKey === 'ranger' && !hero.rangerDiscipline);
+
+  if (_blocked) {
+    _watchdogOkAt = realNow;
+    _watchdogLastEnemy = enemy;
+    _watchdogLastHp = (enemy && isFinite(enemy.hp)) ? enemy.hp : null;
+    return;
+  }
+
+  // Active combat expected. Progress = a new enemy, or this enemy's HP changed.
+  var _progress = (enemy !== _watchdogLastEnemy)
+    || (enemy && isFinite(enemy.hp) && enemy.hp !== _watchdogLastHp);
+  if (_progress) {
+    _watchdogOkAt = realNow;
+    _watchdogLastEnemy = enemy;
+    _watchdogLastHp = (enemy && isFinite(enemy.hp)) ? enemy.hp : null;
+    return;
+  }
+
+  var _threshold = delveActive ? WATCHDOG_DELVE_MS : WATCHDOG_MS;
+  if (realNow - _watchdogOkAt > _threshold) {
+    _watchdogRecover();
+    _watchdogOkAt = realNow;
+    _watchdogLastEnemy = enemy;
+    _watchdogLastHp = (enemy && isFinite(enemy.hp)) ? enemy.hp : null;
+  }
+}
+
+function _watchdogRecover() {
+  addLog('⚠ Stall detected — recovering.', 'info');
+  // Clear the shop-pending intro flags (the known root-cause of this class of stall).
+  _loopIntroPendingShop = false;
+  _priorityIntroPendingShop = false;
+  _bountyIntroPendingShop = false;
+  if (!enemy || !isFinite(enemy.hp) || enemy.hp <= 0) {
+    // No valid live enemy (null or ghosted/NaN HP) — drop it and resume the spawn flow.
+    enemy = null;
+    spawnNextEnemy();
+  } else {
+    // Enemy is valid but the attack loop is frozen — nudge the combat timers.
+    var _n = gameNow();
+    heroNextAtk  = _n + heroAttackInterval();
+    enemyNextAtk = _n + (enemy.isBoss ? BOSS_MS : MOB_MS);
+  }
+}
+
 function _gameTick() {
     _advanceClock();
     _tickCounter++;
     var now = gameNow();
+    _watchdogTick();
 
     // HP regen — ticks once per second of real time, scaled by gameSpeed
     if (now - _lastRegenTick >= 1000) {
@@ -18252,8 +18321,8 @@ function _gameTick() {
 
     // Shop auto-close
     if (shopOpen) {
-      if (shopPaused || bountyActive || enchantOverlayOpen) shopAutoCloseAt += _lastClockDelta;
-      var _shopCdVal = (shopPaused || bountyActive || enchantOverlayOpen) ? (bountyActive ? '🏹' : (enchantOverlayOpen ? '🔮' : '⏸')) : Math.max(0, Math.ceil((shopAutoCloseAt - now) / 1000));
+      if (shopPaused || bountyActive || enchantOverlayOpen) shopAutoCloseAt += _lastRealDelta;
+      var _shopCdVal = (shopPaused || bountyActive || enchantOverlayOpen) ? (bountyActive ? '🏹' : (enchantOverlayOpen ? '🔮' : '⏸')) : Math.max(0, Math.ceil((shopAutoCloseAt - Date.now()) / 1000));
       var cd = document.getElementById('shop-countdown');
       if (cd) cd.textContent = _shopCdVal;
       var stpSec = document.getElementById('shop-timer-panel-sec');
@@ -18264,7 +18333,7 @@ function _gameTick() {
         stpBtn.style.borderColor = shopPaused ? '#c8a84b' : '#5a4a8a';
         stpBtn.style.color       = shopPaused ? '#c8a84b' : '#c8a0ff';
       }
-      if (!shopPaused && !bountyActive && now >= shopAutoCloseAt) {
+      if (!shopPaused && !bountyActive && Date.now() >= shopAutoCloseAt) {
         if (bountyAutoAccept && currentBounty && !bountyActive) {
           _maybeBountyAutoAccept();
         } else {
