@@ -4876,11 +4876,12 @@ function spawnNextEnemy(simNow) {
       addLog('🌾 Farm loop complete! ('+farmLoop.loopsRemaining+' remaining)', 'zone');
       if (farmLoop.loopsRemaining <= 0) {
         addLog('🌾 All farm loops done. Returning to normal progression.', 'zone');
+        var _fd = farmLoop.difficulty, _fa = farmLoop.actIdx;
         farmLoop = null;
         farmPackType = 'any';
         killCount = 0; bossSpawned = false; rarePack = false; rarePackRemaining = 0; enemy = null;
-        actIdx++;
-        if (actIdx >= ACTS.length) actIdx = 0;
+        difficulty = _fd;
+        actIdx = _fa;
         _carnageKills = 0; _mnemonicSkillId = null; _mnemonicBonus = false;
         hero._undyingVowUsed = false; hero._soulDebtActive = false; hero._soulDebtSecondDeath = false;
         // Signal loot review available — no pause, button flashes instead
