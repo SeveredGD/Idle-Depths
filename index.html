@@ -1243,6 +1243,15 @@
   </div>
 </div>
 
+<!-- Gamble Result Overlay -->
+<div id="gamble-result-overlay" style="display:none;position:fixed;inset:0;background:#000000bb;z-index:160;align-items:center;justify-content:center;">
+  <div style="background:#0c0814;border:1px solid #c8a84b;border-radius:4px;padding:20px 24px;width:300px;max-width:92vw;font-family:Georgia,serif;color:#d4c9a8;">
+    <div style="font-size:11px;color:#c8a84b;letter-spacing:1px;text-transform:uppercase;margin-bottom:12px;text-align:center;">🎲 Gamble Result</div>
+    <div id="gamble-result-content"></div>
+    <button class="overlay-btn" onclick="closeGambleResult()" style="margin-top:14px;width:100%;text-align:center;">OK</button>
+  </div>
+</div>
+
 <!-- Loop Feature Introduction Overlay (shown after first boss kill) -->
 <div id="loop-intro-overlay" style="display:none;position:fixed;inset:0;background:#000000cc;z-index:250;align-items:center;justify-content:center;">
   <div style="background:#0d0d18;border:1px solid #c8a84b66;border-radius:4px;padding:35px 40px;max-width:575px;width:90%;font-family:Georgia,serif;color:#d4c9a8;text-align:center;">
@@ -6374,7 +6383,7 @@ function enemyAttack(now) {
 
   // Boss enrage: damage increases over time (+10% per 30s, Nightmare/Hell only)
   if (enemy.isBoss && enemy.spawnTime && (difficulty !== 'normal' || ngPlusUnlocked)) {
-    var _enrageSecs = Math.floor((gameNow() - enemy.spawnTime) / 30000);
+    var _enrageSecs = _bossSpawnRealTime > 0 ? Math.floor((Date.now() - _bossSpawnRealTime) / 30000) : 0;
     if (_enrageSecs > 0) {
       var _enrageMult = 1 + _enrageSecs * 0.10;
       dmg = Math.round(dmg * _enrageMult);
@@ -7906,9 +7915,12 @@ function buyMfBuff() {
   renderShop();
 }
 
+var _gambleOverlayOpen = false;
+
 function buyGamble() {
-  if (hero.gold < 100) return;
-  hero.gold -= 100;
+  var _gambleCost = bossLoop ? 200 : 100;
+  if (hero.gold < _gambleCost) return;
+  hero.gold -= _gambleCost;
   var item = generateItem(false);
   // High Roller scheme: gamble rolls twice, keeps the better item
   if (classKey === 'rogue' && hero.activeScheme === 'lucky') {
@@ -7919,12 +7931,54 @@ function buyGamble() {
     }
   }
   var result = processLoot(item, true);
-  if (result !== 'discard') {
-    addLog('Gamble → '+item.name+' ('+result+')', 'loot '+item.rarity);
-  } else {
-    addLog('Gamble → '+item.name+' (no upgrade)', 'info');
-  }
+  addLog('🎲 Gamble → '+item.name+' ('+result+')', 'loot '+item.rarity);
+  showGambleResult(item, result);
   renderShop();
+}
+
+function showGambleResult(item, result) {
+  _gambleOverlayOpen = true;
+  var col = RARITY_COLORS[item.rarity] || '#d4c9a8';
+  var stats = item.stats || {};
+  var statDefs = [
+    { key:'mainDmg', label:'Dmg' }, { key:'mainSpd', label:'Spd' },
+    { key:'hp', label:'HP' }, { key:'mf', label:'MF' },
+    { key:'hpRegen', label:'HP Regen' }, { key:'reducedDmg', label:'Dmg Reduce' },
+    { key:'fireDmg', label:'Fire Dmg' }, { key:'lightDmg', label:'Lightning Dmg' },
+    { key:'coldDmg', label:'Cold Dmg' }, { key:'magicDmg', label:'Magic Dmg' },
+    { key:'critChance', label:'Crit Chance' }, { key:'aoeChance', label:'AoE Chance' },
+    { key:'blockChance', label:'Block' }, { key:'spellShield', label:'Spell Shield' },
+    { key:'xpGain', label:'XP Gain' }, { key:'goldFind', label:'Gold Find' },
+    { key:'castCooldown', label:'Cooldown Recovery' },
+  ];
+  var pctStats = { mf:1, fireDmg:1, lightDmg:1, coldDmg:1, magicDmg:1, critChance:1, aoeChance:1, blockChance:1, xpGain:1, goldFind:1 };
+  var html = '<div style="font-size:14px;color:'+col+';margin-bottom:3px;">'+item.name+'</div>';
+  html += '<div style="font-size:10px;color:#5a5a6a;margin-bottom:10px;">['+item.slot+' · '+item.rarity+']</div>';
+  if (item.skillBonus) html += '<div style="font-size:11px;color:#c878f0;margin-bottom:6px;">+'+item.skillBonus+' to '+item.skillName+'</div>';
+  if (item.allSkills)  html += '<div style="font-size:11px;color:#c878f0;margin-bottom:6px;">+'+item.allSkills+' to All Skills</div>';
+  for (var _gi = 0; _gi < statDefs.length; _gi++) {
+    var _gsd = statDefs[_gi];
+    var _gv = stats[_gsd.key];
+    if (!_gv) continue;
+    var _gsuffix = pctStats[_gsd.key] ? '%' : (_gsd.key === 'castCooldown' ? 'ms' : _gsd.key === 'hpRegen' ? '/s' : '');
+    html += '<div style="display:flex;justify-content:space-between;font-size:11px;color:#a0906a;margin-bottom:2px;"><span>'+_gsd.label+'</span><span style="color:#d4c9a8;">+'+(_gsd.key==='castCooldown'?'-':'')+_gv+_gsuffix+'</span></div>';
+  }
+  if (item.rarity === 'unique' && UNIQUE_PROC_DESCS && UNIQUE_PROC_DESCS[item.name]) {
+    html += '<div style="font-size:10px;color:#c8a0ff;margin-top:6px;font-style:italic;">&#9670; '+UNIQUE_PROC_DESCS[item.name]+'</div>';
+  }
+  var _gResColor = result === 'discard' ? '#5a5a6a' : result === 'equipped' ? '#7aaa5a' : '#c8a84b';
+  var _gResText  = result === 'discard' ? 'No upgrade — discarded' : result.charAt(0).toUpperCase() + result.slice(1);
+  html += '<div style="margin-top:10px;padding-top:8px;border-top:1px solid #2a2a3a;font-size:11px;color:'+_gResColor+';text-align:center;">'+_gResText+'</div>';
+  var _gel = document.getElementById('gamble-result-content');
+  if (_gel) _gel.innerHTML = html;
+  var _gov = document.getElementById('gamble-result-overlay');
+  if (_gov) _gov.style.display = 'flex';
+}
+
+function closeGambleResult() {
+  _gambleOverlayOpen = false;
+  var _gov = document.getElementById('gamble-result-overlay');
+  if (_gov) _gov.style.display = 'none';
 }
 
 function buyShardFromShop() {
@@ -18322,8 +18376,8 @@ function _gameTick() {
 
     // Shop auto-close
     if (shopOpen) {
-      if (shopPaused || bountyActive || enchantOverlayOpen) shopAutoCloseAt += _lastRealDelta;
-      var _shopCdVal = (shopPaused || bountyActive || enchantOverlayOpen) ? (bountyActive ? '🏹' : (enchantOverlayOpen ? '🔮' : '⏸')) : Math.max(0, Math.ceil((shopAutoCloseAt - Date.now()) / 1000));
+      if (shopPaused || bountyActive || enchantOverlayOpen || _gambleOverlayOpen) shopAutoCloseAt += _lastRealDelta;
+      var _shopCdVal = (shopPaused || bountyActive || enchantOverlayOpen || _gambleOverlayOpen) ? (bountyActive ? '🏹' : (enchantOverlayOpen ? '🔮' : (_gambleOverlayOpen ? '🎲' : '⏸'))) : Math.max(0, Math.ceil((shopAutoCloseAt - Date.now()) / 1000));
       var cd = document.getElementById('shop-countdown');
       if (cd) cd.textContent = _shopCdVal;
       var stpSec = document.getElementById('shop-timer-panel-sec');
