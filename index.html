@@ -100,7 +100,33 @@
     align-items: center;
     gap: 8px;
     flex-wrap: wrap;
+    position: relative;
   }
+  #act-dropdown {
+    display: none;
+    position: absolute;
+    z-index: 90;
+    min-width: 220px;
+    background: #0c0c16;
+    border: 1px solid #c8a84b66;
+    border-radius: 3px;
+    box-shadow: 0 6px 20px #000000cc;
+    padding: 4px;
+  }
+  .act-dd-title {
+    font-size: 10px; color: #c8a84b; letter-spacing: 1px; text-transform: uppercase;
+    padding: 4px 8px 6px; border-bottom: 1px solid #2a2a3a; margin-bottom: 4px;
+  }
+  .act-dd-item {
+    display: block; width: 100%; text-align: left;
+    padding: 5px 8px; margin: 1px 0;
+    border: 1px solid transparent; background: transparent;
+    color: #b0a890; font-family: Georgia, serif; font-size: 11px;
+    cursor: pointer; border-radius: 2px; transition: all 0.12s;
+  }
+  .act-dd-item:not(.locked):hover { background: #1a1510; border-color: #8a7a5a; color: #e8d8a8; }
+  .act-dd-item.current { color: #c8a84b; }
+  .act-dd-item.locked  { opacity: 0.35; cursor: not-allowed; }
   .diff-btn {
     padding: 3px 10px;
     border: 1px solid #2a2a3a;
@@ -416,8 +442,6 @@
   /* ── Enemy block ── */
   #enemy-block {
     padding: 10px 12px;
-    border-bottom: 1px solid #5a1a1a66;
-    box-shadow: 0 2px 10px #8b000033;
     min-height: 80px;
   }
   .enemy-name { font-size: 13px; color: #d4c9a8; margin-bottom: 4px; }
@@ -1404,11 +1428,12 @@
 <!-- Difficulty / act bar -->
 <div id="diffbar">
   <span style="font-size:11px;color:#5a5a6a;">Difficulty:</span>
-  <button class="diff-btn active" id="btn-normal"    onclick="selectDifficulty('normal')">Normal</button>
-  <button class="diff-btn locked" id="btn-nightmare" onclick="selectDifficulty('nightmare')">Nightmare</button>
-  <button class="diff-btn locked" id="btn-hell"      onclick="selectDifficulty('hell')">Hell</button>
+  <button class="diff-btn active" id="btn-normal"    onclick="toggleActDropdown('normal','btn-normal')">Normal ▾</button>
+  <button class="diff-btn locked" id="btn-nightmare" onclick="toggleActDropdown('nightmare','btn-nightmare')">Nightmare ▾</button>
+  <button class="diff-btn locked" id="btn-hell"      onclick="toggleActDropdown('hell','btn-hell')">Hell ▾</button>
   <span id="act-label"></span>
   <span id="diff-unlock-msg"></span>
+  <div id="act-dropdown"></div>
 </div>
 
 <!-- Main layout -->
@@ -1865,6 +1890,24 @@ var ACT_BG_ANIMATED = {
     json: _REPO + 'Background%20Animated/act_2_background_animated.json',
     key:  'bg-act2-anim',
     anim: 'bg-act2-anim-play'
+  },
+  3: {
+    png:  _REPO + 'Background%20Animated/act_3_background_animated.png',
+    json: _REPO + 'Background%20Animated/act_3_background_animated.json',
+    key:  'bg-act3-anim',
+    anim: 'bg-act3-anim-play'
+  },
+  4: {
+    png:  _REPO + 'Background%20Animated/act_4_background_animated.png',
+    json: _REPO + 'Background%20Animated/act_4_background_animated.json',
+    key:  'bg-act4-anim',
+    anim: 'bg-act4-anim-play'
+  },
+  5: {
+    png:  _REPO + 'Background%20Animated/act_5_background_animated.png',
+    json: _REPO + 'Background%20Animated/act_5_background_animated.json',
+    key:  'bg-act5-anim',
+    anim: 'bg-act5-anim-play'
   }
 };
 
@@ -1876,6 +1919,24 @@ var BOSS_SPRITES = {
   'Drakavos': _REPO + 'act_4_boss.png',
   'Zerath':   _REPO + 'act_5_boss.png'
 };
+
+// Animated boss attack sheets — keyed by the same partial boss name. When present,
+// the boss renders as a looping sprite-sheet animation instead of the static png above.
+var _MOBANIM = _REPO + 'mob_animations/';
+// flipX defaults to true (face left toward the hero). spellColor, when set, emits a
+// particle burst on each cast.
+var ANIMATED_BOSSES = {
+  'Koros':    { png: _MOBANIM + 'act_1_boss_attack.png',      json: _MOBANIM + 'act_1_boss_attack.json',      key: 'boss-koros-anim-2',  anim: 'boss-koros-anim-2-play', gooArc: 0x9ab83a },
+  'Skethrix': { png: _MOBANIM + 'act_2_boss_attack_2.png',    json: _MOBANIM + 'act_2_boss_attack_2.json',    key: 'boss-skethrix-anim-2', anim: 'boss-skethrix-anim-2-play', bloodSplash: true },
+  'Malachar': { png: _MOBANIM + 'act_3_boss_attack_2.png',    json: _MOBANIM + 'act_3_boss_attack_2.json',    key: 'boss-malachar-anim-2', anim: 'boss-malachar-anim-2-play', flipX: false, spellBeam: 0x44ee55 },
+  'Drakavos': { png: _MOBANIM + 'act_4_boss_attack_alt.png',  json: _MOBANIM + 'act_4_boss_attack_alt.json',  key: 'boss-drakavos-anim-alt', anim: 'boss-drakavos-anim-alt-play' },
+  'Zerath':   { png: _MOBANIM + 'act_5_boss_Attack.png',      json: _MOBANIM + 'act_5_boss_Attack.json',      key: 'boss-zerath-anim',   anim: 'boss-zerath-anim-play', flipX: false, spellArc: 0x7b53ba }
+};
+function _animatedBossCfg(name) {
+  if (!name) return null;
+  for (var bk in ANIMATED_BOSSES) { if (name.indexOf(bk) !== -1) return ANIMATED_BOSSES[bk]; }
+  return null;
+}
 
 // Mob sprites keyed by exact enemy name
 var MOB_SPRITES = {
@@ -5021,6 +5082,10 @@ function spawnNextEnemy(simNow) {
       hero._enemyMarked  = false;
       hero._enemyTrapped = 0;
     }
+    // Target-Boss guardians get a random mob sprite from the whole pool (fixed per guardian)
+    if (bossLoop && enemy && !enemy.isBoss) {
+      enemy._guardianSprite = _DELVE_SPRITE_POOL[ri(0, _DELVE_SPRITE_POOL.length - 1)];
+    }
     // Per-enemy unique resets
     hero._lastRiteUsed    = false;  // Last Rite: first-hit crit
     hero._martyrdomUsed   = false;  // Martyrdom Plate: per-combat proc
@@ -6352,6 +6417,10 @@ function enemyAttack(now) {
       return;
     }
   }
+
+  // Tiny forward lunge on every committed swing (frozen mobs returned above).
+  if (!enemy.isBoss) triggerEnemyLunge();  // mobs lunge; bosses use their attack animation instead
+  if (enemy.isBoss) triggerBossCast();     // play the boss attack animation on each swing
 
   // chill slow
   var _chillMult = 1 + (Math.min(enemy._chillStacks || 0, 10) * 0.05);
@@ -9574,8 +9643,73 @@ function doTopOff(silent) {
 function selectDifficulty(diff) {
   if (!unlockedDiffs[diff]) return;
   if (diff === difficulty) return;
+  jumpToAct(diff, 0);
+}
+
+// An act is reachable if it's Act 1 (always) or its boss has been unlocked in that difficulty.
+function _actUnlocked(diff, ai) {
+  return ai === 0 || !!unlockedBosses[diff + '-' + ai];
+}
+
+var _actDropdownDiff = null;
+function toggleActDropdown(diff, btnId) {
+  if (!unlockedDiffs[diff]) return;
+  var dd = document.getElementById('act-dropdown');
+  if (!dd) return;
+  // Clicking the same open dropdown closes it
+  if (_actDropdownDiff === diff && dd.style.display === 'block') { closeActDropdown(); return; }
+  _actDropdownDiff = diff;
+  var html = '<div class="act-dd-title">' + DIFFICULTY[diff].label + ' — choose an act</div>';
+  for (var ai = 0; ai < ACTS.length; ai++) {
+    var avail = _actUnlocked(diff, ai);
+    var isCurrent = (diff === difficulty && ai === actIdx);
+    html += '<button class="act-dd-item' + (isCurrent ? ' current' : '') + (avail ? '' : ' locked') + '" '
+      + (avail ? 'onclick="jumpToAct(\'' + diff + '\',' + ai + ')"' : 'disabled')
+      + '>Act ' + (ai + 1) + ' · ' + ACTS[ai].name
+      + (isCurrent ? ' ●' : '') + (avail ? '' : ' 🔒') + '</button>';
+  }
+  dd.innerHTML = html;
+  dd.style.display = 'block';
+  var btn = document.getElementById(btnId);
+  if (btn) {
+    dd.style.left = btn.offsetLeft + 'px';
+    dd.style.top  = (btn.offsetTop + btn.offsetHeight + 4) + 'px';
+  }
+}
+
+function closeActDropdown() {
+  var dd = document.getElementById('act-dropdown');
+  if (dd) dd.style.display = 'none';
+  _actDropdownDiff = null;
+}
+
+// Cancel any active farm/boss loop when leaving via the act dropdown, refunding only the
+// loops that haven't started yet — the loop currently in progress is forfeit (already begun).
+function _refundUnstartedLoops() {
+  if (bossLoop) {
+    var n = Math.max(0, bossLoop.loopsRemaining - 1);
+    var refund = n * BOSS_LOOP_COST;
+    if (refund > 0) { hero.gold += refund; addLog('[Refund] Boss loop cancelled. +'+refund+'g ('+n+' unstarted loop'+(n>1?'s':'')+' returned).', 'shop'); }
+    else addLog('🔁 Boss loop cancelled — current loop already in progress, no refund.', 'zone');
+  }
+  if (farmLoop) {
+    var costPerLoop = (farmLoop.packType && farmLoop.packType !== 'any') ? FARM_LOOP_COST * 2 : FARM_LOOP_COST;
+    var n2 = Math.max(0, farmLoop.loopsRemaining - 1);
+    var refund2 = n2 * costPerLoop;
+    if (refund2 > 0) { hero.gold += refund2; addLog('[Refund] Farm loop cancelled. +'+refund2+'g ('+n2+' unstarted loop'+(n2>1?'s':'')+' returned).', 'shop'); }
+    else addLog('🌾 Farm loop cancelled — current loop already in progress, no refund.', 'zone');
+  }
+}
+
+function jumpToAct(diff, ai) {
+  if (!unlockedDiffs[diff] || !_actUnlocked(diff, ai)) return;
+  closeActDropdown();
+  if (diff === difficulty && ai === actIdx && enemy && !dead) return; // already here
   difficulty = diff;
-  actIdx = 0;
+  actIdx = ai;
+  // Cancel any active loop, refunding the loops that haven't started yet
+  _refundUnstartedLoops();
+  farmLoop = null; bossLoop = null; farmPackType = 'any';
   killCount = 0;
   bossSpawned = false;
   rarePack = false;
@@ -9585,10 +9719,16 @@ function selectDifficulty(diff) {
   hero.hp = hero.maxHp;
   hero.rage = 0;
   hero.shopUsedThisAct = false; hero.topOffUsed = false;
-  // document.getElementById('respawn-bar').classList.remove('active'); // respawn bar removed
-  addLog('Entering '+DIFFICULTY[diff].label+'…', 'zone');
+  addLog('Entering ' + DIFFICULTY[diff].label + ' · Act ' + (ai + 1) + '…', 'zone');
   spawnNextEnemy();
 }
+
+// Close the act dropdown when clicking anywhere outside the difficulty bar
+document.addEventListener('click', function(e) {
+  if (_actDropdownDiff === null) return;
+  var bar = document.getElementById('diffbar');
+  if (bar && !bar.contains(e.target)) closeActDropdown();
+}, true);
 
 // ═══════════════════════════════════════════════════
 // SKILL TREE
@@ -13269,6 +13409,7 @@ var CombatScene = new Phaser.Class({
     // ── Enemy sprite / silhouette ──
     this.enemyGfx  = this.add.graphics().setDepth(3);
     this.enemyImg  = null;
+    this.bossAnimSprite = null;
     this._drawEnemySilhouette();
 
     // ── Boss aura ──
@@ -13297,6 +13438,7 @@ var CombatScene = new Phaser.Class({
       if (_pScene.heroImg)  _pScene.heroImg.setPosition(HERO_X, GROUND_Y + (_pScene._heroYOff || 0));
       if (_pScene.rangerAnimSprite) _pScene.rangerAnimSprite.setPosition(HERO_X, GROUND_Y);
       if (_pScene.enemyImg) _pScene.enemyImg.setPosition(ENEMY_X, GROUND_Y + (_pScene._enemyYOff||0));
+      if (_pScene.bossAnimSprite) _pScene.bossAnimSprite.setPosition(ENEMY_X, GROUND_Y);
 
       if (_pScene._groundGfx) {
         _pScene._groundGfx.clear();
@@ -14607,9 +14749,10 @@ var CombatScene = new Phaser.Class({
   setBackgroundAnimated: function(cfg) {
     var self = this;
     var key = cfg.key, animKey = cfg.anim;
-    // Already playing or loading — don't restart
-    if (this._bgAnimLoading) return;
-    if (this.bgAnimSprite && this.bgAnimSprite.visible && this.bgAnimSprite.anims.isPlaying) return;
+    // Skip only if THIS exact animation is already playing — a different act must still switch.
+    if (this._bgAnimLoading === animKey) return;
+    if (this.bgAnimSprite && this.bgAnimSprite.visible && this.bgAnimSprite.anims.isPlaying
+        && this._bgAnimCurrent === animKey) return;
     if (this.bgImg) this.bgImg.setVisible(false);
     if (this.textures.exists(key)) {
       if (!self.bgAnimSprite) {
@@ -14617,11 +14760,11 @@ var CombatScene = new Phaser.Class({
       } else {
         self.bgAnimSprite.setVisible(true);
       }
+      if (self.anims.exists(animKey)) { self.bgAnimSprite.play(animKey); self._bgAnimCurrent = animKey; }
       self._setBgSize();
-      if (self.anims.exists(animKey)) self.bgAnimSprite.play(animKey);
       return;
     }
-    self._bgAnimLoading = true;
+    self._bgAnimLoading = animKey;
     var xhr = new XMLHttpRequest();
     xhr.open('GET', cfg.json);
     xhr.onload = function() {
@@ -14633,7 +14776,7 @@ var CombatScene = new Phaser.Class({
         var img = new Image();
         img.crossOrigin = 'anonymous';
         img.onload = function() {
-          self._bgAnimLoading = false;
+          self._bgAnimLoading = null;
           var cols = Math.floor(img.width / fw);
           var rows = Math.floor(img.height / fh);
           var frameCount = cols * rows - 1; // drop last frame (blank padding)
@@ -14653,14 +14796,15 @@ var CombatScene = new Phaser.Class({
           } else {
             self.bgAnimSprite.setVisible(true);
           }
-          self._setBgSize();
           self.bgAnimSprite.play(animKey);
+          self._bgAnimCurrent = animKey;
+          self._setBgSize();
         };
-        img.onerror = function() { self._bgAnimLoading = false; };
+        img.onerror = function() { self._bgAnimLoading = null; };
         img.src = cfg.png;
-      } catch(e) { self._bgAnimLoading = false; console.warn('BG anim load error', e); }
+      } catch(e) { self._bgAnimLoading = null; console.warn('BG anim load error', e); }
     };
-    xhr.onerror = function() { self._bgAnimLoading = false; };
+    xhr.onerror = function() { self._bgAnimLoading = null; };
     xhr.send();
   },
   setBackground: function(url) {
@@ -14689,6 +14833,16 @@ var CombatScene = new Phaser.Class({
     if (this._ngMobColor) {
       this._ngParticleTimer = this.time.addEvent({ delay: 400, loop: true, callback: this._spawnNgParticle, callbackScope: this });
     }
+
+    // Animated boss attack sheet takes precedence over the static boss png
+    var _bossAnimCfg = isBoss ? _animatedBossCfg(enemyName) : null;
+    if (_bossAnimCfg) {
+      this._showBossAnimated(_bossAnimCfg, enemyName);
+      if (isBoss) { this.cameras.main.shake(400, 0.012); this.cameras.main.flash(300, 80, 0, 0); }
+      return;
+    }
+    // Not an animated boss — make sure any boss animation is hidden before showing the static sprite
+    if (this.bossAnimSprite) this.bossAnimSprite.setVisible(false);
 
     if (spriteUrl) {
       // Key by URL tail to avoid stale name-based cache collisions
@@ -14744,8 +14898,324 @@ var CombatScene = new Phaser.Class({
     }
   },
 
+  // Render a boss from its attack sprite sheet. Builds two animations: a slow looping
+  // idle (frames 0-1) shown at rest, and a play-once attack (full start→end range, with
+  // trailing blank padding frames excluded) fired by bossCast() on each swing.
+  _showBossAnimated: function(cfg, enemyName) {
+    var self = this;
+    if (this.enemyImg) this.enemyImg.setVisible(false);
+    this.enemyGfx.clear();
+    this._enemyYOff = 0;
+
+    var flipX = (cfg.flipX != null) ? cfg.flipX : true; // default: face left toward the hero
+    var targetH = ngPlusUnlocked ? 370 : 300;
+    var idleKey = cfg.anim + '-idle';
+
+    var place = function() {
+      var frameH = self.textures.get(cfg.key).get(0).height || 192;
+      var scale = targetH / frameH;
+      if (!self.bossAnimSprite) {
+        self.bossAnimSprite = self.add.sprite(ENEMY_X, GROUND_Y, cfg.key).setOrigin(0.5, 1).setDepth(3);
+      }
+      self.bossAnimSprite.setTexture(cfg.key).setScale(scale).setFlipX(flipX)
+        .setPosition(ENEMY_X, GROUND_Y).setVisible(true).setAlpha(0);
+      self._bossAnimCfgCurrent = cfg;
+      self._bossCasting = false;
+      if (self.anims.exists(idleKey))      self.bossAnimSprite.play(idleKey);
+      else if (self.anims.exists(cfg.anim)) self.bossAnimSprite.play(cfg.anim);
+      self.tweens.add({ targets: self.bossAnimSprite, alpha: 1, duration: 300 });
+      // Boss drop shadow
+      self._groundGfx.clear();
+      self._groundGfx.fillStyle(0x000000, 0.5);
+      self._groundGfx.fillEllipse(HERO_X,  GROUND_Y + 10, 60, 12);
+      self._groundGfx.fillEllipse(ENEMY_X, GROUND_Y + 10, 120, 18);
+    };
+
+    if (this.textures.exists(cfg.key) && this.anims.exists(cfg.anim)) { place(); return; }
+    if (this._bossAnimLoading === cfg.key) return;
+    this._bossAnimLoading = cfg.key;
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', cfg.json);
+    xhr.onload = function() {
+      try {
+        var data = JSON.parse(xhr.responseText);
+        var fw = data.frameWidth, fh = data.frameHeight;
+        var da = data.defaultAnimation || {};
+        var fps = da.fps || 30;
+        var startF = (da.start != null) ? da.start : 0;
+        var endF   = (da.end != null) ? da.end : 0;
+        var img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.onload = function() {
+          self._bossAnimLoading = null;
+          if (!self.textures.exists(cfg.key)) {
+            self.textures.addSpriteSheet(cfg.key, img, { frameWidth: fw, frameHeight: fh });
+          }
+          // Idle: first two frames, slow gentle loop (yoyo so 0→1→0)
+          if (!self.anims.exists(idleKey)) {
+            self.anims.create({
+              key: idleKey,
+              frames: self.anims.generateFrameNumbers(cfg.key, { start: startF, end: Math.min(startF + 1, endF) }),
+              frameRate: 2.5, repeat: -1, yoyo: true
+            });
+          }
+          // Attack: full range, play once, slower than the sheet's native fps
+          if (!self.anims.exists(cfg.anim)) {
+            self.anims.create({
+              key: cfg.anim,
+              frames: self.anims.generateFrameNumbers(cfg.key, { start: startF, end: endF }),
+              frameRate: Math.max(12, Math.round(fps * 0.6)),
+              repeat: 0
+            });
+          }
+          place();
+        };
+        img.onerror = function() { self._bossAnimLoading = null; };
+        img.src = cfg.png;
+      } catch(e) { self._bossAnimLoading = null; console.warn('Boss anim load error', e); }
+    };
+    xhr.onerror = function() { self._bossAnimLoading = null; };
+    xhr.send();
+  },
+
+  // Play the boss's attack animation once, then return to idle. Fired on each boss swing.
+  bossCast: function() {
+    var spr = this.bossAnimSprite;
+    var cfg = this._bossAnimCfgCurrent;
+    if (!spr || !spr.visible || !cfg || this._bossCasting) return;
+    if (!this.anims.exists(cfg.anim)) return;
+    var self = this;
+    this._bossCasting = true;
+    var idleKey = cfg.anim + '-idle';
+    spr.play(cfg.anim);
+
+    // Projectile effects release on a specific animation frame (the "throw"/"cast" frame).
+    // Splash effects with no configured frame fire immediately at cast start.
+    var releases = [];
+    if (cfg.spellBeam) releases.push({ frame: (cfg.beamFrame != null ? cfg.beamFrame : 32), fn: function() { self._bossSpellBeam(cfg.spellBeam); } });
+    if (cfg.gooArc)    releases.push({ frame: (cfg.gooFrame  != null ? cfg.gooFrame  : 20), fn: function() { self._bossGooArc(cfg.gooArc); } });
+    if (cfg.spellArc && cfg.arcFrame != null) releases.push({ frame: cfg.arcFrame, fn: function() { self._bossSpellArc(cfg.spellArc); } });
+
+    // Immediate (non-frame-gated) effects
+    if (cfg.spellColor) this._bossSpellBurst(cfg.spellColor);
+    if (cfg.spellArc && cfg.arcFrame == null) this._bossSpellArc(cfg.spellArc);
+    if (cfg.bloodSplash) this._bossBloodSplash();
+
+    var onFrame = null;
+    if (releases.length) {
+      onFrame = function(anim, frame) {
+        var idx = parseInt(frame.frame.name, 10);
+        for (var i = 0; i < releases.length; i++) {
+          if (!releases[i].fired && idx >= releases[i].frame) {
+            releases[i].fired = true;
+            releases[i].fn();
+          }
+        }
+      };
+      spr.on('animationupdate', onFrame);
+    }
+    spr.once('animationcomplete-' + cfg.anim, function() {
+      self._bossCasting = false;
+      if (onFrame) spr.off('animationupdate', onFrame);
+      if (self.bossAnimSprite && self.bossAnimSprite.visible) {
+        if (self.anims.exists(idleKey)) self.bossAnimSprite.play(idleKey);
+      }
+    });
+  },
+
+  // Glowing beam that arcs from the boss to the hero on a cast, with an impact spark burst.
+  _bossSpellBeam: function(color) {
+    var self = this;
+    var dir  = (HERO_X <= ENEMY_X) ? -1 : 1;  // toward the hero
+    var sx = ENEMY_X + dir * 50;              // launch point in front of the boss
+    var sy = GROUND_Y - (ngPlusUnlocked ? 200 : 165);
+    var tx = HERO_X - dir * 6;                // land on the hero
+    var ty = GROUND_Y - 80;
+    var midX = (sx + tx) / 2;
+    var peak = Math.min(sy, ty) - 130;        // arc apex above the path
+    // Sample the quadratic bezier into a flat [x0,y0,x1,y1,...] point list
+    var N = 26, pts = [];
+    for (var i = 0; i <= N; i++) {
+      var t = i / N, inv = 1 - t;
+      pts.push(inv*inv*sx + 2*inv*t*midX + t*t*tx);
+      pts.push(inv*inv*sy + 2*inv*t*peak + t*t*ty);
+    }
+    var g = self.add.graphics().setDepth(7);
+    // Layered strokes: wide soft glow → mid → bright core
+    var passes = [[26, color, 0.16], [14, color, 0.4], [6, 0xc8ffd0, 0.95]];
+    for (var p = 0; p < passes.length; p++) {
+      g.lineStyle(passes[p][0], passes[p][1], passes[p][2]);
+      g.beginPath();
+      g.moveTo(pts[0], pts[1]);
+      for (var k = 2; k < pts.length; k += 2) g.lineTo(pts[k], pts[k+1]);
+      g.strokePath();
+    }
+    // Impact spark burst where the beam meets the hero
+    var ix = pts[pts.length - 2], iy = pts[pts.length - 1];
+    for (var b = 0; b < 10; b++) {
+      (function() {
+        var a  = Math.random() * Math.PI * 2, d = 8 + Math.random() * 26;
+        var sp = self.add.circle(ix, iy, 2 + Math.random() * 3, color, 0.9).setDepth(7);
+        self.tweens.add({
+          targets: sp, x: ix + Math.cos(a) * d, y: iy + Math.sin(a) * d, alpha: 0,
+          duration: 220 + Math.random() * 180, ease: 'Quad.easeOut',
+          onComplete: function() { sp.destroy(); }
+        });
+      })();
+    }
+    // Fade the whole beam out
+    self.tweens.add({ targets: g, alpha: 0, duration: 280, ease: 'Quad.easeIn',
+      onComplete: function() { g.destroy(); } });
+  },
+
+  // A single goo blob lobbed in an arc to the hero; splatters into droplets + a puddle on impact.
+  _bossGooArc: function(color) {
+    var self = this;
+    var dir  = (HERO_X <= ENEMY_X) ? -1 : 1;  // toward the hero
+    var sx = ENEMY_X + dir * 50;
+    var sy = GROUND_Y - (ngPlusUnlocked ? 175 : 145);
+    var tx = HERO_X - dir * 6;
+    var ty = GROUND_Y - 70;
+    var midX = (sx + tx) / 2 + Phaser.Math.Between(-15, 15);
+    var peak = Math.min(sy, ty) - Phaser.Math.Between(110, 155);
+    // Blobby projectile: a few overlapping circles in a container
+    var blob = self.add.container(sx, sy).setDepth(7);
+    blob.add([
+      self.add.circle(0, 0, 11, color, 0.95),
+      self.add.circle(5, 3, 7, color, 0.85),
+      self.add.circle(-5, 4, 6, color, 0.80)
+    ]);
+    var o = { t: 0 };
+    self.tweens.add({
+      targets: o, t: 1, duration: 540, ease: 'Sine.easeIn',
+      onUpdate: function() {
+        var t = o.t, inv = 1 - t;
+        blob.x = inv*inv*sx + 2*inv*t*midX + t*t*tx;
+        blob.y = inv*inv*sy + 2*inv*t*peak + t*t*ty;
+        blob.rotation += 0.18;
+      },
+      onComplete: function() {
+        var ix = blob.x, iy = blob.y;
+        blob.destroy();
+        // Splatter droplets flung outward, pulled down by gravity
+        for (var i = 0; i < 14; i++) {
+          (function() {
+            var a = (-Math.PI / 2) + (Math.random() - 0.5) * Math.PI * 1.2;
+            var d = 12 + Math.random() * 34;
+            var sp = self.add.circle(ix, iy, 2 + Math.random() * 5, color, 0.9).setDepth(7);
+            self.tweens.add({
+              targets: sp,
+              x: ix + Math.cos(a) * d,
+              y: iy + Math.sin(a) * d + 22,
+              alpha: 0, scaleX: 0.3, scaleY: 0.3,
+              duration: 280 + Math.random() * 220, ease: 'Quad.easeIn',
+              onComplete: function() { sp.destroy(); }
+            });
+          })();
+        }
+        // Lingering goo puddle on the ground that fades
+        var puddle = self.add.ellipse(ix, GROUND_Y - 2, 42, 11, color, 0.5).setDepth(6);
+        self.tweens.add({ targets: puddle, alpha: 0, scaleX: 1.3, duration: 650,
+          onComplete: function() { puddle.destroy(); } });
+      }
+    });
+  },
+
+  // Volley of spell particles that arc from the boss across to the hero (quadratic bezier).
+  _bossSpellArc: function(color) {
+    var self = this;
+    var dir  = (HERO_X <= ENEMY_X) ? -1 : 1;  // toward the hero (always), independent of sprite flip
+    var sx = ENEMY_X + dir * 50;              // launch point in front of the boss
+    var sy = GROUND_Y - (ngPlusUnlocked ? 200 : 165);
+    var tx = HERO_X - dir * 6;                // land on the hero
+    var ty = GROUND_Y - 80;
+    for (var i = 0; i < 12; i++) {
+      (function(idx) {
+        self.time.delayedCall(idx * 40, function() {
+          if (!self.scene || !self.scene.isActive() || !self.bossAnimSprite || !self.bossAnimSprite.visible) return;
+          var jtx  = tx + Phaser.Math.Between(-18, 18);
+          var jty  = ty + Phaser.Math.Between(-22, 18);
+          var midX = (sx + jtx) / 2 + Phaser.Math.Between(-20, 20);
+          var peak = Math.min(sy, jty) - Phaser.Math.Between(90, 150);  // arc apex
+          var p    = self.add.circle(sx, sy, Phaser.Math.Between(4, 8), color, 0.9).setDepth(6);
+          var o    = { t: 0 };
+          self.tweens.add({
+            targets: o, t: 1, duration: Phaser.Math.Between(380, 540), ease: 'Sine.easeIn',
+            onUpdate: function() {
+              var t = o.t, inv = 1 - t;
+              p.setPosition(
+                inv*inv*sx + 2*inv*t*midX + t*t*jtx,
+                inv*inv*sy + 2*inv*t*peak + t*t*jty
+              );
+            },
+            onComplete: function() {
+              self.tweens.add({ targets: p, alpha: 0, scaleX: 0.2, scaleY: 0.2, duration: 160,
+                onComplete: function() { p.destroy(); } });
+            }
+          });
+        });
+      })(i);
+    }
+  },
+
+  // Blood splash in front of the boss — droplets fly out toward the hero and fall to the ground.
+  _bossBloodSplash: function() {
+    var self = this;
+    var dir  = (HERO_X <= ENEMY_X) ? -1 : 1;  // toward the hero (always), independent of sprite flip
+    var ox   = ENEMY_X + dir * 55;            // in front of the boss
+    var oy   = GROUND_Y - (ngPlusUnlocked ? 150 : 120);
+    var colors = [0x8a0303, 0xb01010, 0x6a0202, 0xcc1c1c];
+    for (var i = 0; i < 22; i++) {
+      (function() {
+        var c  = colors[Phaser.Math.Between(0, colors.length - 1)];
+        var px = ox + Phaser.Math.Between(-14, 14);
+        var py = oy + Phaser.Math.Between(-20, 20);
+        var p  = self.add.circle(px, py, Phaser.Math.Between(2, 7), c, Phaser.Math.FloatBetween(0.7, 0.95)).setDepth(6);
+        self.tweens.add({
+          targets: p,
+          x: px + dir * Phaser.Math.Between(20, 95),
+          y: GROUND_Y - Phaser.Math.Between(0, 28),   // splatter falls to the ground
+          alpha: 0,
+          scaleX: 0.3, scaleY: 0.3,
+          duration: Phaser.Math.Between(350, 700),
+          ease: 'Quad.easeIn',                        // accelerating fall, like gravity
+          onComplete: function() { p.destroy(); }
+        });
+      })();
+    }
+  },
+
+  // Burst of colored spell particles in front of a casting boss, drifting toward the hero.
+  _bossSpellBurst: function(color) {
+    var self = this;
+    var flip = this.bossAnimSprite ? this.bossAnimSprite.flipX : true;
+    var dir  = flip ? -1 : 1;                 // toward the hero
+    var ox   = ENEMY_X + dir * 50;            // out in front of the boss
+    var oy   = GROUND_Y - (ngPlusUnlocked ? 200 : 165);
+    for (var i = 0; i < 22; i++) {
+      (function() {
+        var px = ox + Phaser.Math.Between(-28, 28);
+        var py = oy + Phaser.Math.Between(-40, 40);
+        var r  = Phaser.Math.Between(3, 9);
+        var p  = self.add.circle(px, py, r, color, Phaser.Math.FloatBetween(0.55, 0.9)).setDepth(5);
+        self.tweens.add({
+          targets: p,
+          x: px + dir * Phaser.Math.Between(40, 130),
+          y: py + Phaser.Math.Between(-30, 40),
+          alpha: 0,
+          scaleX: 0.2, scaleY: 0.2,
+          duration: Phaser.Math.Between(450, 950),
+          ease: 'Quad.easeOut',
+          onComplete: function() { p.destroy(); }
+        });
+      })();
+    }
+  },
+
   hideEnemy: function() {
     if (this.enemyImg) this.enemyImg.setVisible(false);
+    if (this.bossAnimSprite) this.bossAnimSprite.setVisible(false);
+    this._bossCasting = false;
     this.enemyGfx.clear();
     this.bossAura.clear();
     this._bossAuraPulse = false;
@@ -14758,6 +15228,27 @@ var CombatScene = new Phaser.Class({
     var flash = this.add.circle(HERO_X, GROUND_Y-80, 40, c, 0.55).setDepth(10);
     this.tweens.add({ targets: flash, scaleX: 2, scaleY: 2, alpha: 0, duration: 220,
       ease: 'Quad.easeOut', onComplete: function() { flash.destroy(); } });
+  },
+
+  // Tiny forward lunge/hop on each enemy swing — placeholder "life" until each mob
+  // gets a real attack animation. Moves the sprite toward the hero (left) and back.
+  enemyLunge: function() {
+    var img = (this.bossAnimSprite && this.bossAnimSprite.visible) ? this.bossAnimSprite : this.enemyImg;
+    if (!img || !img.visible || this._enemyLungeActive) return;
+    var baseX = ENEMY_X;
+    var baseY = GROUND_Y + (this._enemyYOff || 0);
+    img.x = baseX; img.y = baseY;
+    this._enemyLungeActive = true;
+    var self = this;
+    this.tweens.add({
+      targets: img,
+      x: baseX - 14,   // hero is to the left, so lunge left
+      y: baseY - 8,    // slight hop for a "jump forward" feel
+      duration: 100,
+      ease: 'Quad.easeOut',
+      yoyo: true,
+      onComplete: function() { img.x = baseX; img.y = baseY; self._enemyLungeActive = false; }
+    });
   },
 
   spawnFloatText: function(x, y, text, hexColor, isCrit) {
@@ -16440,7 +16931,7 @@ var CombatScene = new Phaser.Class({
       onComplete: function() { skull.destroy(); }
     });
 
-    if (!isHero) { if (this.enemyImg) this.enemyImg.setVisible(false); this.enemyGfx.clear(); }
+    if (!isHero) { if (this.enemyImg) this.enemyImg.setVisible(false); if (this.bossAnimSprite) this.bossAnimSprite.setVisible(false); this._bossCasting = false; this.enemyGfx.clear(); }
   },
 
   refreshHero: function() {
@@ -16654,6 +17145,8 @@ function _updateEnemyScene() {
     var _bHash = 0;
     for (var _bi = 0; _bi < (enemy.name || '').length; _bi++) _bHash += enemy.name.charCodeAt(_bi);
     spriteUrl = BOUNTY_SPRITES[_bHash % BOUNTY_SPRITES.length];
+  } else if (enemy._guardianSprite) {
+    spriteUrl = enemy._guardianSprite;
   } else if (enemy._delveSprite) {
     spriteUrl = enemy._delveSprite;
   } else {
@@ -16762,6 +17255,14 @@ function triggerItemDropAnim(rarity) {
 
 function triggerEnemyHitAnim() {
   if (_pScene && !settingsReduceAnims) _pScene.flashHero('#c0392b');
+}
+
+function triggerEnemyLunge() {
+  if (_pScene && !settingsReduceAnims) _pScene.enemyLunge();
+}
+
+function triggerBossCast() {
+  if (_pScene && !settingsReduceAnims) _pScene.bossCast();
 }
 
 function triggerStatusFlash(color) {
