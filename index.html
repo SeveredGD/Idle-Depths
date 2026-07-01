@@ -1,37 +1,4 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Everdeep Idle</title>
-<script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser.min.js"></script>
-<style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
 
-  /* Remove 300ms tap delay on all interactive elements */
-  a, button, input, select, textarea, [onclick] { touch-action: manipulation; }
-  [onclick] { cursor: pointer; }
-
-  body {
-    background: #0a0a0f url('https://severedgd.github.io/gamesprites/full-screen-background.png') center center / cover fixed;
-    color: #d4c9a8;
-    font-family: Georgia, 'Times New Roman', serif;
-    font-size: 13px;
-    height: 100vh;
-    height: calc(var(--vh, 1vh) * 100);
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-  }
-
-  #phaser-container canvas {
-    width: 100% !important;
-    height: 100% !important;
-  }
-  #topbar {
-    background: rgba(6,6,10,0.55);
-    border-bottom: 2px solid #c8a84b66;
-    box-shadow: 0 2px 12px #c8a84b22;
     padding: 8px 14px;
     display: flex;
     align-items: center;
@@ -1484,7 +1451,7 @@
 </div>
 
 
-  <span class="game-title">EVERDEEP IDLE <span style="font-size:13px;letter-spacing:1px;opacity:0.6;">v1.1.4</span></span>
+  <span class="game-title">EVERDEEP IDLE <span style="font-size:13px;letter-spacing:1px;opacity:0.6;">v1.1.10</span></span>
 </div>
 
 <!-- Difficulty / act bar -->
@@ -3311,6 +3278,113 @@ var ITEMS_CSV = [
 'named,boots,all,Gravebound Greaves,,,,,,,,,,,,,,,,,,',
 'named,boots,all,Voidwalker Boots,,,,,,,,,,,,,,,,,,',
 'named,boots,all,Pale March Greaves,,,,,,,,,,,,,,,,,,',
+// ── Expanded rare names (batch 2) ──
+'named,weapon,sorceress,Glasspyre Wand,,,,,,,,,,,,,,,,,,',
+'named,weapon,sorceress,Runeshard Staff,,,,,,,,,,,,,,,,,,',
+'named,weapon,sorceress,Frostquill Rod,,,,,,,,,,,,,,,,,,',
+'named,weapon,sorceress,Stormglass Scepter,,,,,,,,,,,,,,,,,,',
+'named,weapon,sorceress,Cindercore Focus,,,,,,,,,,,,,,,,,,',
+'named,weapon,sorceress,Hollowlight Staff,,,,,,,,,,,,,,,,,,',
+'named,weapon,sorceress,Nethervein Wand,,,,,,,,,,,,,,,,,,',
+'named,weapon,sorceress,Arclight Rod,,,,,,,,,,,,,,,,,,',
+'named,weapon,sorceress,Duskflame Scepter,,,,,,,,,,,,,,,,,,',
+'named,weapon,sorceress,Whisperbone Staff,,,,,,,,,,,,,,,,,,',
+'named,weapon,warrior,Ironmaw Greatsword,,,,,,,,,,,,,,,,,,',
+'named,weapon,warrior,Sundercleave Axe,,,,,,,,,,,,,,,,,,',
+'named,weapon,warrior,Skullrend Maul,,,,,,,,,,,,,,,,,,',
+'named,weapon,warrior,Bloodforge Blade,,,,,,,,,,,,,,,,,,',
+'named,weapon,warrior,Gravehewn Hammer,,,,,,,,,,,,,,,,,,',
+'named,weapon,warrior,Rimeshard Broadsword,,,,,,,,,,,,,,,,,,',
+'named,weapon,warrior,Ashborne Cleaver,,,,,,,,,,,,,,,,,,',
+'named,weapon,warrior,Warbrand Zweihander,,,,,,,,,,,,,,,,,,',
+'named,weapon,warrior,Ruststorm Flail,,,,,,,,,,,,,,,,,,',
+'named,weapon,warrior,Doomhewn Axe,,,,,,,,,,,,,,,,,,',
+'named,weapon,rogue,Venomkiss Dagger,,,,,,,,,,,,,,,,,,',
+'named,weapon,rogue,Shadowfang Blade,,,,,,,,,,,,,,,,,,',
+'named,weapon,rogue,Nightcarver Dirk,,,,,,,,,,,,,,,,,,',
+'named,weapon,rogue,Silentedge Kris,,,,,,,,,,,,,,,,,,',
+'named,weapon,rogue,Gutterfang Knife,,,,,,,,,,,,,,,,,,',
+'named,weapon,rogue,Whisperthorn Stiletto,,,,,,,,,,,,,,,,,,',
+'named,weapon,rogue,Duskbite Dagger,,,,,,,,,,,,,,,,,,',
+'named,weapon,rogue,Ripcoil Blade,,,,,,,,,,,,,,,,,,',
+'named,weapon,rogue,Cinderfang Dirk,,,,,,,,,,,,,,,,,,',
+'named,weapon,rogue,Hollowpoint Kris,,,,,,,,,,,,,,,,,,',
+'named,weapon,ranger,Windpiercer Bow,,,,,,,,,,,,,,,,,,',
+'named,weapon,ranger,Thornstring Longbow,,,,,,,,,,,,,,,,,,',
+'named,weapon,ranger,Hawkfeather Recurve,,,,,,,,,,,,,,,,,,',
+'named,weapon,ranger,Gloomshot Bow,,,,,,,,,,,,,,,,,,',
+'named,weapon,ranger,Verdant Arc,,,,,,,,,,,,,,,,,,',
+'named,weapon,ranger,Emberstring Bow,,,,,,,,,,,,,,,,,,',
+'named,weapon,ranger,Falconeye Longbow,,,,,,,,,,,,,,,,,,',
+'named,weapon,ranger,Wraithdraw Recurve,,,,,,,,,,,,,,,,,,',
+'named,weapon,ranger,Barkbite Bow,,,,,,,,,,,,,,,,,,',
+'named,weapon,ranger,Sunspine Arc,,,,,,,,,,,,,,,,,,',
+'named,armor,sorceress,Runescribed Robe,,,,,,,,,,,,,,,,,,',
+'named,armor,sorceress,Frostloom Vestment,,,,,,,,,,,,,,,,,,',
+'named,armor,sorceress,Cindersilk Mantle,,,,,,,,,,,,,,,,,,',
+'named,armor,sorceress,Hollowweave Shroud,,,,,,,,,,,,,,,,,,',
+'named,armor,sorceress,Starlace Cassock,,,,,,,,,,,,,,,,,,',
+'named,armor,sorceress,Duskthread Wrappings,,,,,,,,,,,,,,,,,,',
+'named,armor,warrior,Grimhold Plate,,,,,,,,,,,,,,,,,,',
+'named,armor,warrior,Ironwake Cuirass,,,,,,,,,,,,,,,,,,',
+'named,armor,warrior,Bloodbarrow Hauberk,,,,,,,,,,,,,,,,,,',
+'named,armor,warrior,Ashforged Mail,,,,,,,,,,,,,,,,,,',
+'named,armor,warrior,Bulwark Warplate,,,,,,,,,,,,,,,,,,',
+'named,armor,warrior,Ruinguard Breastplate,,,,,,,,,,,,,,,,,,',
+'named,armor,rogue,Shadowknit Jerkin,,,,,,,,,,,,,,,,,,',
+'named,armor,rogue,Nightveil Leathers,,,,,,,,,,,,,,,,,,',
+'named,armor,rogue,Gutterhide Vest,,,,,,,,,,,,,,,,,,',
+'named,armor,rogue,Silentweave Cloak,,,,,,,,,,,,,,,,,,',
+'named,armor,rogue,Duskrunner Jacket,,,,,,,,,,,,,,,,,,',
+'named,armor,rogue,Cinderskin Wrap,,,,,,,,,,,,,,,,,,',
+'named,armor,ranger,Bramblehide Coat,,,,,,,,,,,,,,,,,,',
+'named,armor,ranger,Hawkweave Mantle,,,,,,,,,,,,,,,,,,',
+'named,armor,ranger,Verdant Leathers,,,,,,,,,,,,,,,,,,',
+'named,armor,ranger,Windwrap Cloak,,,,,,,,,,,,,,,,,,',
+'named,armor,ranger,Thornguard Vest,,,,,,,,,,,,,,,,,,',
+'named,armor,ranger,Emberhide Jerkin,,,,,,,,,,,,,,,,,,',
+'named,amulet,all,Whisperstone Pendant,,,,,,,,,,,,,,,,,,',
+'named,amulet,all,Gravebind Amulet,,,,,,,,,,,,,,,,,,',
+'named,amulet,all,Emberheart Locket,,,,,,,,,,,,,,,,,,',
+'named,amulet,all,Voidglass Talisman,,,,,,,,,,,,,,,,,,',
+'named,amulet,all,Starfall Charm,,,,,,,,,,,,,,,,,,',
+'named,amulet,all,Runeward Pendant,,,,,,,,,,,,,,,,,,',
+'named,amulet,all,Duskthorn Amulet,,,,,,,,,,,,,,,,,,',
+'named,amulet,all,Hollowlight Locket,,,,,,,,,,,,,,,,,,',
+'named,ring,all,Cinderloop Band,,,,,,,,,,,,,,,,,,',
+'named,ring,all,Wraithgold Ring,,,,,,,,,,,,,,,,,,',
+'named,ring,all,Frostvein Signet,,,,,,,,,,,,,,,,,,',
+'named,ring,all,Grimhold Band,,,,,,,,,,,,,,,,,,',
+'named,ring,all,Emberglass Ring,,,,,,,,,,,,,,,,,,',
+'named,ring,all,Duskcoil Signet,,,,,,,,,,,,,,,,,,',
+'named,ring,all,Hollowbone Band,,,,,,,,,,,,,,,,,,',
+'named,ring,all,Starbound Ring,,,,,,,,,,,,,,,,,,',
+'named,trinket,all,Runeshard Idol,,,,,,,,,,,,,,,,,,',
+'named,trinket,all,Gravewhisper Totem,,,,,,,,,,,,,,,,,,',
+'named,trinket,all,Emberglass Sigil,,,,,,,,,,,,,,,,,,',
+'named,trinket,all,Voidmark Fetish,,,,,,,,,,,,,,,,,,',
+'named,trinket,all,Starlit Relic,,,,,,,,,,,,,,,,,,',
+'named,trinket,all,Duskbone Charm,,,,,,,,,,,,,,,,,,',
+'named,trinket,all,Hollowlight Idol,,,,,,,,,,,,,,,,,,',
+'named,trinket,all,Wraithglass Talon,,,,,,,,,,,,,,,,,,',
+'named,boots,all,Cinderstride Boots,,,,,,,,,,,,,,,,,,',
+'named,boots,all,Wraithstep Greaves,,,,,,,,,,,,,,,,,,',
+'named,boots,all,Frostmarch Boots,,,,,,,,,,,,,,,,,,',
+'named,boots,all,Grimwalk Greaves,,,,,,,,,,,,,,,,,,',
+'named,boots,all,Emberpace Boots,,,,,,,,,,,,,,,,,,',
+'named,boots,all,Duskstride Greaves,,,,,,,,,,,,,,,,,,',
+'named,boots,sorceress,Runewoven Slippers,,,,,,,,,,,,,,,,,,',
+'named,boots,sorceress,Frostglide Sandals,,,,,,,,,,,,,,,,,,',
+'named,boots,sorceress,Hollowstep Shoes,,,,,,,,,,,,,,,,,,',
+'named,boots,warrior,Ironmarch Sabatons,,,,,,,,,,,,,,,,,,',
+'named,boots,warrior,Bloodtread Sabatons,,,,,,,,,,,,,,,,,,',
+'named,boots,warrior,Ashforged Warboots,,,,,,,,,,,,,,,,,,',
+'named,boots,rogue,Shadowstep Boots,,,,,,,,,,,,,,,,,,',
+'named,boots,rogue,Nightglide Boots,,,,,,,,,,,,,,,,,,',
+'named,boots,rogue,Gutterrun Sandals,,,,,,,,,,,,,,,,,,',
+'named,boots,ranger,Windstride Boots,,,,,,,,,,,,,,,,,,',
+'named,boots,ranger,Bramblewalk Shoes,,,,,,,,,,,,,,,,,,',
+'named,boots,ranger,Verdant Treads,,,,,,,,,,,,,,,,,,',
 // ── Normal bases — boots ──
 'normal,boots,all,Cracked Leather Boots,,,,,,,,,,,,,,,,,,',
 'normal,boots,all,Worn Greaves,,,,,,,,,,,,,,,,,,',
@@ -3448,6 +3522,8 @@ var LOOT_ODDS = {
   dropChance:0.11,   skillBonusChance:0.0015,           // overall drop rate down from 0.18; skill-amulet chance bumped
   allSkillsChance:0.0008,                                // +1 to all skills on rings/amulets — fairly rare
 };
+// Desolation (NG+) loot odds — rarer fights reward better: rares +20%, uniques bumped (0.0008→0.0012, 0.008→0.012).
+var DESO_LOOT = { uniqueBase:0.0012, uniqueBoss:0.012, rareMult:1.2 };
 
 // Stat pools per slot — which stats can appear on each slot
 var SLOT_STAT_POOLS = {
@@ -3476,7 +3552,7 @@ function _rollItemBaseStat(rarity) {
   var key = BASE_STATS[ri(0, BASE_STATS.length - 1)];
   var r = tbl[key]; if (!r) return null;
   if (rarity === 'normal') return { key: key, value: ri(r.min, r.max) };
-  var diffScale = DIFF_ITEM_SCALE[difficulty] || 1.0;
+  var diffScale = _itemDiffScale(difficulty);
   var actBonus  = (ACT_STAT_BONUS[key] || 0) * actIdx;
   var scaledMax = Math.round((r.max + actBonus) * diffScale);
   var scaledMin = Math.max(r.min, Math.round(r.min * diffScale * 0.5));
@@ -3594,6 +3670,12 @@ var MF_BOOST = { baseChance:0.02, chancePerMf:0.004, maxChance:0.35, shiftHalfPo
 
 // Item stat scaling by difficulty
 var DIFF_ITEM_SCALE = { normal:1.0, nightmare:1.6, hell:2.8 };
+// Desolation (NG+) item scale — drops track the Desolation enemy curve so gear keeps pace
+// (≈ Hell ×1.0 / ×1.25 / ×1.75). Used instead of DIFF_ITEM_SCALE whenever ngPlusUnlocked.
+var DESO_ITEM_SCALE = { normal:2.8, nightmare:3.5, hell:4.9 };
+function _itemDiffScale(diff) {
+  return (ngPlusUnlocked ? (DESO_ITEM_SCALE[diff] || DIFF_ITEM_SCALE[diff]) : DIFF_ITEM_SCALE[diff]) || 1.0;
+}
 // Per-act bonus added to max stat ranges (stacks on top of difficulty)
 var ACT_STAT_BONUS  = {
   mainDmg:2, mainSpd:1, hp:8, mf:1, hpRegen:0.6, reducedDmg:1.2,
@@ -4181,15 +4263,28 @@ function _advanceClock() {
   _lastRealDelta  = Math.round(dt);
   _lastClockDelta = Math.round(dt * gameSpeed);
   _gameClock += _lastClockDelta;
-  // MF Blessing does not tick down while running a Farm Zone or Boss Target loop —
-  // keep its remaining time constant by advancing the expiry in lockstep with the clock.
-  if (hero && hero.mfBuff && (farmLoop || bossLoop) && _gameClock < hero.mfBuffEnd) {
+  // MF Blessing does not tick down while navigating the Boss Target / Farm Zone menus
+  // (combat is paused there) — but it DOES tick during the actual loop. Keep its remaining
+  // time constant while a menu is open by advancing the expiry in lockstep with the clock.
+  if (hero && hero.mfBuff && (bossLoopMenuOpen || farmLoopMenuOpen) && _gameClock < hero.mfBuffEnd) {
     hero.mfBuffEnd += _lastClockDelta;
   }
 }
 
-var NG_HP_MULT     = 1.4;   // NG+: enemy/boss HP multiplier (stacks with difficulty mult)
-var NG_DMG_MULT    = 2.0;   // NG+: enemy attack damage multiplier
+var NG_HP_MULT     = 1.4;   // NG+: enemy/boss HP multiplier (legacy; superseded by the Desolation curve for act enemies)
+var NG_DMG_MULT    = 2.0;   // NG+: enemy attack damage multiplier (still used by Delve)
+
+// ── Desolation (NG+) power curve — everything is a % of first-run Hell Act 5 ──
+//   Mobs:  80→200% (HP & damage)   Bosses: 60→120% HP, 70→130% damage
+//   Normal A1-5: 80→100 (+5/act) · Nightmare: 110→140 (+7.5/act) · Hell: 145→200 (+13.75/act)
+function _desoMobPct() {
+  if (!ngPlusUnlocked) return 1;
+  if (difficulty === 'nightmare') return 1.10 + actIdx * 0.075;
+  if (difficulty === 'hell')      return 1.45 + actIdx * 0.1375;
+  return 0.80 + actIdx * 0.05; // normal
+}
+function _desoBossHpPct()  { return 0.60 + (_desoMobPct() - 0.80) * 0.5; } // 60→120%
+function _desoBossDmgPct() { return 0.70 + (_desoMobPct() - 0.80) * 0.5; } // 70→130%
 
 // ── Reforging gems ──
 var GEMS = [
@@ -4699,6 +4794,11 @@ function generateItem(isBossLoot, forceSlot, extraMf, ignoreMf) {
   var shift = effectiveMf / (effectiveMf + MF_BOOST.shiftHalfPoint) * MF_BOOST.shiftAsymptote;
   var uBase = isBossLoot ? LOOT_ODDS.uniqueBoss : LOOT_ODDS.uniqueBase;
   var rBase = isBossLoot ? LOOT_ODDS.rareBoss   : LOOT_ODDS.rareBase;
+  if (ngPlusUnlocked) {
+    // Desolation: better unique + rare odds
+    uBase = isBossLoot ? DESO_LOOT.uniqueBoss : DESO_LOOT.uniqueBase;
+    rBase = rBase * DESO_LOOT.rareMult;
+  }
   var mBase = isBossLoot ? LOOT_ODDS.magicBoss  : LOOT_ODDS.magicBase;
   var t = {
     unique: Math.min(uBase + shift,        0.20),
@@ -4715,7 +4815,7 @@ function generateItem(isBossLoot, forceSlot, extraMf, ignoreMf) {
   if (_ngPlusZone && slot !== 'armor' && slot !== 'boots') pool.push('sunder');
 
   // Scaling factors
-  var diffScale = DIFF_ITEM_SCALE[difficulty] || 1.0;
+  var diffScale = _itemDiffScale(difficulty);
   var act = actIdx; // 0-4
 
   // Build scaled ranges for magic and rare
@@ -5164,7 +5264,10 @@ function spawnNextEnemy(simNow) {
     } else {
       // spawn boss
       rarePack = false; rarePackRemaining = 0;
-      var maxHp = Math.round(act.bossHp * diff.bossMult * (ngPlusUnlocked ? NG_HP_MULT : 1));
+      // Desolation: boss HP is a % of the first-run Hell Act 5 boss (Zerath ref); otherwise vanilla per-act boss.
+      var maxHp = ngPlusUnlocked
+        ? Math.round(ACTS[4].bossHp * DIFFICULTY.hell.bossMult * _desoBossHpPct())
+        : Math.round(act.bossHp * diff.bossMult);
       enemy = { name:act.bossName, hp:maxHp, maxHp:maxHp, isBoss:true, _encounter:true, frozenUntil:0, stunCooldownUntil:0, _freezeDR:1.0, _freezeCount:0, spawnTime:gameNow() };
       if (ngPlusUnlocked) {
         enemy._physResist = Math.min(75, ri(20 + actIdx*4, 25 + actIdx*5));
@@ -5234,8 +5337,15 @@ function spawnNextEnemy(simNow) {
     var namePool = (packType !== 'any' && HUNT_PACK_ENEMIES[packType]) ? HUNT_PACK_ENEMIES[packType] : act.enemies;
     var name = namePool[ri(0, namePool.length-1)];
     var base = 8 + hero.level * 5 + actIdx * 12;
-    var _ngMobMult = ngPlusUnlocked ? (1.4 + actIdx * 0.2) : 1;
-    var maxHp = Math.round(ri(base, base+12) * diff.enemyHpMult * (bossLoop ? BOSS_LOOP_MOB_HP_MULT : 1) * _ngMobMult);
+    var maxHp;
+    if (ngPlusUnlocked && !delveActive) {
+      // Desolation: mob HP is a % of first-run Hell Act 5 (Hell hpMult × curve), independent of vanilla act/diff mults
+      var _refBase = 8 + hero.level * 5 + 4 * 12;
+      maxHp = Math.round(ri(_refBase, _refBase + 12) * DIFFICULTY.hell.enemyHpMult * _desoMobPct() * (bossLoop ? BOSS_LOOP_MOB_HP_MULT : 1));
+    } else {
+      var _ngMobMult = ngPlusUnlocked ? (1.4 + actIdx * 0.2) : 1;
+      maxHp = Math.round(ri(base, base+12) * diff.enemyHpMult * (bossLoop ? BOSS_LOOP_MOB_HP_MULT : 1) * _ngMobMult);
+    }
     if (bossLoop) name = '⚡ ' + name;
     if (farmLoop) name = '🌾 ' + name;
 
@@ -6697,7 +6807,15 @@ function enemyAttack(now) {
 
   var diff = DIFFICULTY[difficulty];
   var dmg = enemy.isBoss ? ri(12, 22) : ri(3, 9);
-  dmg = Math.round(dmg * diff.enemyDmgMult * (ngPlusUnlocked ? NG_DMG_MULT : 1) * (delveActive ? _delveDmgMult() : 1));
+  if (delveActive) {
+    // Delve keeps its own depth-based curve (unchanged)
+    dmg = Math.round(dmg * diff.enemyDmgMult * NG_DMG_MULT * _delveDmgMult());
+  } else if (ngPlusUnlocked) {
+    // Desolation: damage is a % of first-run Hell Act 5 (Hell dmgMult × curve) — mobs 80→200%, bosses 70→130%
+    dmg = Math.round(dmg * DIFFICULTY.hell.enemyDmgMult * (enemy.isBoss ? _desoBossDmgPct() : _desoMobPct()));
+  } else {
+    dmg = Math.round(dmg * diff.enemyDmgMult);
+  }
   var _rawMobDmg = dmg;
 
   // Boss enrage: damage increases over time (+10% per 30s, Nightmare/Hell only)
@@ -11527,7 +11645,7 @@ function rerollVaultItem(slot, idx) {
       }
     }
   }
-  var diffScale = DIFF_ITEM_SCALE[bestReforgeDiff] || 1.0;
+  var diffScale = _itemDiffScale(bestReforgeDiff);
   var act = bestReforgeAct;
   var ranges = item.rarity === 'rare' ? RARE_RANGES : MAGIC_RANGES;
   var newStats = {};
@@ -11753,7 +11871,7 @@ function doEnchant() {
   if (lockedI > -1) pool.splice(lockedI, 1);
 
   var ranges    = item.rarity === 'magic' ? MAGIC_RANGES : RARE_RANGES;
-  var diffScale = DIFF_ITEM_SCALE[difficulty] || 1.0;
+  var diffScale = _itemDiffScale(difficulty);
   var act       = actIdx;
   var newStats  = {};
   newStats[_enchantLockedStat] = lockedVal;
@@ -18742,7 +18860,10 @@ function loadGame() {
     vaultIntroSeen         = state.vaultIntroSeen         || false;
     equippedRelic       = state.equippedRelic       || null;
     relicTriggerMode    = state.relicTriggerMode    || 'full';
-    relicActiveUntil    = state.relicActiveUntil    || 0;
+    // relicActiveUntil is a game-clock timestamp; the clock resets on reload, so a saved value is
+    // meaningless (it would show a bogus multi-thousand-second buff). Relic effects are transient —
+    // always start inactive and let the relic re-trigger normally this session.
+    relicActiveUntil    = 0;
     hero._voidAccumDmg  = state.voidAccumDmg        || 0;
     relicPending        = state.relicPending         || null;
     relicStash = (state.relicStash || []).map(function(_rr) {
@@ -18751,13 +18872,9 @@ function loadGame() {
       if (_rr.charges != null) _fresh.charges = Math.min(_fresh.maxCharges, _rr.charges);
       return _fresh;
     }).filter(function(_x) { return _x; });
-    // Always clear all relic effects on load — reapply only if still active
+    // Relic effects never carry over a reload — start with no active effect this session.
     if (equippedRelic) clearRelicEffect(equippedRelic);
-    if (equippedRelic && relicActiveUntil > gameNow()) {
-      applyRelicEffect(equippedRelic, gameNow());  // reapply if still active
-    } else {
-      relicActiveUntil = 0;
-    }
+    relicActiveUntil = 0;
     // Reinject relic frame if already unlocked
     if (relicSystemUnlocked) {
       setTimeout(function() { injectRelicFrame(); }, 100);
@@ -20412,8 +20529,8 @@ init();
 
 
 
-<!-- Debug bar — hidden until Ctrl+Shift+` -->
-<div style="position:fixed;bottom:12px;right:14px;display:flex;gap:6px;z-index:150;">
+<!-- Stats / Settings / Help — pinned to the very top right -->
+<div style="position:fixed;top:8px;right:14px;display:flex;gap:6px;z-index:150;">
   <button onclick="openStats()" style="padding:3px 10px;border:1px solid #2a2a3a;background:#0a0a14;color:#5a5a6a;font-family:Georgia,serif;font-size:11px;cursor:pointer;border-radius:2px;transition:all 0.15s;" onmouseover="this.style.color='#c8a84b';this.style.borderColor='#4a4a2a'" onmouseout="this.style.color='#5a5a6a';this.style.borderColor='#2a2a3a'">📊 Stats</button>
   <button onclick="openSettings()" style="padding:3px 10px;border:1px solid #2a2a3a;background:#0a0a14;color:#5a5a6a;font-family:Georgia,serif;font-size:11px;cursor:pointer;border-radius:2px;transition:all 0.15s;" onmouseover="this.style.color='#c8a84b';this.style.borderColor='#4a4a2a'" onmouseout="this.style.color='#5a5a6a';this.style.borderColor='#2a2a3a'">⚙ Settings</button>
   <button onclick="openHelp()" style="padding:3px 10px;border:1px solid #2a2a3a;background:#0a0a14;color:#5a5a6a;font-family:Georgia,serif;font-size:11px;cursor:pointer;border-radius:2px;transition:all 0.15s;" onmouseover="this.style.color='#c8a84b';this.style.borderColor='#4a4a2a'" onmouseout="this.style.color='#5a5a6a';this.style.borderColor='#2a2a3a'">? Help</button>
