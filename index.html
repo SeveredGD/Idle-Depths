@@ -899,18 +899,21 @@
   /* ── Skill tree ── */
   #skill-tree-toggle {
     width: 100%;
-    padding: 5px 8px;
-    border: 1px solid #2a2a3a;
-    background: rgba(6,6,12,0.4);
-    color: #8a7a6a;
-    font-family: Georgia, serif;
-    font-size: 11px;
+    aspect-ratio: 812 / 360;
+    padding: 0;
+    border: none;
+    background: url('https://severedgd.github.io/gamesprites/icons/skill_tree_icon.png') center/contain no-repeat;
+    color: transparent;
+    font-size: 0;
+    line-height: 0;
     cursor: pointer;
-    border-radius: 2px;
     margin-bottom: 6px;
-    transition: all 0.15s;
+    transition: filter 0.15s, transform 0.1s;
+    filter: drop-shadow(0 1px 3px #0008);
   }
-  #skill-tree-toggle:hover { border-color: #4a4a6a; color: #d4c9a8; }
+  #skill-tree-toggle:hover  { filter: brightness(1.15) drop-shadow(0 0 6px #c8a84b66); }
+  #skill-tree-toggle:active { transform: scale(0.97); }
+  #skill-tree-toggle.tree-open { filter: brightness(1.2) drop-shadow(0 0 8px #c8a84b99); }
   /* Skill tree overlay */
   #skill-tree-overlay { display:none; position:fixed; inset:0; background:#000000bb; z-index:180; align-items:flex-start; justify-content:center; overflow-y:auto; padding:16px 0; }
   #skill-tree-overlay.open { display:flex; }
@@ -1033,6 +1036,42 @@
     white-space: nowrap;
     letter-spacing: 2px;
     animation: bountyCompleteFade 2.4s ease-out forwards;
+  }
+
+  /* ── Trap carry-over float animation ── */
+  @keyframes trapCarryFade {
+    0%   { opacity: 0; transform: translateX(-50%) translateY(14px) scale(0.4) rotate(-4deg); }
+    10%  { opacity: 1; transform: translateX(-50%) translateY(-6px) scale(1.3) rotate(3deg); }
+    16%  { opacity: 1; transform: translateX(-50%) translateY(-9px) scale(0.94) rotate(-2deg); }
+    22%  { opacity: 1; transform: translateX(-50%) translateY(-11px) scale(1.06) rotate(1deg); }
+    28%  { opacity: 1; transform: translateX(-50%) translateY(-12px) scale(1) rotate(0deg); }
+    72%  { opacity: 1; transform: translateX(-50%) translateY(-30px) scale(1); }
+    100% { opacity: 0; transform: translateX(-50%) translateY(-72px) scale(0.95); }
+  }
+  .trap-carry-float {
+    position: absolute;
+    left: 50%; top: 30%;
+    transform: translateX(-50%);
+    pointer-events: none;
+    z-index: 82;
+    font-family: Georgia, serif;
+    font-size: 34px;
+    font-weight: bold;
+    color: #ffcf70;
+    -webkit-text-stroke: 1px #5a2e08;
+    text-shadow: 0 0 18px #ff9a2a, 0 0 40px #ff8800cc, 0 0 60px #c8843a88, 2px 3px 0 #180c02;
+    white-space: nowrap;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    animation: trapCarryFade 2.2s cubic-bezier(0.2, 1.4, 0.4, 1) forwards;
+  }
+  .trap-carry-float .tc-sub {
+    display: block;
+    font-size: 14px;
+    letter-spacing: 3px;
+    color: #ffe6b0;
+    text-shadow: 0 0 10px #ff9a2a, 1px 1px 0 #180c02;
+    margin-top: 2px;
   }
 
   /* ── Bounty footstep animation ── */
@@ -1484,7 +1523,7 @@
 </div>
 
 
-  <span class="game-title">EVERDEEP IDLE <span style="font-size:13px;letter-spacing:1px;opacity:0.6;">v1.2.2</span></span>
+  <span class="game-title">EVERDEEP IDLE <span style="font-size:13px;letter-spacing:1px;opacity:0.6;">v1.5.0</span></span>
 </div>
 
 <!-- Difficulty / act bar -->
@@ -1727,10 +1766,11 @@
           <div id="delve-extract-slots" style="display:grid;grid-template-columns:repeat(2,1fr);gap:5px;margin-bottom:10px;max-height:240px;overflow-y:auto;"></div>
           <div id="delve-extract-pick-info" style="font-size:11px;color:#9a8060;margin-bottom:10px;"></div>
           <div style="display:flex;align-items:center;gap:6px;margin-bottom:10px;">
-            <input type="checkbox" id="delve-extract-auto-check" onchange="delveAutoDelve=this.checked;if(!this.checked&&_delveExtractTimer){clearInterval(_delveExtractTimer);_delveExtractTimer=null;var c=document.getElementById('delve-extract-countdown');if(c)c.textContent='';}" style="cursor:pointer;">
+            <input type="checkbox" id="delve-extract-auto-check" onchange="delveAutoDelve=this.checked;if(!this.checked&&_delveExtractTimer){clearInterval(_delveExtractTimer);_delveExtractTimer=null;var c=document.getElementById('delve-extract-countdown');if(c)c.textContent='';}if(!this.checked){var pb=document.getElementById('delve-extract-pause-btn');if(pb)pb.style.display='none';}" style="cursor:pointer;">
             <label for="delve-extract-auto-check" style="font-size:11px;color:#9a8060;cursor:pointer;">Auto-delve after</label>
             <input type="number" id="delve-extract-timer-input" min="5" max="120" value="20" onchange="delveAutoDelveDelay=Math.max(5,Math.min(120,parseInt(this.value)||20));var ti=document.getElementById('delve-timer-input');if(ti)ti.value=delveAutoDelveDelay;" style="width:40px;background:#0a0800;border:1px solid #3a2a1a;color:#c8a044;font-size:11px;text-align:center;padding:1px 3px;border-radius:2px;">
             <span style="font-size:11px;color:#9a8060;">s</span>
+            <button id="delve-extract-pause-btn" onclick="_toggleDelveExtractPause()" style="display:none;margin-left:auto;padding:2px 12px;border:1px solid #c8a044;background:#1a1208;color:#c8a044;font-family:Georgia,serif;font-size:11px;cursor:pointer;border-radius:2px;">&#x23F8; Pause</button>
           </div>
           <div style="display:flex;gap:8px;">
             <button onclick="confirmDelveExtract()" style="flex:1;padding:7px 0;border:1px solid #c8a044;background:#1a1208;color:#c8a044;font-family:Georgia,serif;font-size:12px;cursor:pointer;border-radius:2px;" onmouseover="this.style.background='#2a1e0a'" onmouseout="this.style.background='#1a1208'">Extract &amp; Leave</button>
@@ -1788,7 +1828,7 @@
 
       <div id="center-vault">
         <div class="panel-title" style="display:flex;justify-content:space-between;align-items:center;">
-          <span>Vault</span>
+          <span style="display:flex;align-items:center;gap:6px;">Vault<button onclick="openItemHelp()" title="Items, affixes & quality — help" style="width:17px;height:17px;padding:0;border:1px solid #4a3a5a;background:#0e0a16;color:#a878d0;font-family:Georgia,serif;font-size:11px;line-height:1;cursor:pointer;border-radius:50%;">?</button></span>
           <div id="unique-queue-btn-wrap-center" style="display:none;">
             <button onclick="openUniqueQueue()" style="padding:2px 6px;border:1px solid #6a3a6a;background:#110a14;color:#e57bf5;font-family:Georgia,serif;font-size:10px;cursor:pointer;border-radius:2px;">
               📋 <span id="unique-queue-count-center">0</span> Pending
@@ -1817,7 +1857,7 @@
       <div id="skill-picker"></div>
       <div class="section-div"></div>
       <div class="skill-pts-avail" id="skill-pts-label"></div>
-      <button id="skill-tree-toggle" onclick="toggleSkillTree()">⊞ Skill Tree</button>
+      <button id="skill-tree-toggle" onclick="toggleSkillTree()" title="Skill Tree" aria-label="Skill Tree"></button>
       <button id="pet-panel-toggle" onclick="togglePetPanel()" style="display:none;margin-top:6px;width:100%;padding:6px 0;border:1px solid #5a7a4a;background:#0a1208;color:#88cc44;font-family:Georgia,serif;font-size:11px;cursor:pointer;border-radius:2px;letter-spacing:1px;transition:all 0.15s;" onmouseover="this.style.borderColor='#88cc44';this.style.color='#ccff88'" onmouseout="this.style.borderColor='#5a7a4a';this.style.color='#88cc44'">🐾 Companion</button>
       <div style="border-top:1px solid #1e1e2a;margin-top:10px;">
         <div onclick="toggleLeftSection('loadout')" style="cursor:pointer;user-select:none;display:flex;justify-content:space-between;align-items:center;padding:6px 0 4px;font-size:11px;color:#c8a84b;text-transform:uppercase;letter-spacing:1px;">
@@ -3148,7 +3188,7 @@ var ITEMS_CSV = [
 'unique,weapon,Voltedge,8,20,0,0,0,0,0,18,0,10,200,0,0,0,0,0,0,,,0,,2',
 'unique,amulet,Crackling Mantle Chain,6,8,0,0,0,0,0,20,0,12,120,0,0,0,0,0,0,1,,0,,2',
 'unique,armor,Vow of Iron,0,0,110,0,0,15,0,0,0,0,0,20,0,0,0,0,0,,,0,,2',
-'unique,weapon,Reaver\'s Toll,28,0,35,0,0,0,0,0,0,0,0,0,0,0,0,0,0,,,0,,2',
+'unique,weapon,Reaver\'s Toll,30,10,45,0,0,8,0,0,0,0,0,0,0,0,0,0,0,,,0,,2',
 'unique,weapon,Nightwhisper,6,22,0,20,0,0,0,0,0,8,150,0,0,0,0,0,0,,,0,,2',
 'unique,armor,The Unseen Coat,0,14,45,15,0,5,0,0,0,0,0,0,20,0,0,0,0,,,0,,2',
 'unique,ring,Plunder\'s Promise,0,8,0,30,0,0,0,0,0,0,0,0,0,12,15,0,0,,,0,,2',
@@ -3528,6 +3568,56 @@ var UNIQUE_ITEMS      = _parsedItems.uniqueItems;
 var ITEM_NAMES        = _parsedItems.namedItems;
 var NORMAL_ITEM_NAMES = _parsedItems.normalItems;
 
+// ── Extra chase uniques (appended post-parse to avoid the CSV's ragged columns) ──
+// Fills the biggest coverage gaps: BOOTS had zero uniques, and the ring/amulet top-end
+// was thin. Uniques are shared across all classes. T2 scales ×diffScale; T3 also gets act bonus.
+(function() {
+  var _extra = [
+    { slot:'boots',  name:'Gravewalk Striders',    uniqueTier:2, allSkills:1, stats:{ mainSpd:18, hp:70,  reducedDmg:10, spellShield:15 } },
+    { slot:'boots',  name:'Threshold of the Deep',  uniqueTier:3, allSkills:2, stats:{ mainSpd:28, hp:150, reducedDmg:18, blockChance:20, spellShield:25 } },
+    { slot:'ring',   name:'Loop of the Everdeep',   uniqueTier:3, allSkills:2, stats:{ mainDmg:20, mainSpd:16, hp:45, mf:35, castCooldown:250 } },
+    { slot:'amulet', name:"Deepcaller's Locket",    uniqueTier:2, allSkills:1, stats:{ mainDmg:14, hp:35, hpRegen:4, statusEffect:18 } },
+    // T2 ring/trinket fillers — those slots only had 2 stat-sticks each
+    { slot:'ring',   name:'Ring of the Riven',      uniqueTier:2, allSkills:1, stats:{ mainDmg:16, mainSpd:12, hp:35, statusEffect:12 } },
+    { slot:'trinket',name:'Ashen Focus',            uniqueTier:2,              stats:{ fireDmg:18, magicDmg:12, aoeChance:8, statusEffect:10 } },
+    // New-stat chase uniques (echo / encounter / ailment / crit-multi stay fixed — see _noScaleStat)
+    { slot:'trinket',name:'Reverberation',          uniqueTier:2,              stats:{ echo:12, magicDmg:15, mainSpd:8 } },
+    { slot:'amulet', name:'The Plaguebearer',       uniqueTier:2,              stats:{ ailmentDmg:25, hp:30, statusEffect:15 } },
+    { slot:'ring',   name:"Hunter's Ledger",        uniqueTier:2,              stats:{ encounterDmg:20, mainDmg:12, mf:15 } },
+    { slot:'weapon', name:'Fang of Excess',         uniqueTier:3,              stats:{ mainDmg:24, critMulti:15, mainSpd:10 } },
+    // Coded-proc uniques (effects hooked in combat by name)
+    { slot:'trinket',name:'Cascade',                uniqueTier:3,              stats:{ echo:15, mainSpd:8 } },
+    { slot:'amulet', name:'Festering Heart',        uniqueTier:3,              stats:{ ailmentDmg:20, hp:40 } },
+    { slot:'ring',   name:'The Warmark',            uniqueTier:2,              stats:{ encounterDmg:15, mainDmg:10, hp:25 } },
+  ];
+  for (var _ei = 0; _ei < _extra.length; _ei++) {
+    for (var _c in UNIQUE_ITEMS) { if (UNIQUE_ITEMS.hasOwnProperty(_c)) UNIQUE_ITEMS[_c].push(_extra[_ei]); }
+  }
+})();
+
+// ── Tier 2 balance pass: normalize under-budgeted stat-stick uniques (procs left as-is) ──
+(function() {
+  var _tune = {
+    'Abyssal Lantern':        { stats:{ mainDmg:10, hp:35, hpRegen:4, coldDmg:18 }, allSkills:1 },
+    'Mantle of Many Winters': { stats:{ hp:75, hpRegen:6, reducedDmg:10, coldDmg:15 }, allSkills:1 },
+    'Crackling Edge':         { stats:{ mainDmg:10, mainSpd:12, lightDmg:14, magicDmg:14, castCooldown:100 } },
+    'Stormthread Blade':      { stats:{ mainDmg:12, mainSpd:18, magicDmg:12, castCooldown:150 } },
+    "Plunder's Promise":      { stats:{ mainDmg:8, mainSpd:10, mf:30, xpGain:12, goldFind:15 } },
+  };
+  var _done = {};
+  for (var _c in UNIQUE_ITEMS) {
+    if (!UNIQUE_ITEMS.hasOwnProperty(_c)) continue;
+    var arr = UNIQUE_ITEMS[_c];
+    for (var i = 0; i < arr.length; i++) {
+      var e = arr[i], t = _tune[e.name];
+      if (!t || _done[e.name]) continue; // entries are shared refs — tune once
+      e.stats = t.stats;
+      if (t.allSkills) e.allSkills = t.allSkills;
+      _done[e.name] = true;
+    }
+  }
+})();
+
 // Returns true if the named unique is currently equipped in any slot
 function _hasUnique(name) {
   if (!hero || !hero.equipped) return false;
@@ -3623,8 +3713,8 @@ var MAGIC_RANGES = {
   echo:           { min:1,   max:6   },
   encounterDmg:   { min:4,   max:18  },
   ailmentDmg:     { min:5,   max:20  },
-  resist:         { min:3,   max:10  },
-  thorns:         { min:5,   max:8   },
+  resist:         { min:2,   max:8   },
+  thorns:         { min:4,   max:6   },
   critMulti:      { min:4,   max:9   },
   sunder:         { min:3,   max:8   },
 };
@@ -3653,8 +3743,8 @@ var RARE_RANGES = {
   echo:           { min:1,   max:4   },
   encounterDmg:   { min:3,   max:12  },
   ailmentDmg:     { min:3,   max:12  },
-  resist:         { min:3,   max:17  },
-  thorns:         { min:5,   max:10  },
+  resist:         { min:2,   max:14  },
+  thorns:         { min:4,   max:8   },
   critMulti:      { min:5,   max:14  },
   sunder:         { min:3,   max:15  },
 };
@@ -3717,7 +3807,7 @@ function _itemDiffScale(diff) {
 var ACT_STAT_BONUS  = {
   mainDmg:2, mainSpd:1, hp:8, mf:1, hpRegen:0.6, reducedDmg:1.2,
   fireDmg:0.8, lightDmg:0.8, coldDmg:0.8, magicDmg:0.8,
-  critChance:0.4, aoeChance:0.4, resist:0.4, thorns:0.2, critMulti:0, sunder:0.5,
+  critChance:0.4, aoeChance:0.4, resist:0.32, thorns:0.16, critMulti:0, sunder:0.5,
   blockChance:0.4, spellShield:1.5,
   xpGain:0.6, goldFind:0.6, castCooldown:15,
   statusEffect:0.5,
@@ -3954,6 +4044,8 @@ var hero = {
   shopPasses: 0, // earned from boss kills post-delve-unlock; spent to open the on-demand item shop
   mfBuff: false,
   mfBuffEnd: 0,
+  blessBuffs: {},          // { gold:{end,amt}, wrath:{...}, aegis:{...} } — real-time timed blessings
+  blessUsedAct: {},        // per-act "one purchase" locks for the non-MF blessings
   shopUsedThisAct: false,
   topOffUsed: false,       // once per act heal
   autoTopOff: false,       // auto-heal before boss
@@ -4111,6 +4203,8 @@ var bountyActive = false;     // true during the 10s hunt sequence or bounty fig
 var bountySearchTimer = null; // setTimeout handle for the 10s search
 var bountyPendingPet = null;  // pet encounter data during hunt sequence { pet, rarity, roll }
 var _bountyPreBossLoop = null;// snapshot of bossLoop before bounty paused it
+var _bountyPreFarmLoop = null;// snapshot of farmLoop before bounty paused it
+var _bountyPreDelve    = null;// snapshot of the active delve before bounty paused it
 // Bounty reward types: 'gold' | 'item' | 'unique'
 var BOUNTY_RARITY_WEIGHTS = [
   { rarity: 'common',      weight: 50, powerRange: [0.10, 0.30] },
@@ -4222,6 +4316,7 @@ var _fightDmgTaken  = 0;   // total damage the hero took this fight
 var _fightLastHit   = 0;   // damage of the most recent enemy swing (the killing blow on death)
 var _lastDeathRecapHtml = '';  // most recent death recap, viewable from the Recap button
 var _trapEntryFiring = false; // guard: prevents recursive entry-trap chain when trap kill spawns next mob
+var _trapCarryGhost  = false; // when true, the next enemy hp-ghost drain is drawn purple (carried-over trap)
 var MERCHANT_DEATH_THRESHOLD = 5; // nightmare/hell; normal uses 3
 var MERCHANT_GOLD_PER_SCORE  = 3;
 
@@ -4257,9 +4352,11 @@ var delveBag         = [];     // items found this run (max 20, priority-sorted)
 var delveGoldEarned  = 0;      // gold earned this run (banked on extract, 50% on death)
 var delveCheckpoints = [];     // cleared checkpoint depths [20, 40, ...]
 var delveStartLevel  = 1;      // chosen starting depth for next run
+var delveResume      = null;   // mid-delve resume snapshot (saved every 5 depths): {level,gold,startLevel,bag}
 var delveAutoDelve   = false;  // auto-continue extract popups
 var delveAutoDelveDelay = 20;  // seconds before auto-continue (setting)
 var _delveExtractTimer  = null;// interval handle for auto-continue countdown
+var _delveExtractPaused = false;// true while the auto-continue countdown is paused by the player
 var _delveExtractSelected = []; // selected item indices in extract popup
 var DELVE_BAG_MAX    = 20;
 var DELVE_MOBS_PER_LEVEL = 5;
@@ -4907,11 +5004,16 @@ function generateItem(isBossLoot, forceSlot, extraMf, ignoreMf) {
       var tierScale = (base.uniqueTier >= 2) ? diffScale : 1.0;
       var actBonus  = (base.uniqueTier === 3) ? (1 + actIdx * 0.1) : 1.0;
       var hellRoll  = (difficulty === 'hell' && base.uniqueTier >= 2) ? (1.0 + Math.random() * 0.30) : 1.0;
+      // Percentage modifiers (echo/encounter/ailment/crit-multi) stay FIXED — a flat % is
+      // equally valuable at any tier, so they must not balloon with the difficulty scale.
+      var _noScaleStat = { echo:1, encounterDmg:1, ailmentDmg:1, critMulti:1 };
       var rawStats = {};
       for (var key in base.stats) {
         rawStats[key] = key === 'mf'
           ? (hasMf ? ri(STAT_RANGES.unique.mf.min, STAT_RANGES.unique.mf.max) : (base.stats[key]||0))
-          : Math.round((base.stats[key]||0) * tierScale * actBonus * hellRoll);
+          : _noScaleStat[key]
+            ? (base.stats[key]||0)
+            : Math.round((base.stats[key]||0) * tierScale * actBonus * hellRoll);
       }
       var boosted = ignoreMf ? { stats: rawStats } : applyMfBoost(rawStats, effectiveMf);
       item = { slot:slot, name:base.name, stats:boosted.stats, rarity:'unique', uniqueTier:base.uniqueTier||1 };
@@ -5519,7 +5621,14 @@ function spawnNextEnemy(simNow) {
         if (Math.random() < _retriggerChance) _trapFires++;
         else break;
       }
-      if (_trapFires > 1) { addLog('🪤 Trap carried over! ('+_trapFires+'× entry)', 'crit'); triggerStatusFlash('#c8843a'); }
+      if (_trapFires > 1) {
+        addLog('🪤 Trap carried over! ('+_trapFires+'× entry)', 'crit');
+        triggerStatusFlash('#c8843a');
+        triggerTrapCarryAnim(_trapFires);
+        // Draw the incoming trap damage as a purple ghost-bar drain from full so it reads as a carry-over.
+        _trapCarryGhost = true;
+        _prevEnemyHpPct = 100;
+      }
       var _trapTargetEnemy = enemy;
       _trapEntryFiring = true;
       for (var _tf = 0; _tf < _trapFires; _tf++) {
@@ -5583,6 +5692,14 @@ function arcaneVulnMult() {
   return 1 + amp / 100;
 }
 
+// Festering Heart: a newly-applied burn / bleed / poison erupts instantly for 3× its per-tick value.
+function _festeringBurst(tickDmg) {
+  if (!_hasUnique('Festering Heart') || !enemy || enemy.hp <= 0) return;
+  var b = Math.max(1, Math.round((tickDmg || 0) * 3));
+  enemy.hp = Math.max(0, enemy.hp - b);
+  addLog('☠ Festering Heart erupts! +' + b, 'bleed');
+}
+
 function tryApplyBurn(dmg) {
   if (!enemy || enemy.hp <= 0) return;
   var seMult = 1 + ((hero._statusEffect || 0) + (hero._relicStatusBoost || 0)) / 100;
@@ -5607,6 +5724,7 @@ function tryApplyBurn(dmg) {
   }
   enemy._burn = { tickDmg: tickDmg, ticksLeft: ticks, nextTick: gameNow() + 1000 };
   addLog('🔥 Burn! ('+tickDmg+'/s for '+ticks+'s'+(burnMult>1?' [×'+burnMult+' Ashpyre]':'')+(seMult>1?' [SE+'+Math.round((seMult-1)*100)+'%]':'')+')' , 'burn');
+  _festeringBurst(tickDmg);
   triggerStatusFlash('#ff6a1a');
 }
 
@@ -5647,6 +5765,7 @@ function tryApplyBleed(dmg) {
   var tickDmg = Math.max(1, Math.round(dmg * 0.05 / 5 * seMult * (1 + (hero._ailmentDmg || 0) / 100)));
   enemy._bleedStacks.push({ tickDmg: tickDmg, ticksLeft: bleedDur, nextTick: gameNow() + 1000 });
   addLog('🩸 Bleed! ('+tickDmg+'/s for '+bleedDur+'s, stack '+enemy._bleedStacks.length+'/5)', 'bleed');
+  _festeringBurst(tickDmg);
   triggerStatusFlash('#cc2233');
 }
 
@@ -5757,6 +5876,9 @@ function heroAttack(now) {
   var dr    = spellDamageRange();
   var base  = ri(dr.min, dr.max);
 
+  // Blessing of Wrath: temporary +% damage dealt
+  if (_blessActive('wrath')) base = Math.round(base * (1 + _blessActive('wrath') / 100));
+
   // ── Unique item procs (pre-damage) ──
   // The Pendulum: alternate 200%/50% damage
   if (_hasUnique('The Pendulum')) {
@@ -5852,8 +5974,9 @@ function heroAttack(now) {
     }
   }
 
-  // Encounter Damage — flat % more damage vs bosses, delve guardians, bounty targets & rare packs
-  if (enemy && enemy._encounter && (hero._encounterDmg || 0) > 0) {
+  // Encounter Damage — flat % more damage vs bosses, delve guardians, bounty targets & rare packs.
+  // The Warmark: Encounter Dmg applies to EVERY enemy, not just special encounters.
+  if (enemy && (enemy._encounter || _hasUnique('The Warmark')) && (hero._encounterDmg || 0) > 0) {
     base = Math.max(1, Math.round(base * (1 + hero._encounterDmg / 100)));
   }
 
@@ -6560,6 +6683,7 @@ function heroAttack(now) {
       var bleedDur = Math.round(5 * seMult);
       var bleedTick = Math.max(1, Math.round(dmg * 0.05 / 5 * seMult));
       enemy._bleedStacks.push({ tickDmg: bleedTick, ticksLeft: bleedDur, nextTick: gameNow() + 1000 });
+      _festeringBurst(bleedTick);
       triggerStatusFlash('#cc2233');
     }
     if (!enemy._poisonStacks) enemy._poisonStacks = [];
@@ -6570,6 +6694,7 @@ function heroAttack(now) {
       var poisonTick = Math.max(1, Math.round(dmg * 0.06 / 6 * seMult * dotBonus * (1 + (hero._ailmentDmg || 0) / 100)));
       enemy._poisonStacks.push({ tickDmg: poisonTick, ticksLeft: poisonDur, nextTick: gameNow() + 1000 });
       addLog('  ↳ Poison applied! ('+poisonTick+'/s for '+poisonDur+'s, stack '+enemy._poisonStacks.length+'/5)', 'stun');
+      _festeringBurst(poisonTick);
       triggerStatusFlash('#55aa55');
     }
 
@@ -6726,12 +6851,16 @@ function heroAttack(now) {
       if (_isPhysSkill)  tryApplyBleed(_lastDealtDmg);
     }
 
-    // Echo — chance to repeat the strike for 20% damage; the echo can also re-roll status effects
-    if (enemy && enemy.hp > 0 && (hero._echo || 0) > 0 && Math.random() < hero._echo / 100) {
+    // Echo — chance to repeat the strike for 20% damage; the echo can also re-roll status effects.
+    // Cascade: an echo can itself echo — re-roll the echo chance up to 3 chained repeats.
+    var _echoChainMax = _hasUnique('Cascade') ? 3 : 1;
+    var _echoChains = 0;
+    while (enemy && enemy.hp > 0 && (hero._echo || 0) > 0 && _echoChains < _echoChainMax && Math.random() < hero._echo / 100) {
+      _echoChains++;
       var _echoStat = Math.max(1, Math.round(_lastDealtDmg * 0.20));
       enemy.hp = Math.max(0, enemy.hp - _echoStat);
       trackDps(_echoStat, now);
-      addLog('🔁 Echo — strike repeats! +'+_echoStat+' (20%)', 'light');
+      addLog((_echoChains > 1 ? '🔁 Echo cascades! +' : '🔁 Echo — strike repeats! +') + _echoStat + ' (20%)', 'light');
       if (enemy.hp > 0) {
         if (_isMageHunterSkill) {
           if (typeof mhElem !== 'undefined' && mhElem) {
@@ -6914,6 +7043,9 @@ function enemyAttack(now) {
 
   // Defense: diminishing % physical reduction (Desolation), cap 50%
   if (hero._defense) dmg = Math.max(1, Math.round(dmg * (1 - hero._defense / 100)));
+
+  // Aegis Blessing: temporary flat % reduction of incoming damage
+  if (_blessActive('aegis')) dmg = Math.max(1, Math.round(dmg * (1 - _blessActive('aegis') / 100)));
 
   // Red Covenant relic: % damage reduction while active
   if (hero._relicDmgReduce && relicActiveUntil > now) {
@@ -7408,6 +7540,7 @@ function activateNgPlus() {
   hero.rage         = 0;
   hero.shopUsedThisAct = false;
   hero.topOffUsed      = false;
+  _resetBlessUsed();
   _ensureLoadouts();
   renderLoadoutTabs();
   saveGame();
@@ -7659,7 +7792,7 @@ function gainKill(isBoss, isAoe, simNow) {
       xpGain = Math.round(xpGain * (1 - penalty));
     }
   }
-  var goldGain = Math.round(ri(2, 8) * diff.goldMult * (1 + ((hero._goldFind || 0) + (hero._relicGoldBonus || 0)) / 100) + (isBoss ? 30 : 0));
+  var goldGain = Math.round(ri(2, 8) * diff.goldMult * (1 + ((hero._goldFind || 0) + (hero._relicGoldBonus || 0) + _blessActive('gold')) / 100) + (isBoss ? 30 : 0));
   // Goblin pack bonus
   if (farmLoop && farmLoop.packType === 'goblin') goldGain = Math.round(goldGain * 1.30);
   var isRarePackMob = enemy && enemy.isRarePack;
@@ -8031,6 +8164,19 @@ function triggerDeath() {
       bossLoop = { difficulty: _bountyPreBossLoop.difficulty, actIdx: _bountyPreBossLoop.actIdx, loopsRemaining: _bountyPreBossLoop.loopsRemaining, loopsTotal: _bountyPreBossLoop.loopsTotal };
       _bountyPreBossLoop = null;
     }
+    if (_bountyPreFarmLoop) {
+      farmLoop = { difficulty: _bountyPreFarmLoop.difficulty, actIdx: _bountyPreFarmLoop.actIdx, loopsRemaining: _bountyPreFarmLoop.loopsRemaining, loopsTotal: _bountyPreFarmLoop.loopsTotal, packType: _bountyPreFarmLoop.packType, mfBonus: _bountyPreFarmLoop.mfBonus };
+      farmPackType = _bountyPreFarmLoop.packType || 'any';
+      _bountyPreFarmLoop = null;
+    }
+    if (_bountyPreDelve) {
+      // Died during the hunt — the delve run ends; recover the delve-death share of pending gold.
+      var _dvGold = Math.floor((_bountyPreDelve.gold || 0) * 0.50);
+      if (_dvGold > 0) { hero.gold += _dvGold; addLog('⛏ Delve run ended — ' + _dvGold + 'g recovered.', 'death'); }
+      delveActive = false; delveBag = []; delveGoldEarned = 0; delveResume = null;
+      _bountyPreDelve = null;
+      _updateDelveHud();
+    }
     addLog('📋 Bounty lost — target escaped.', 'info');
   }
 
@@ -8168,7 +8314,7 @@ function doRespawn() {
   rarePack = false;
   rarePackRemaining = 0;
   enemy = null;
-  hero.shopUsedThisAct = false; hero.topOffUsed = false;
+  hero.shopUsedThisAct = false; hero.topOffUsed = false; _resetBlessUsed();
   // Loadout auto-swap: return to farm skill/technique on respawn
   if (hero.farmSkillIdx !== null && hero.farmSkillIdx !== undefined) {
     hero.activeSkillIdx = hero.farmSkillIdx;
@@ -8388,12 +8534,16 @@ function _renderShopGrid() {
   var boardUnlocked = getHighestDefeatedBoss() && getTotalBossKills() >= 3;
   var mfUsed = hero.shopUsedThisAct;
   var gDis   = hero.gold < gambleCost;
+  // Blessings available this act = MF (not used) + each non-MF blessing (not used)
+  var _blessAvail = (mfUsed ? 0 : 1);
+  if (hero.blessUsedAct) { for (var _ba = 0; _ba < BLESSING_DEFS.length; _ba++) { if (!hero.blessUsedAct[BLESSING_DEFS[_ba].id]) _blessAvail++; } }
+  else _blessAvail += BLESSING_DEFS.length;
   var html = '<div style="display:flex;flex-wrap:wrap;gap:12px;justify-content:center;margin:16px 0 4px;">';
   html += _shopIconBtn(0, 'Bounties',  boardUnlocked ? '2 offers' : 'locked',
             boardUnlocked ? "openShopPanel('bounty')" : "void 0", '#5a3a7a', !boardUnlocked);
   html += _shopIconBtn(1, 'Gamble',    gambleCost + 'g · ' + totalMf() + '% MF',
             gDis ? "void 0" : "shopGambleIcon()", '#7a5a3a', gDis);
-  html += _shopIconBtn(2, 'Blessings', bossLoop ? '—' : (mfUsed ? 'used this act' : 'MF boost'),
+  html += _shopIconBtn(2, 'Blessings', bossLoop ? '—' : (_blessAvail > 0 ? _blessAvail + ' available' : 'all used'),
             "openShopPanel('blessings')", '#3a5a7a');
   html += _shopIconBtn(3, 'Shop',      shopItems.length + ' items · gems',
             "openShopPanel('shop')", '#5a3a7a');
@@ -8498,7 +8648,40 @@ function _renderBlessingsPanel() {
     + '<br><button class="overlay-btn" onclick="buyMfBuff()" '+((!_canAffordMf||mfUsed)?'disabled style="opacity:0.4;cursor:not-allowed"':'')+'>'
     + (mfUsed ? 'Already purchased' : 'Buy MF Blessing')
     + '</button></div>';
-  html += '<div style="text-align:center;color:#3a3a4a;font-size:10px;margin-top:8px;font-style:italic;">More blessings await in deeper depths…</div>';
+  // Additional blessings (Fortune's Favor / Wrath / Aegis) — each one purchase per act
+  for (var _bi = 0; _bi < BLESSING_DEFS.length; _bi++) {
+    html += _renderBlessingRow(BLESSING_DEFS[_bi]);
+  }
+  return html;
+}
+
+function _renderBlessingRow(def) {
+  if (!hero.blessUsedAct) hero.blessUsedAct = {};
+  var used = !!hero.blessUsedAct[def.id];
+  var n = _blessCount[def.id] || 1;
+  var totalPct  = n * def.pct;
+  var totalCost = _blessTotalCost(def.id, n);
+  var canAfford = hero.gold >= totalCost;
+  var atCap  = def.cap && (n + 1) * def.pct > def.cap;
+  var canInc = !used && !atCap && hero.gold >= _blessTotalCost(def.id, n + 1);
+  var canDec = !used && n > 1;
+  var active = _blessActive(def.id);
+  var html = '<div class="shop-item" style="border-color:'+def.color+'33;">'
+    + '<div class="shop-item-name" style="color:'+def.color+';">'+def.name
+    + (active ? ' <span style="font-size:10px;color:#7aaa5a;">(active +'+active+'%)</span>' : '') + '</div>'
+    + '<div class="shop-item-desc">+' + totalPct + '% ' + def.label + ' for 5 minutes. One per act.'
+    + (def.cap ? ' Cap ' + def.cap + '%.' : '') + '</div>';
+  if (!used) {
+    html += '<div style="display:flex;align-items:center;gap:8px;margin:6px 0;">'
+      + '<button onclick="adjustBlessCount(\''+def.id+'\',-1)" '+ (!canDec ? 'disabled style="opacity:0.4;cursor:not-allowed"' : '') +' style="width:28px;height:28px;font-size:16px;cursor:pointer;background:#0a0a12;border:1px solid '+def.color+'66;color:'+def.color+';border-radius:2px;">−</button>'
+      + '<span style="font-size:13px;color:'+def.color+';min-width:96px;text-align:center;">' + n + ' stack' + (n > 1 ? 's' : '') + ' (+' + totalPct + '%)</span>'
+      + '<button onclick="adjustBlessCount(\''+def.id+'\',1)" '+ (!canInc ? 'disabled style="opacity:0.4;cursor:not-allowed"' : '') +' style="width:28px;height:28px;font-size:16px;cursor:pointer;background:#0a0a12;border:1px solid '+def.color+'66;color:'+def.color+';border-radius:2px;">+</button>'
+      + '</div>';
+  }
+  html += '<div class="shop-item-cost">&#x27A1; ' + totalCost + ' gold</div>'
+    + '<br><button class="overlay-btn" onclick="buyBlessing(\''+def.id+'\')" '+((!canAfford||used)?'disabled style="opacity:0.4;cursor:not-allowed"':'')+'>'
+    + (used ? 'Already purchased' : 'Buy ' + def.name)
+    + '</button></div>';
   return html;
 }
 
@@ -8628,6 +8811,64 @@ function buyMfBuff() {
   _mfBlessCount = 1;
   renderShop();
 }
+
+// ── Blessings (beyond MF) — timed % buffs, one purchase per act each (independent) ──
+// Real-time (Date.now) end stamps so they expire correctly across reloads.
+var BLESSING_DUR_MS = 5 * 60 * 1000;
+var BLESSING_DEFS = [
+  { id:'gold',  name:"Fortune's Favor", label:'Gold Find',        pct:5, base:200, cap:0,  color:'#e0c070', desc:'Gold Find' },
+  { id:'wrath', name:'Blessing of Wrath', label:'Damage',         pct:2, base:300, cap:20, color:'#e08050', desc:'damage dealt' },
+  { id:'aegis', name:'Aegis Blessing',  label:'Damage Reduction', pct:2, base:300, cap:20, color:'#70a0e0', desc:'less damage taken' },
+];
+function _blessDef(id) { for (var i=0;i<BLESSING_DEFS.length;i++){ if (BLESSING_DEFS[i].id===id) return BLESSING_DEFS[i]; } return null; }
+var _blessCount = { gold:1, wrath:1, aegis:1 };
+
+// Current active magnitude of a blessing (0 if none/expired). Aegis is capped.
+function _blessActive(id) {
+  var b = hero.blessBuffs && hero.blessBuffs[id];
+  if (!b || Date.now() >= b.end) return 0;
+  var def = _blessDef(id);
+  return (def && def.cap) ? Math.min(def.cap, b.amt) : b.amt;
+}
+function _blessTotalCost(id, n) {
+  var def = _blessDef(id); if (!def) return 0;
+  var total = 0, step = def.base;
+  for (var i = 0; i < n; i++) { total += Math.round(step); step *= 1.2; }
+  return total * _actShopCostMult();
+}
+function _blessMaxPct(id) {
+  var def = _blessDef(id);
+  return def && def.cap ? def.cap : 999;
+}
+function adjustBlessCount(id, delta) {
+  var next = (_blessCount[id] || 1) + delta;
+  if (next < 1) return;
+  var def = _blessDef(id);
+  if (def && def.cap && next * def.pct > def.cap) return; // don't step past the cap
+  if (delta > 0 && _blessTotalCost(id, next) > hero.gold) return;
+  _blessCount[id] = next;
+  renderShop();
+}
+function buyBlessing(id) {
+  var def = _blessDef(id); if (!def) return;
+  if (!hero.blessUsedAct) hero.blessUsedAct = {};
+  if (hero.blessUsedAct[id]) return;
+  var n = _blessCount[id] || 1;
+  var cost = _blessTotalCost(id, n);
+  if (hero.gold < cost) return;
+  hero.gold -= cost;
+  if (!hero.blessBuffs) hero.blessBuffs = {};
+  var amt = n * def.pct;
+  if (def.cap) amt = Math.min(def.cap, amt);
+  hero.blessBuffs[id] = { end: Date.now() + BLESSING_DUR_MS, amt: amt };
+  hero.blessUsedAct[id] = true;
+  _blessCount[id] = 1;
+  addLog(def.name + ' active! +' + amt + '% ' + def.desc + ' for 5 minutes.', 'info');
+  var cgd = document.getElementById('combat-gold-display'); if (cgd) cgd.textContent = hero.gold;
+  renderShop();
+}
+// Clear the per-act "one purchase" locks (called wherever a new act begins)
+function _resetBlessUsed() { hero.blessUsedAct = {}; }
 
 var _gambleOverlayOpen = false;
 
@@ -8856,7 +9097,7 @@ function _advanceAfterBossShop() {
   rarePack = false;
   rarePackRemaining = 0;
   enemy = null;
-  hero.shopUsedThisAct = false; hero.topOffUsed = false;
+  hero.shopUsedThisAct = false; hero.topOffUsed = false; _resetBlessUsed();
   _carnageKills = 0; _mnemonicSkillId = null; _mnemonicBonus = false;
   hero._undyingVowUsed = false; hero._soulDebtActive = false; hero._soulDebtSecondDeath = false;
   // Loadout auto-swap: return to farm skill/technique
@@ -9159,7 +9400,7 @@ function selectBossLoop(diff, idx) {
   sessionDrops = []; sessionDropsPending = false; _lastSessionType = 'boss';
   _updateLoopButtons();
   difficulty = diff; actIdx = idx;
-  killCount = 0; bossSpawned = false; rarePack = false; rarePackRemaining = 0; enemy = null; hero.shopUsedThisAct = false; hero.topOffUsed = false;
+  killCount = 0; bossSpawned = false; rarePack = false; rarePackRemaining = 0; enemy = null; hero.shopUsedThisAct = false; hero.topOffUsed = false; _resetBlessUsed();
   addLog('[boss loop] '+cost+'g spent for '+_bossLoopCount+' loop'+(_bossLoopCount>1?'s':'')+'.', 'shop');
   addLog('[boss loop] Targeting '+ACTS[idx].bossName+'...', 'zone');
   closeBossLoopMenu();
@@ -9271,9 +9512,9 @@ function _delveItemMult(depth) {            // item-scale creep on top of Deso-H
   var d = Math.max(1, depth || delveLevel);
   return 1 + 0.019 * Math.log(d);
 }
-function _delveDmgCreep(depth) {            // near-flat damage creep (~+1.5% by depth 250)
+function _delveDmgCreep(depth) {            // damage scales with depth so deep delve stays a real threat
   var d = Math.max(1, depth || delveLevel);
-  return 1 + 0.003 * Math.log(d);
+  return 1 + 0.26 * (Math.pow(d, 0.6) - 1);  // ~3.5× @50, ~5× @105, ~7.9× @250, keeps climbing
 }
 // Rolled delve mob HP for the current depth — pinned to the Hell A5 reference × Deso Hell A5 (2×) × curve,
 // so it's independent of whatever difficulty/act you clicked Delve from.
@@ -9332,7 +9573,7 @@ function _renderDelveStartMenu() {
 }
 
 function startDelve() {
-  if (delveActive) return;
+  if (delveActive || bountyActive) return;
   closeDelveMenu();
   if (bossLoop) cancelBossLoop();
   if (farmLoop) cancelFarmLoop();
@@ -9353,6 +9594,7 @@ function startDelve() {
   rarePack = false;
 
   addLog('⛏ Descending to Depth ' + delveLevel + '…', 'zone');
+  _saveDelveCheckpoint(delveLevel);
   _updateDelveHud();
   renderDelveBtn();
   spawnNextEnemy();
@@ -9374,6 +9616,7 @@ function exitDelve(byDeath, rescuedItem) {
 
   delveBag = [];
   delveGoldEarned = 0;
+  delveResume = null; // run is over — don't resume on next load
   _updateDelveHud();
   renderDelveBtn();
   saveGame();
@@ -9561,6 +9804,20 @@ function buyVaultSlot(slot) {
   saveBank();
 }
 
+// ── Resume checkpoint ─────────────────────────────────
+// Persist an active-delve snapshot every 5 depths so a reload drops the player straight back
+// into the delve at the last checkpoint (losing at most a few depths, keeping bag + run gold).
+function _saveDelveCheckpoint(resumeLevel) {
+  if (!delveActive) return;
+  delveResume = {
+    level:      Math.max(1, resumeLevel || delveLevel),
+    gold:       delveGoldEarned,
+    startLevel: delveStartLevel,
+    bag:        delveBag.slice(),
+  };
+  saveGame();
+}
+
 // ── Combat hooks ──────────────────────────────────────
 function _delveOnMobKill(simNow) {
   delveMobsThisLevel++;
@@ -9581,6 +9838,8 @@ function _delveOnMobKill(simNow) {
     }
 
     if (completedLevel % 5 === 0) {
+      // Reached a 5-depth checkpoint — persist resume point so a reload continues delving here.
+      _saveDelveCheckpoint(completedLevel + 1);
       // Don't increment yet — continueDelve advances to the next depth
       _updateDelveHud();
       _showDelveExtractPopup();
@@ -9605,6 +9864,7 @@ function _delveOnBossKill(depth, simNow) {
   bossSpawned = false;
   delveMobsThisLevel = 0;
   _grantShopPass(); // delve guardian kill banks a shop pass
+  _saveDelveCheckpoint(depth + 1); // resume past the cleared guardian
   // Don't increment yet — continueDelve advances to depth+1
   _updateDelveHud();
   _showDelveExtractPopup();
@@ -9676,11 +9936,16 @@ function _showDelveExtractPopup() {
 
   document.getElementById('delve-extract').style.display = 'flex';
 
+  _delveExtractPaused = false;
+  var _pauseBtn = document.getElementById('delve-extract-pause-btn');
+  if (_pauseBtn) { _pauseBtn.textContent = '⏸ Pause'; _pauseBtn.style.display = delveAutoDelve ? '' : 'none'; }
+
   if (delveAutoDelve) {
     var secsLeft = delveAutoDelveDelay;
     var cdEl = document.getElementById('delve-extract-countdown');
     if (cdEl) cdEl.textContent = 'Auto-continuing in ' + secsLeft + 's…';
     _delveExtractTimer = setInterval(function() {
+      if (_delveExtractPaused) return;
       secsLeft--;
       if (cdEl) cdEl.textContent = secsLeft > 0 ? 'Auto-continuing in ' + secsLeft + 's…' : '';
       if (secsLeft <= 0) { clearInterval(_delveExtractTimer); _delveExtractTimer = null; _delveContinueOrBoss(); }
@@ -9689,6 +9954,18 @@ function _showDelveExtractPopup() {
     var cdEl = document.getElementById('delve-extract-countdown');
     if (cdEl) cdEl.textContent = '';
   }
+}
+
+function _toggleDelveExtractPause() {
+  _delveExtractPaused = !_delveExtractPaused;
+  var btn = document.getElementById('delve-extract-pause-btn');
+  if (btn) {
+    btn.textContent = _delveExtractPaused ? '▶ Resume' : '⏸ Pause';
+    btn.style.borderColor = _delveExtractPaused ? '#7aaa5a' : '#c8a044';
+    btn.style.color       = _delveExtractPaused ? '#7aaa5a' : '#c8a044';
+  }
+  var cdEl = document.getElementById('delve-extract-countdown');
+  if (cdEl && _delveExtractPaused) cdEl.textContent = '⏸ Countdown paused';
 }
 
 function _renderDelveExtractSlots() {
@@ -9795,7 +10072,7 @@ function selectFarmLoop(diff, idx) {
   sessionDrops = []; sessionDropsPending = false; _lastSessionType = 'farm';
   _updateLoopButtons();
   difficulty = diff; actIdx = idx;
-  killCount = 0; bossSpawned = false; rarePack = false; rarePackRemaining = 0; enemy = null; hero.shopUsedThisAct = false; hero.topOffUsed = false;
+  killCount = 0; bossSpawned = false; rarePack = false; rarePackRemaining = 0; enemy = null; hero.shopUsedThisAct = false; hero.topOffUsed = false; _resetBlessUsed();
   var packLabel = farmPackType !== 'any' ? ' ['+farmPackType+' packs]' : '';
   addLog('[farm loop] '+cost+'g spent for '+_farmLoopCount+' loop'+(_farmLoopCount>1?'s':'')+packLabel+'.', 'shop');
   addLog('[farm loop] Farming '+ACTS[idx].name+' ('+DIFFICULTY[diff].label+')...', 'zone');
@@ -10183,10 +10460,25 @@ function acceptBounty() {
     bossLoop = null;
     addLog('🔁 Boss loop paused — answering bounty.', 'zone');
   }
+  // Pause farm loop if running
+  if (farmLoop) {
+    _bountyPreFarmLoop = { difficulty: farmLoop.difficulty, actIdx: farmLoop.actIdx, loopsRemaining: farmLoop.loopsRemaining, loopsTotal: farmLoop.loopsTotal, packType: farmLoop.packType, mfBonus: farmLoop.mfBonus };
+    farmLoop = null;
+    addLog('🌾 Farm loop paused — answering bounty.', 'zone');
+  }
+  // Suspend delve if running — so hunt kills don't advance depth (restored on completion)
+  if (delveActive) {
+    _bountyPreDelve = { level: delveLevel, gold: delveGoldEarned, bag: delveBag.slice(), mobsThisLevel: delveMobsThisLevel, startLevel: delveStartLevel };
+    delveActive = false;
+    _delveBossPhase = false;
+    _delveBossPending = null;
+    addLog('⛏ Delve paused — answering bounty.', 'zone');
+  }
 
   // Advance to the next act now — same logic as closeShop — so completing
-  // the bounty returns to the correct act rather than restarting the current one
-  if (!_bountyPreBossLoop) {
+  // the bounty returns to the correct act rather than restarting the current one.
+  // Skip when a loop/delve is paused: we return to that, not the next act.
+  if (!_bountyPreBossLoop && !_bountyPreFarmLoop && !_bountyPreDelve) {
     if (pendingDiffPromotion) {
       var nextDiffIdx = DIFFICULTY_ORDER.indexOf(difficulty) + 1;
       if (nextDiffIdx < DIFFICULTY_ORDER.length) difficulty = DIFFICULTY_ORDER[nextDiffIdx];
@@ -10431,7 +10723,42 @@ function completeBounty() {
     addLog('🔁 Boss loop resumed.', 'zone');
     killCount = 0; bossSpawned = false; rarePack = false; rarePackRemaining = 0;
     enemy = null;
-    hero.shopUsedThisAct = false; hero.topOffUsed = false;
+    hero.shopUsedThisAct = false; hero.topOffUsed = false; _resetBlessUsed();
+    saveGame();
+    spawnNextEnemy();
+    return;
+  }
+
+  // Resume farm loop if it was paused
+  if (_bountyPreFarmLoop) {
+    var fl = _bountyPreFarmLoop;
+    _bountyPreFarmLoop = null;
+    farmLoop = { difficulty: fl.difficulty, actIdx: fl.actIdx, loopsRemaining: fl.loopsRemaining, loopsTotal: fl.loopsTotal, packType: fl.packType, mfBonus: fl.mfBonus };
+    farmPackType = fl.packType || 'any';
+    difficulty = fl.difficulty;
+    actIdx = fl.actIdx;
+    addLog('🌾 Farm loop resumed.', 'zone');
+    killCount = 0; bossSpawned = false; rarePack = false; rarePackRemaining = 0;
+    enemy = null;
+    hero.shopUsedThisAct = false; hero.topOffUsed = false; _resetBlessUsed();
+    saveGame();
+    spawnNextEnemy();
+    return;
+  }
+
+  // Resume delve if it was paused
+  if (_bountyPreDelve) {
+    var dv = _bountyPreDelve;
+    _bountyPreDelve = null;
+    delveActive = true;
+    delveLevel = dv.level;
+    delveGoldEarned = dv.gold;
+    delveBag = dv.bag || [];
+    delveMobsThisLevel = dv.mobsThisLevel || 0;
+    delveStartLevel = dv.startLevel || delveLevel;
+    _delveBossPhase = false; bossSpawned = false; enemy = null;
+    addLog('⛏ Delve resumed at Depth ' + delveLevel + '.', 'zone');
+    _updateDelveHud();
     saveGame();
     spawnNextEnemy();
     return;
@@ -10442,7 +10769,7 @@ function completeBounty() {
   // After a bounty fight the player returns to where they were — just re-enter combat
   enemy = null;
   killCount = 0; bossSpawned = false; rarePack = false; rarePackRemaining = 0;
-  hero.shopUsedThisAct = false; hero.topOffUsed = false;
+  hero.shopUsedThisAct = false; hero.topOffUsed = false; _resetBlessUsed();
   addLog('Returning to ' + ACTS[actIdx].name + '...', 'zone');
   spawnNextEnemy();
 }
@@ -10567,7 +10894,7 @@ function jumpToAct(diff, ai) {
   dead = false;
   hero.hp = hero.maxHp;
   hero.rage = 0;
-  hero.shopUsedThisAct = false; hero.topOffUsed = false;
+  hero.shopUsedThisAct = false; hero.topOffUsed = false; _resetBlessUsed();
   addLog('Entering ' + DIFFICULTY[diff].label + ' · Act ' + (ai + 1) + '…', 'zone');
   spawnNextEnemy();
 }
@@ -10654,10 +10981,10 @@ function toggleSkillTree() {
   var t = document.getElementById('skill-tree-toggle');
   if (overlay.classList.contains('open')) {
     overlay.classList.remove('open');
-    t.textContent = '⊞ Skill Tree';
+    if (t) t.classList.remove('tree-open');
   } else {
     overlay.classList.add('open');
-    t.textContent = '✕ Close Tree';
+    if (t) t.classList.add('tree-open');
     renderSkillTree();
   }
 }
@@ -10803,6 +11130,12 @@ function renderPetPanel() {
   var activeSlot = hero.activePetSlot;
   var activeEntry = (activeSlot !== null && activeSlot !== undefined) ? roster[activeSlot] : null;
   var html = '';
+
+  // ── How to get new companions (very obvious) ──
+  html += '<div style="border:1px solid #c8a0ff99;background:#160a1e;border-radius:3px;padding:10px 12px;margin-bottom:12px;text-align:center;box-shadow:0 0 12px #7a3aff33;">'
+    + '<div style="font-size:13px;color:#e6c2ff;letter-spacing:1px;text-transform:uppercase;font-weight:bold;">🏹 Find New Companions on Bounty Hunts</div>'
+    + '<div style="font-size:10px;color:#9a7aba;margin-top:4px;line-height:1.4;">Accept a contract from the <b style="color:#c8a0ff;">Bounty Board</b> — when you cross a wild creature during the hunt, choose to <b style="color:#c8a0ff;">tame</b> it to keep it forever.</div>'
+    + '</div>';
 
   // ── Active companion summary ──
   if (activeEntry) {
@@ -11140,6 +11473,9 @@ var UNIQUE_PROC_DESCS = {
   'Glass Cannon':       '2\xd7 damage dealt. 2\xd7 damage taken.',
   'Ichor of Decay':     'Poison ticks have 20% chance to add another stack.',
   "Fool's Bargain":     'All other gear loses its stat bonuses. Your base damage is tripled.',
+  'Cascade':            'Echoes can echo — each echo re-rolls your Echo chance, chaining up to 3 times.',
+  'Festering Heart':    'Every new burn, bleed, or poison erupts instantly for 3\xd7 a tick.',
+  'The Warmark':        'Encounter Damage applies to ALL enemies, not just bosses/bounties/packs.',
 };
 
 // A non-unique item carries "quality" if it rolled a base MF / Gold Find / XP Gain stat.
@@ -11252,6 +11588,24 @@ function renderUI(now) {
         var _bBoss = document.getElementById('quiver-mode-boss');
         if (_bAll)  _bAll.addEventListener('click',  function(){ setRecoverMode('all'); });
         if (_bBoss) _bBoss.addEventListener('click', function(){ setRecoverMode('boss'); });
+        // Explain the Quiver / Trap Bag on hover (adapts to the active discipline)
+        quiverBar.style.cursor = 'help';
+        quiverBar.addEventListener('mouseenter', function() {
+          scheduleTooltip(function() {
+            var _trap  = hero.rangerDiscipline === 'trapper';
+            var _name  = _trap ? '🪤 Trap Bag' : '🏹 Quiver';
+            var _many  = _trap ? 'traps' : 'arrows';
+            var _one   = _trap ? 'trap'  : 'arrow';
+            showTooltip('<div class="tt-title">'+_name+'</div>'
+              + '<div style="font-size:11px;color:#a09080;line-height:1.5;">'
+              + 'Forestcraft\'s <b style="color:#9ac59a;">Recover</b> passive banks '+_many+' here on mob kills (holds up to 5). '
+              + 'Each stored '+_one+' is spent automatically and strikes for <b style="color:#ffd257;">2× damage</b> (guaranteed crit).'
+              + '<br><br><b style="color:#7aaa5a;">Auto</b> — spend stored '+_many+' on any enemy.  '
+              + '<b style="color:#c8843a;">Boss only</b> — save them for boss fights.'
+              + '</div>');
+          });
+        });
+        quiverBar.addEventListener('mouseleave', hideTooltip);
         quiverBar._built = true;
       }
       var _qLabelEl = document.getElementById('quiver-label');
@@ -11383,15 +11737,27 @@ function renderUI(now) {
     else { cdEl.className = 'stat-val'; cdEl.title = ''; }
   }
 
-  // MF buff
+  // MF buff + timed blessings
   var mfEl = document.getElementById('mf-buff-display');
+  var _buffHtml = '';
   if (hero.mfBuff && now < hero.mfBuffEnd) {
     var secsLeft = Math.round((hero.mfBuffEnd - now) / 1000);
-    mfEl.innerHTML = '<span class="mf-buff-tag">✦ MF Blessing: '+secsLeft+'s</span>';
-  } else {
-    if (hero.mfBuff && now >= hero.mfBuffEnd) hero.mfBuff = false;
-    mfEl.innerHTML = '';
+    _buffHtml += '<span class="mf-buff-tag">✦ MF Blessing: '+secsLeft+'s</span>';
+  } else if (hero.mfBuff && now >= hero.mfBuffEnd) {
+    hero.mfBuff = false;
   }
+  if (hero.blessBuffs) {
+    var _nowReal = Date.now();
+    for (var _bhi = 0; _bhi < BLESSING_DEFS.length; _bhi++) {
+      var _bd = BLESSING_DEFS[_bhi];
+      var _bb = hero.blessBuffs[_bd.id];
+      if (_bb && _nowReal < _bb.end) {
+        var _bsec = Math.round((_bb.end - _nowReal) / 1000);
+        _buffHtml += '<span class="mf-buff-tag" style="color:'+_bd.color+';border-color:'+_bd.color+'55;">✦ '+_bd.label+' +'+_bb.amt+'%: '+_bsec+'s</span>';
+      }
+    }
+  }
+  mfEl.innerHTML = _buffHtml;
 
   // Equipped + Vault — only rebuild DOM when gear actually changed
   if (gearDirty) {
@@ -11463,7 +11829,9 @@ function renderUI(now) {
     nameEl.className   = 'enemy-name' + (enemy.isBoss ? ' boss' : '');
     if (_enemyHpShowAt === 0 || gameNow() >= _enemyHpShowAt) {
       var ePct = Math.max(0, Math.round(enemy.hp / enemy.maxHp * 100));
-      _prevEnemyHpPct = _updateGhostBar('enemy-hp-ghost', 'enemy-hp-bar', ePct, _prevEnemyHpPct, _enemyGhostTimer, function(t){ _enemyGhostTimer = t; });
+      var _ghostColor = _trapCarryGhost ? '#c078e0' : null; // purple = carried-over trap damage
+      _trapCarryGhost = false;
+      _prevEnemyHpPct = _updateGhostBar('enemy-hp-ghost', 'enemy-hp-bar', ePct, _prevEnemyHpPct, _enemyGhostTimer, function(t){ _enemyGhostTimer = t; }, _ghostColor);
       document.getElementById('enemy-hp-text').textContent = (Math.round(enemy.hp * 100) / 100) + ' / ' + (Math.round(enemy.maxHp * 100) / 100);
     }
     var statusEl = document.getElementById('status-line');
@@ -11996,6 +12364,13 @@ function rerollVaultItem(slot, idx) {
 // ─── Enchanting ───────────────────────────────────────────────────────────────
 
 var ENCHANT_COSTS = { magic: 300, rare: 800 };
+// Enchant cost scales with the current difficulty's item power — the reroll produces stats at
+// _itemDiffScale(difficulty), so a cheap flat price would let players upgrade old items to
+// Desolation-tier stats for a pittance. Price now tracks that same scale (×1 normal → ×4.9 Deso-Hell).
+function _enchantCost(rarity) {
+  var base = ENCHANT_COSTS[rarity] || 0;
+  return Math.round(base * _itemDiffScale(difficulty) / 10) * 10;
+}
 
 function statLineForStat(k, v) {
   var dmgL = cls ? cls.dmgLabel : 'Dmg';
@@ -12115,7 +12490,7 @@ function renderEnchantOverlay() {
       var clickAttr = isEnchanted ? '' : 'onclick="selectEnchantItem(\''+e.slot+'\','+e.idx+')"';
       html += '<div '+clickAttr+' style="'+(isEnchanted?'opacity:0.4;cursor:not-allowed;':'cursor:pointer;')+'padding:7px 9px;margin-bottom:4px;border:1px solid '+(isSel?col:'#2a2a3a')+';border-radius:3px;background:'+(isSel?'#0d0d20':'#0a0a14')+';transition:border-color 0.1s;">'
         + '<div style="color:'+col+';font-size:12px;font-weight:bold;">'+e.item.name+_qualityBadge(e.item)+(isEnchanted?' <span style="color:#3a3a5a;font-size:9px;">✦ enchanted</span>':'')+'</div>'
-        + '<div style="color:#4a4a6a;font-size:10px;margin:1px 0;">'+e.item.slot+' · '+e.item.rarity+(isEnchanted?' · already enchanted':' · '+ENCHANT_COSTS[e.item.rarity]+'g')+'</div>'
+        + '<div style="color:#4a4a6a;font-size:10px;margin:1px 0;">'+e.item.slot+' · '+e.item.rarity+(isEnchanted?' · already enchanted':' · '+_enchantCost(e.item.rarity)+'g')+'</div>'
         + '<div style="color:#7a7a8a;font-size:10px;">'+statLine(e.item.stats)+'</div>'
       + '</div>';
     }
@@ -12125,7 +12500,7 @@ function renderEnchantOverlay() {
   if (_enchantSelSlot !== null && _enchantSelIdx !== null) {
     var selItem = hero.vault[_enchantSelSlot] && hero.vault[_enchantSelSlot][_enchantSelIdx];
     if (selItem) {
-      var cost = ENCHANT_COSTS[selItem.rarity];
+      var cost = _enchantCost(selItem.rarity);
       var canAfford = hero.gold >= cost;
       // Base mf/gf/xp and baked-in defense are always kept, so they aren't lockable choices
       var statKeys = Object.keys(selItem.stats).filter(function(k) { return selItem.stats[k] > 0 && k !== 'defense' && BASE_STATS.indexOf(k) === -1; });
@@ -12156,7 +12531,7 @@ function doEnchant() {
   if (!_enchantSelSlot || _enchantSelIdx === null || !_enchantLockedStat) return;
   var item = hero.vault[_enchantSelSlot] && hero.vault[_enchantSelSlot][_enchantSelIdx];
   if (!item) return;
-  var cost = ENCHANT_COSTS[item.rarity];
+  var cost = _enchantCost(item.rarity);
   if (!cost || hero.gold < cost) return;
 
   hero.gold -= cost;
@@ -18652,9 +19027,12 @@ function triggerAttackAnim(skillId, isCrit) {
   }
   else if (classKey === 'ranger') {
     if (skillId !== 'overload_shot' && _pScene._overloadOrbs && _pScene._overloadOrbs.length) _pScene._clearOverloadOrbs();
-    if (RAN_BOW_SKILLS.indexOf(skillId) !== -1) _pScene.playRangerBowDraw(heroAttackInterval());
-    else if (RAN_TRAPPER_SKILLS.indexOf(skillId) !== -1) _pScene.playRangerTrapperAttack(heroAttackInterval());
-    else _pScene.playRangerShoot(heroAttackInterval());
+    // Speed-adjust the interval so the animation plays fully within the (sped-up) swing,
+    // matching the sorc/warrior/rogue paths — otherwise it stalls on the first frames at 2–3×.
+    var _rint = Math.max(1, Math.round(heroAttackInterval() / gameSpeed));
+    if (RAN_BOW_SKILLS.indexOf(skillId) !== -1) _pScene.playRangerBowDraw(_rint);
+    else if (RAN_TRAPPER_SKILLS.indexOf(skillId) !== -1) _pScene.playRangerTrapperAttack(_rint);
+    else _pScene.playRangerShoot(_rint);
   }
   var _noProjectile = ['leapslam', 'corrosive', 'neurotoxin', 'spellbreaker', 'nullstrike', 'taintblood', 'backstab'];
   if (_noProjectile.indexOf(skillId) === -1) _pScene.fireProjectile(skillId, isCrit);
@@ -18730,6 +19108,31 @@ function closeDesoHelp() {
   document.getElementById('deso-help-modal').classList.remove('open');
 }
 
+function openItemHelp() {
+  // Build the "which affixes drop where" list from the real slot pools
+  var box = document.getElementById('item-help-affixes');
+  if (box) {
+    var _lab = { mainDmg:'Dmg', mainSpd:'Spd', hp:'HP', hpRegen:'HP Regen', reducedDmg:'Dmg Reduce',
+      blockChance:'Block', spellShield:'Spell Shield', castCooldown:'Cast Cooldown',
+      fireDmg:'Fire', lightDmg:'Lightning', coldDmg:'Cold', magicDmg:'Magic',
+      critChance:'Crit', aoeChance:'AoE', statusEffect:'Status',
+      echo:'Echo', encounterDmg:'Encounter Dmg', ailmentDmg:'Ailment Dmg' };
+    var _slots = [['weapon','Weapon'],['armor','Armor'],['ring','Ring'],['amulet','Amulet'],['trinket','Trinket'],['boots','Boots']];
+    var h = '';
+    for (var i = 0; i < _slots.length; i++) {
+      var pool = SLOT_STAT_POOLS[_slots[i][0]] || [];
+      var names = [];
+      for (var j = 0; j < pool.length; j++) { if (_lab[pool[j]]) names.push(_lab[pool[j]]); }
+      h += '<div style="margin-bottom:3px;"><b style="color:#a89ac0;">'+_slots[i][1]+':</b> <span style="color:#6a6a7a;">'+names.join(', ')+'</span></div>';
+    }
+    box.innerHTML = h;
+  }
+  document.getElementById('item-help-modal').style.display = 'flex';
+}
+function closeItemHelp() {
+  document.getElementById('item-help-modal').style.display = 'none';
+}
+
 function triggerBountyCompleteAnim() {
   var scene = document.getElementById('combat-scene');
   if (!scene) return;
@@ -18738,6 +19141,17 @@ function triggerBountyCompleteAnim() {
   el.textContent = '📋 Bounty Complete!';
   scene.appendChild(el);
   setTimeout(function() { if (el.parentNode) el.parentNode.removeChild(el); }, 2500);
+}
+
+function triggerTrapCarryAnim(times) {
+  var scene = document.getElementById('combat-scene');
+  if (!scene) return;
+  var el = document.createElement('div');
+  el.className = 'trap-carry-float';
+  el.innerHTML = '🪤 TRAP CARRIED!<span class="tc-sub">×' + times + ' entry strike' + (times > 1 ? 's' : '') + '</span>';
+  scene.appendChild(el);
+  if (_pScene && _pScene.flashStatus) _pScene.flashStatus('#ff9a2a');
+  setTimeout(function() { if (el.parentNode) el.parentNode.removeChild(el); }, 2300);
 }
 
 // ── Bounty hunt footsteps ──
@@ -18948,6 +19362,8 @@ function saveGame() {
         mfBuff:        hero.mfBuff,
         mfBuffEnd:     hero.mfBuffEnd,
         mfBuffAmount:  hero.mfBuffAmount || 5,
+        blessBuffs:    hero.blessBuffs || {},
+        blessUsedAct:  hero.blessUsedAct || {},
         shopUsedThisAct: hero.shopUsedThisAct,
         topOffUsed:      hero.topOffUsed || false,
         autoTopOff:      hero.autoTopOff || false,
@@ -19004,6 +19420,7 @@ function saveGame() {
       // Delve
       delveUnlocked:           delveUnlocked,
       delveCheckpoints:        delveCheckpoints,
+      delveResume:             delveResume,
       delveAutoDelve:          delveAutoDelve,
       delveAutoDelveDelay:     delveAutoDelveDelay,
       // Bounty board
@@ -19098,6 +19515,8 @@ function loadGame() {
     hero.mfBuff         = h.mfBuff         || false;
     hero.mfBuffEnd      = h.mfBuffEnd      || 0;
     hero.mfBuffAmount   = h.mfBuffAmount   || 5;
+    hero.blessBuffs     = h.blessBuffs     || {};
+    hero.blessUsedAct   = h.blessUsedAct   || {};
     hero.shopUsedThisAct = h.shopUsedThisAct || false;
     hero.topOffUsed  = h.topOffUsed  || false;
     hero.autoTopOff  = h.autoTopOff  || false;
@@ -19219,6 +19638,21 @@ function loadGame() {
     delveCheckpoints   = state.delveCheckpoints   || [];
     delveAutoDelve     = state.delveAutoDelve      || false;
     delveAutoDelveDelay= state.delveAutoDelveDelay || 20;
+    // Resume an in-progress delve (snapshot saved every 5 depths)
+    delveResume = state.delveResume || null;
+    if (delveResume && delveUnlocked) {
+      delveActive        = true;
+      delveLevel         = Math.max(1, delveResume.level || 1);
+      delveGoldEarned    = delveResume.gold || 0;
+      delveBag           = delveResume.bag || [];
+      delveStartLevel    = delveResume.startLevel || delveLevel;
+      delveMobsThisLevel = 0;
+      _delveBossPhase    = false;
+      bossSpawned        = false;
+      enemy              = null;
+      addLog('⛏ Resuming delve at Depth ' + delveLevel + '…', 'zone');
+      setTimeout(_updateDelveHud, 120);
+    }
     setTimeout(renderDelveBtn, 100);
     // Bounty board
     currentBounty    = state.currentBounty    || null;
@@ -19306,14 +19740,15 @@ var _hitVisualDelayMs = 0;
 var _enemyHpShowAt    = 0;
 var _warriorGreeting  = false;
 var _rogueGreeting    = false;
-function _updateGhostBar(ghostId, barId, newPct, prevPct, timerRef, setTimer) {
+function _updateGhostBar(ghostId, barId, newPct, prevPct, timerRef, setTimer, color) {
   var ghost = document.getElementById(ghostId);
   var bar   = document.getElementById(barId);
   if (!ghost || !bar) return prevPct;
   bar.style.width = newPct + '%';
   if (newPct === prevPct) return prevPct;
   if (newPct < prevPct) {
-    // Snap ghost to old value, then drain after delay
+    // Snap ghost to old value, then drain after delay. Color signals the damage source.
+    ghost.style.background = color || '#ff9999';
     ghost.style.transition = 'none';
     ghost.style.width = prevPct + '%';
     clearTimeout(timerRef);
@@ -21015,6 +21450,61 @@ init();
 <div id="ngplus-whisper-overlay" style="display:none;position:fixed;inset:0;background:#000000ee;z-index:501;align-items:center;justify-content:center;">
   <div style="background:#0a0a0f;border:1px solid #1a1a2a;border-radius:4px;padding:48px 56px;text-align:center;font-family:Georgia,serif;max-width:480px;">
     <div id="ngplus-whisper-text" style="font-size:15px;color:#6a6a8a;letter-spacing:2px;font-style:italic;line-height:1.8;opacity:0;transition:opacity 1.8s ease;"></div>
+  </div>
+</div>
+
+<!-- Item Help Modal -->
+<div id="item-help-modal" onclick="if(event.target===this)closeItemHelp()" style="display:none;position:fixed;inset:0;z-index:9000;background:rgba(0,0,0,0.82);align-items:center;justify-content:center;">
+  <div style="background:#0c0a12;border:1px solid #6a4a8a;border-radius:6px;max-width:520px;width:92%;max-height:84vh;overflow-y:auto;padding:20px 22px;box-shadow:0 0 40px #6a4a8a44;font-family:Georgia,serif;color:#d4c9a8;">
+    <div style="font-size:15px;letter-spacing:2px;text-transform:uppercase;color:#c8a0ff;text-align:center;margin:0 0 14px;">🎒 Understanding Items</div>
+
+    <div style="margin-bottom:14px;">
+      <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#9a7aba;border-bottom:1px solid #2a1a3a;padding-bottom:4px;margin-bottom:7px;">Rarities &amp; Affixes</div>
+      <div style="font-size:12px;line-height:1.7;color:#b8b0c8;">
+        Every item has a <b style="color:#d4c9a8;">rarity</b> that sets how many random <b style="color:#d4c9a8;">affixes</b> (rolled bonus stats) it carries:
+        <div style="padding-left:8px;margin-top:5px;">
+          <div><span style="color:#7a7a8a;">■ Normal</span> — no affixes (base item only).</div>
+          <div><span style="color:#6fa3ef;">■ Magic</span> — 1–2 affixes, rolled higher on average.</div>
+          <div><span style="color:#ffd700;">■ Rare</span> — 3–4 affixes, more variety.</div>
+          <div><span style="color:#e57bf5;">■ Unique</span> — fixed, hand-tuned stats; some grant <b style="color:#c878f0;">+skills</b> and special effects.</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-bottom:14px;">
+      <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#9a7aba;border-bottom:1px solid #2a1a3a;padding-bottom:4px;margin-bottom:7px;">⚜ Quality — “free” base stats</div>
+      <div style="font-size:12px;line-height:1.7;color:#b8b0c8;">
+        Independent of affixes, each non-unique item has a <b style="color:#d4c9a8;">25% chance</b> to be born with <b style="color:#d4c9a8;">one</b> Quality stat: <span style="color:#e0c070;">Magic Find</span>, <span style="color:#e0c070;">Gold Find</span>, or <span style="color:#e0c070;">XP Gain</span>.
+        <div style="padding-left:8px;margin-top:5px;">
+          <div>• It’s <b style="color:#c8a84b;">free</b> — it does <b>not</b> count toward the item’s affix total.</div>
+          <div>• It’s <b style="color:#c8a84b;">always kept</b> — reforging and enchanting never remove or reroll it.</div>
+          <div>• A <span style="color:#c8a84b;">⚜ fleur-de-lis</span> next to the item name marks a Quality item.</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-bottom:14px;">
+      <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#9a7aba;border-bottom:1px solid #2a1a3a;padding-bottom:4px;margin-bottom:7px;">Magic Damage is NOT Elemental</div>
+      <div style="font-size:12px;line-height:1.7;color:#b8b0c8;">
+        <span style="color:#ff7733;">Fire</span>, <span style="color:#a0d8ff;">Lightning</span>, and <span style="color:#7dd4fc;">Cold</span> are <b style="color:#d4c9a8;">elemental</b> damage — in Desolation enemies can carry elemental <b>Resist</b> that reduces them.
+        <div style="margin-top:5px;"><span style="color:#c878f0;">Magic Damage</span> is a <b style="color:#d4c9a8;">separate school</b>. It is <b style="color:#e57bf5;">not</b> elemental and is <b>never</b> reduced by elemental resist — reliable against resistant foes.</div>
+      </div>
+    </div>
+
+    <div style="margin-bottom:14px;">
+      <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#9a7aba;border-bottom:1px solid #2a1a3a;padding-bottom:4px;margin-bottom:7px;">Which affixes drop where</div>
+      <div id="item-help-affixes" style="font-size:11px;line-height:1.6;color:#8a8a9a;"></div>
+      <div style="font-size:10px;color:#5a5a6a;margin-top:6px;font-style:italic;">A few affixes (Resist, Thorns, Crit Multi, Sunder, Defense) only appear once <span style="color:#cc44ff;">Desolation</span> is unlocked.</div>
+    </div>
+
+    <div style="margin-bottom:4px;">
+      <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#9a7aba;border-bottom:1px solid #2a1a3a;padding-bottom:4px;margin-bottom:7px;">Reforging &amp; Enchanting</div>
+      <div style="font-size:12px;line-height:1.7;color:#b8b0c8;">
+        In the <b style="color:#c8a0ff;">Crafting</b> tab you can spend <b style="color:#d4c9a8;">gem shards</b> to <b>Reforge</b> a magic/rare item (rerolls all affixes, favored by the shard type), or <b>Enchant</b> to lock one affix and reroll the rest. Quality stats survive both.
+      </div>
+    </div>
+
+    <button onclick="closeItemHelp()" style="display:block;margin:16px auto 0;padding:6px 28px;background:#160f22;border:1px solid #6a4a8a;color:#c8a0ff;font-family:Georgia,serif;font-size:12px;letter-spacing:2px;cursor:pointer;border-radius:3px;">Got it</button>
   </div>
 </div>
 
