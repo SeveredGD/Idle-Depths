@@ -1201,6 +1201,18 @@
 <!-- Tooltip -->
 <div id="tooltip"></div>
 
+<!-- Stats Help Overlay -->
+<div id="stats-help-overlay" style="display:none;position:fixed;inset:0;background:#000000cc;z-index:300;align-items:center;justify-content:center;" onclick="if(event.target===this)closeStatsHelp()">
+  <div style="background:#0c0c14;border:1px solid #3a3a5a;border-radius:4px;padding:22px 24px;max-width:560px;width:92%;max-height:86vh;overflow-y:auto;font-family:Georgia,serif;color:#c8c0b0;">
+    <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:12px;">
+      <span style="font-size:18px;color:#c8a84b;letter-spacing:1px;">Stat Reference</span>
+      <button onclick="closeStatsHelp()" style="background:none;border:1px solid #3a3a5a;color:#7a7a9a;font-family:Georgia,serif;font-size:11px;cursor:pointer;border-radius:2px;padding:2px 10px;">Close</button>
+    </div>
+    <div id="stats-help-body" style="font-size:12px;line-height:1.55;"></div>
+    <button onclick="closeStatsHelp()" style="width:100%;margin-top:14px;padding:8px 0;border:1px solid #c8a84b66;background:#1a1510;color:#c8a84b;font-family:Georgia,serif;font-size:12px;cursor:pointer;border-radius:2px;letter-spacing:1px;">Got it</button>
+  </div>
+</div>
+
 <!-- Help overlay -->
 <div id="help-overlay" style="display:none;position:fixed;inset:0;background:#00000099;z-index:200;align-items:flex-start;justify-content:center;overflow-y:auto;padding:20px 0;" onclick="if(event.target===this)closeHelp()">
   <div style="background:#0d0d18;border:1px solid #c8a84b44;border-radius:4px;padding:32px 40px;max-width:760px;width:100%;font-family:Georgia,serif;color:#d4c9a8;position:relative;">
@@ -1472,7 +1484,7 @@
 </div>
 
 
-  <span class="game-title">EVERDEEP IDLE <span style="font-size:13px;letter-spacing:1px;opacity:0.6;">v1.1.0</span></span>
+  <span class="game-title">EVERDEEP IDLE <span style="font-size:13px;letter-spacing:1px;opacity:0.6;">v1.1.4</span></span>
 </div>
 
 <!-- Difficulty / act bar -->
@@ -1521,7 +1533,11 @@
       <div class="stat-row" id="stat-sunder-row" style="display:none;"><span class="stat-label" title="Reduces enemy resistance on first hit of each fight." style="color:#ffffff;">Sunder</span><span class="stat-val" id="stat-sunder" style="color:#ffffff;">0%</span></div>
       <div class="stat-row"><span class="stat-label">Recovery</span><span class="stat-val" id="stat-cooldown">—</span></div>
       <div class="stat-row"><span class="stat-label" title="Multiplies status proc chance, duration, and burn damage">Status Eff.</span><span class="stat-val" id="stat-statuseffect">0%</span></div>
+      <div class="stat-row" id="stat-echo-row" style="display:none;"><span class="stat-label" title="Chance to repeat your attack for 20% damage (can re-proc status effects).">Echo</span><span class="stat-val" id="stat-echo">0%</span></div>
+      <div class="stat-row" id="stat-encounter-row" style="display:none;"><span class="stat-label" title="Bonus damage vs bosses, delve guardians, bounty targets and rare packs.">Encounter Dmg</span><span class="stat-val" id="stat-encounter">0%</span></div>
+      <div class="stat-row" id="stat-ailment-row" style="display:none;"><span class="stat-label" title="Increases burn, bleed and poison damage-over-time.">Ailment Dmg</span><span class="stat-val" id="stat-ailment">0%</span></div>
       <div id="mf-buff-display"></div>
+      <button onclick="openStatsHelp()" style="width:100%;margin-top:8px;padding:4px 0;border:1px solid #2a2a3a;background:#0a0a14;color:#6a6a8a;font-family:Georgia,serif;font-size:10px;cursor:pointer;border-radius:2px;letter-spacing:0.5px;" onmouseover="this.style.color='#c8a84b';this.style.borderColor='#c8a84b44';" onmouseout="this.style.color='#6a6a8a';this.style.borderColor='#2a2a3a';">? What do these stats do?</button>
       </div>
     </div>
 
@@ -3568,7 +3584,7 @@ var SCORE_WEIGHTS  = {
   blockChance:1.0, spellShield:1.5,
   xpGain:1.0, goldFind:1.0, castCooldown:0.2, // ms-magnitude stat: 0.2/ms keeps it from dwarfing damage rolls (see cap at 1000ms lockout)
   statusEffect:2.0,
-  echo:2.5, encounterDmg:2.0, ailmentDmg:2.0,
+  echo:2.0, encounterDmg:1.2, ailmentDmg:1.0, // big-magnitude/conditional stats: low per-point weight so they don't dwarf damage rolls
   // Desolation-only stats
   resist:2.8, thorns:1.8, critMulti:2.5, sunder:2.5,
 };
@@ -8173,7 +8189,7 @@ function renderShop() {
     html += '<div class="shop-item" data-shopidx="'+i+'" style="opacity:'+(entry.sold?'0.4':'1')+'">'
       + '<div style="display:flex;justify-content:space-between;align-items:flex-start;">'
         + '<div>'
-          + '<div class="shop-item-name" style="color:'+color+'">'+item.name+bonusStr+(!entry.sold ? upgradeTag(item) : '')+'</div>'
+          + '<div class="shop-item-name" style="color:'+color+'">'+item.name+_qualityBadge(item)+bonusStr+(!entry.sold ? upgradeTag(item) : '')+'</div>'
           + '<div class="shop-item-desc">'+statLine(item.stats)+'</div>'
           + '<div class="shop-item-desc" style="color:#5a5a6a;font-size:10px;">['+item.slot+' · '+item.rarity+']</div>'
         + '</div>'
@@ -8621,7 +8637,7 @@ function renderMerchant() {
     html += '<div class="shop-item" data-shopidx="'+i+'" style="opacity:'+(entry.sold?'0.4':'1')+'">'
       + '<div style="display:flex;justify-content:space-between;align-items:flex-start;">'
         + '<div>'
-          + '<div class="shop-item-name" style="color:'+color+'">'+item.name+bonusStr+(!entry.sold?upgradeTag(item):'')+'</div>'
+          + '<div class="shop-item-name" style="color:'+color+'">'+item.name+_qualityBadge(item)+bonusStr+(!entry.sold?upgradeTag(item):'')+'</div>'
           + '<div class="shop-item-desc">'+statLine(item.stats)+'</div>'
           + '<div class="shop-item-desc" style="color:#5a5a6a;font-size:10px;">['+item.slot+' · '+item.rarity+']</div>'
         + '</div>'
@@ -10780,6 +10796,17 @@ var UNIQUE_PROC_DESCS = {
   "Fool's Bargain":     'All other gear loses its stat bonuses. Your base damage is tripled.',
 };
 
+// A non-unique item carries "quality" if it rolled a base MF / Gold Find / XP Gain stat.
+function _itemHasQuality(item) {
+  return !!(item && item.rarity !== 'unique' && item.stats && (item.stats.mf || item.stats.goldFind || item.stats.xpGain));
+}
+// Amber fleur-de-lis badge appended to item names (mirrors the enchanted ✦ badge)
+function _qualityBadge(item) {
+  return _itemHasQuality(item)
+    ? ' <span style="color:#c8b06a;font-size:9px;letter-spacing:0.5px;" title="Quality — this item has a base Magic Find / Gold Find / XP Gain bonus">⚜</span>'
+    : '';
+}
+
 function statLine(stats) {
   if (!stats) return '';
   var parts = [];
@@ -10937,6 +10964,15 @@ function renderUI(now) {
   if (gfEl)     gfEl.textContent     = (hero._goldFind      || 0) + '%';
   var seEl = document.getElementById('stat-statuseffect');
   if (seEl) seEl.textContent = (hero._statusEffect || 0) + '%';
+  // New offensive stats — only shown once the hero actually has them
+  var _showStat = function(rowId, valId, val) {
+    var row = document.getElementById(rowId), el = document.getElementById(valId);
+    if (row) row.style.display = (val || 0) > 0 ? '' : 'none';
+    if (el)  el.textContent = (val || 0) + '%';
+  };
+  _showStat('stat-echo-row',      'stat-echo',      hero._echo);
+  _showStat('stat-encounter-row', 'stat-encounter', hero._encounterDmg);
+  _showStat('stat-ailment-row',   'stat-ailment',   hero._ailmentDmg);
 
   var defenseRow = document.getElementById('stat-defense-row');
   var defenseEl  = document.getElementById('stat-defense');
@@ -11250,7 +11286,7 @@ function renderEquipped() {
     if (item) {
       var eNew  = !isItemSeen(slot, item);
       var stats = statLine(item.stats);
-      html += '<div class="gr-name ' + item.rarity + (eNew ? ' item-new' : '') + '">' + item.name + '</div>';
+      html += '<div class="gr-name ' + item.rarity + (eNew ? ' item-new' : '') + '">' + item.name + _qualityBadge(item) + (item.enchanted ? ' <span style="color:#c8a84b;font-size:9px;">✦</span>' : '') + '</div>';
       if (item.skillBonus) html += '<div class="gr-bonus">+' + item.skillBonus + ' ' + item.skillName + '</div>';
       else if (item.allSkills) html += '<div class="gr-bonus">+' + item.allSkills + ' All Skills</div>';
       else if (stats)      html += '<div class="gr-stat">' + stats + '</div>';
@@ -11292,6 +11328,57 @@ function applyHeroStatsCollapse() {
   var btn = document.getElementById('stats-toggle-btn');
   if (el)  el.style.display  = _heroStatsCollapsed ? 'none' : '';
   if (btn) btn.textContent   = _heroStatsCollapsed ? '▸ more' : '▾ less';
+}
+
+function openStatsHelp() {
+  var body = document.getElementById('stats-help-body');
+  if (body) {
+    function _sec(title) { return '<div style="color:#c8a84b;font-size:11px;text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid #2a2a3a;padding-bottom:3px;margin:14px 0 7px;">'+title+'</div>'; }
+    function _row(name, desc, color) { return '<div style="margin-bottom:6px;"><span style="color:'+(color||'#d8c8a0')+';font-weight:bold;">'+name+'</span> <span style="color:#8a8a9a;">— '+desc+'</span></div>'; }
+    var _deso = ngPlusUnlocked; // gate Desolation-only stats so they aren't referenced before unlock
+    var _encTargets = (typeof delveUnlocked !== 'undefined' && delveUnlocked)
+      ? 'bosses, delve guardians, bounty targets, and ★ rare packs'
+      : 'bosses, bounty targets, and ★ rare packs';
+    var h = '';
+    h += '<div style="color:#7a7a8a;font-style:italic;margin-bottom:6px;">Stats come from gear. Percentages are additive unless noted.</div>';
+
+    h += _sec('Offense');
+    h += _row('Dmg', 'Your base attack / spell damage.');
+    h += _row('Atk / Cast Spd', 'How fast you attack. Higher is faster (lower interval).');
+    h += _row('Crit Chance', 'Chance to land a critical hit.');
+    if (_deso) h += _row('Crit Multi', 'Crit damage multiplier — base 2× (Lightning spells 3×), raised by critMulti gear.');
+    h += _row('AoE Chance', 'Chance a hit also slays a bonus nearby mob.');
+    h += _row('Fire / Lightning / Cold / Magic Dmg', 'Increases damage of that element’s skills.');
+    h += _row('Echo', 'Chance to repeat your attack for <b>20% damage</b>. The echo can also re-roll status effects (freeze, bleed, burn, poison…).', '#7ac8e8');
+    h += _row('Encounter Dmg', 'Flat % more damage vs <b>'+_encTargets+'</b> — not normal mobs.', '#e8a05a');
+    h += _row('Ailment Dmg', 'Increases <b>burn, bleed, and poison</b> damage-over-time. Bleed procs on every physical hit, so melee builds benefit most.', '#cc6a6a');
+    if (_deso) h += _row('Sunder', 'Reduces enemy resistance on the first hit of a fight.');
+
+    h += _sec('Status & Effects');
+    h += _row('Status Eff.', 'Multiplies status proc chance, duration, and burn tick damage (freeze, chill, shock, bleed, poison, burn).');
+
+    h += _sec('Defense & Survival');
+    h += _row('HP / HP Regen', 'Max health and health recovered per second.');
+    h += _row('Dmg Reduce', 'Flat damage subtracted from every hit you take.');
+    h += _row('Block', 'Chance to block an attack (cap 40%).');
+    h += _row('Spell Shield', 'Absorbs damage before your HP; refreshes to full every 10s in combat.');
+    if (_deso) h += _row('Resist All / Thorns / Defense', 'Elemental resistance, reflected damage, and physical damage reduction.');
+
+    h += _sec('Find & Utility');
+    h += _row('Magic Find', 'Improves the rarity of dropped items.');
+    h += _row('Gold Find', 'Increases gold from kills.');
+    h += _row('XP Gain', 'Increases experience earned.');
+    h += _row('Recovery', 'Cooldown Recovery — reduces the flat lock-out after each attack (caps once lock-out hits 0).');
+
+    h += '<div style="margin-top:12px;padding-top:8px;border-top:1px solid #2a2a3a;font-size:11px;color:#c8b06a;"><b>&#9670; Quality</b> — Magic Find, Gold Find and XP Gain are <i>base "quality"</i> stats: each item has a 25% chance at one of them. They’re not rolled affixes and are always kept through reforge &amp; enchant.</div>';
+    body.innerHTML = h;
+  }
+  var ov = document.getElementById('stats-help-overlay');
+  if (ov) ov.style.display = 'flex';
+}
+function closeStatsHelp() {
+  var ov = document.getElementById('stats-help-overlay');
+  if (ov) ov.style.display = 'none';
 }
 
 var _tabSeenSkills   = false;
@@ -11604,7 +11691,7 @@ function renderEnchantOverlay() {
       var col = isEnchanted ? '#3a3a4a' : (rarityColors[e.item.rarity] || '#d4c9a8');
       var clickAttr = isEnchanted ? '' : 'onclick="selectEnchantItem(\''+e.slot+'\','+e.idx+')"';
       html += '<div '+clickAttr+' style="'+(isEnchanted?'opacity:0.4;cursor:not-allowed;':'cursor:pointer;')+'padding:7px 9px;margin-bottom:4px;border:1px solid '+(isSel?col:'#2a2a3a')+';border-radius:3px;background:'+(isSel?'#0d0d20':'#0a0a14')+';transition:border-color 0.1s;">'
-        + '<div style="color:'+col+';font-size:12px;font-weight:bold;">'+e.item.name+(isEnchanted?' <span style="color:#3a3a5a;font-size:9px;">✦ enchanted</span>':'')+'</div>'
+        + '<div style="color:'+col+';font-size:12px;font-weight:bold;">'+e.item.name+_qualityBadge(e.item)+(isEnchanted?' <span style="color:#3a3a5a;font-size:9px;">✦ enchanted</span>':'')+'</div>'
         + '<div style="color:#4a4a6a;font-size:10px;margin:1px 0;">'+e.item.slot+' · '+e.item.rarity+(isEnchanted?' · already enchanted':' · '+ENCHANT_COSTS[e.item.rarity]+'g')+'</div>'
         + '<div style="color:#7a7a8a;font-size:10px;">'+statLine(e.item.stats)+'</div>'
       + '</div>';
@@ -11879,7 +11966,7 @@ function renderVault() {
           ? '<button onclick="event.stopPropagation();rerollVaultItem(\''+slot+'\','+j+')" title="Reforge with selected gem (50g)" class="vault-reroll-btn" '+(hasGem?'':'disabled')+'>↻</button>'
           : '<span style="width:20px;flex-shrink:0;"></span>')
         + '<div class="gr-body" style="text-align:right;">'
-          + '<div class="gr-name '+v.rarity+'" style="text-align:right;">'+v.name+(v.enchanted?' <span style="color:#c8a84b;font-size:9px;letter-spacing:0.5px;">✦</span>':'')+'</div>'
+          + '<div class="gr-name '+v.rarity+'" style="text-align:right;">'+v.name+_qualityBadge(v)+(v.enchanted?' <span style="color:#c8a84b;font-size:9px;letter-spacing:0.5px;">✦</span>':'')+'</div>'
           + (extra ? '<div class="gr-stat" style="text-align:right;">'+extra+'</div>' : '')
         + '</div>'
         + '<button onclick="event.stopPropagation();discardVaultItem(\''+slot+'\','+j+')" title="Discard" class="discard-btn">✕</button>'
@@ -13639,7 +13726,7 @@ var RARITY_COLORS = { normal:'#7a7a8a', magic:'#6fa3ef', rare:'#ffd700', unique:
 function itemTooltipHtml(item, label) {
   if (!item) return '<div class="tt-title" style="color:#4a4a5a;">— Empty —</div>';
   var col = RARITY_COLORS[item.rarity] || '#d4c9a8';
-  var html = '<div class="tt-title" style="color:'+col+';">'+(label||item.name)+'</div>';
+  var html = '<div class="tt-title" style="color:'+col+';">'+(label||item.name)+_qualityBadge(item)+(item.enchanted?' <span style="color:#c8a84b;font-size:9px;">✦</span>':'')+'</div>';
   html += '<div class="tt-sub">['+item.slot+' · '+item.rarity+']</div>';
   if (item.skillBonus) html += '<div style="font-size:10px;color:#c878f0;margin-bottom:4px;">+'+item.skillBonus+' to '+item.skillName+'</div>';
   if (item.allSkills)  html += '<div style="font-size:10px;color:#c878f0;margin-bottom:4px;">+'+item.allSkills+' to All Skills</div>';
