@@ -1,4 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Everdeep Idle</title>
+<script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser.min.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
 
+  /* Remove 300ms tap delay on all interactive elements */
+  a, button, input, select, textarea, [onclick] { touch-action: manipulation; }
+  [onclick] { cursor: pointer; }
+
+  body {
+    background: #0a0a0f url('https://severedgd.github.io/gamesprites/full-screen-background.png') center center / cover fixed;
+    color: #d4c9a8;
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: 13px;
+    height: 100vh;
+    height: calc(var(--vh, 1vh) * 100);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  #phaser-container canvas {
+    width: 100% !important;
+    height: 100% !important;
+  }
+  #topbar {
+    background: rgba(6,6,10,0.55);
+    border-bottom: 2px solid #c8a84b66;
+    box-shadow: 0 2px 12px #c8a84b22;
     padding: 8px 14px;
     display: flex;
     align-items: center;
@@ -1451,7 +1484,7 @@
 </div>
 
 
-  <span class="game-title">EVERDEEP IDLE <span style="font-size:13px;letter-spacing:1px;opacity:0.6;">v1.1.10</span></span>
+  <span class="game-title">EVERDEEP IDLE <span style="font-size:13px;letter-spacing:1px;opacity:0.6;">v1.1.11</span></span>
 </div>
 
 <!-- Difficulty / act bar -->
@@ -3674,6 +3707,8 @@ var DIFF_ITEM_SCALE = { normal:1.0, nightmare:1.6, hell:2.8 };
 // (≈ Hell ×1.0 / ×1.25 / ×1.75). Used instead of DIFF_ITEM_SCALE whenever ngPlusUnlocked.
 var DESO_ITEM_SCALE = { normal:2.8, nightmare:3.5, hell:4.9 };
 function _itemDiffScale(diff) {
+  // Delve: always Desolation-Hell tier (4.9) plus a slow depth creep, regardless of entry difficulty
+  if (delveActive) return DESO_ITEM_SCALE.hell * _delveItemMult(delveLevel);
   return (ngPlusUnlocked ? (DESO_ITEM_SCALE[diff] || DIFF_ITEM_SCALE[diff]) : DIFF_ITEM_SCALE[diff]) || 1.0;
 }
 // Per-act bonus added to max stat ranges (stacks on top of difficulty)
@@ -5380,7 +5415,7 @@ function spawnNextEnemy(simNow) {
       }
     } else {
       if (delveActive) {
-        maxHp = Math.round(maxHp * _delveHpMult());
+        maxHp = _delveMobHp();
         name = _DELVE_MOB_NAMES[ri(0, _DELVE_MOB_NAMES.length - 1)];
       }
       enemy = { name:name, hp:maxHp, maxHp:maxHp, isBoss:false, frozenUntil:0, stunCooldownUntil:0 };
@@ -6808,8 +6843,9 @@ function enemyAttack(now) {
   var diff = DIFFICULTY[difficulty];
   var dmg = enemy.isBoss ? ri(12, 22) : ri(3, 9);
   if (delveActive) {
-    // Delve keeps its own depth-based curve (unchanged)
-    dmg = Math.round(dmg * diff.enemyDmgMult * NG_DMG_MULT * _delveDmgMult());
+    // Delve damage: pinned to Deso Hell A5 (Hell dmgMult × 2), near-flat creep; guardians ×1.8 the mob basis
+    var _dBasis = ri(3, 9) * DIFFICULTY.hell.enemyDmgMult * 2.0 * _delveDmgCreep(delveLevel);
+    dmg = Math.round(enemy.isBoss ? _dBasis * 1.8 : _dBasis);
   } else if (ngPlusUnlocked) {
     // Desolation: damage is a % of first-run Hell Act 5 (Hell dmgMult × curve) — mobs 80→200%, bosses 70→130%
     dmg = Math.round(dmg * DIFFICULTY.hell.enemyDmgMult * (enemy.isBoss ? _desoBossDmgPct() : _desoMobPct()));
@@ -9076,19 +9112,26 @@ function cancelFarmLoop() {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 // ── Scaling ───────────────────────────────────────────
-function _delveHpMult() {
-  var l = delveLevel - 1;
-  if (l <= 0) return 1;
-  if (l <= 20)  return 1 + l * 0.12;
-  if (l <= 60)  return 3.4 + (l - 20) * 0.18;
-  if (l <= 100) return 10.6 + (l - 60) * 0.28;
-  return 21.8 + (l - 100) * 0.45;
+// ── Delve power curve — % of Desolation Hell Act 5 (itself 200% of first-run Hell A5) ──
+// Depth 1 = 80% of Deso Hell A5, curving out slowly: 80 + 14×(d^0.42 − 1). Item scale creeps
+// to ~+11% by depth 250; damage stays ~flat so deep delve is a DPS/tank check, not a one-shot gate.
+function _delvePct(depth) {                 // fraction of Deso Hell A5
+  var d = Math.max(1, depth || delveLevel);
+  return 0.80 + 0.14 * (Math.pow(d, 0.42) - 1);
 }
-function _delveDmgMult() {
-  // Smooth quadratic ramp: gentle early, ~x25 around depth 250.
-  var l = delveLevel - 1;
-  if (l <= 0) return 1;
-  return 1 + l * 0.045 + l * l * 0.0002;
+function _delveItemMult(depth) {            // item-scale creep on top of Deso-Hell scale (4.9)
+  var d = Math.max(1, depth || delveLevel);
+  return 1 + 0.019 * Math.log(d);
+}
+function _delveDmgCreep(depth) {            // near-flat damage creep (~+1.5% by depth 250)
+  var d = Math.max(1, depth || delveLevel);
+  return 1 + 0.003 * Math.log(d);
+}
+// Rolled delve mob HP for the current depth — pinned to the Hell A5 reference × Deso Hell A5 (2×) × curve,
+// so it's independent of whatever difficulty/act you clicked Delve from.
+function _delveMobHp() {
+  var refBase = 8 + hero.level * 5 + 4 * 12;   // Hell Act 5 base at current level
+  return Math.round(ri(refBase, refBase + 12) * DIFFICULTY.hell.enemyHpMult * 2.0 * _delvePct(delveLevel));
 }
 // Every 10th depth grants a "second wind" — full heal (the damage curve makes this matter).
 function _delveHealCheck() {
@@ -9405,7 +9448,7 @@ function _delveOnBossKill(depth, simNow) {
 
 function _delveSpawnBoss(simNow, depth) {
   var now = simNow || gameNow();
-  var baseHp = Math.round(ri(400, 500) * _delveHpMult() * 5);
+  var baseHp = Math.round(_delveMobHp() * 3.8);  // guardian ≈ 3.8× the depth's mob (Desolation boss:mob ratio)
   var bossName = '⚔ Depth ' + depth + ' Guardian';
   enemy = { name: bossName, maxHp: baseHp, hp: baseHp, isBoss: true, _encounter: true, spawnTime: now, _bleeds: [], frozenUntil: 0, stunCooldownUntil: 0 };
   enemy._delveSprite = _DELVE_SPRITE_POOL[ri(0, _DELVE_SPRITE_POOL.length - 1)];
