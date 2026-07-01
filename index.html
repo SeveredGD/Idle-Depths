@@ -1069,6 +1069,28 @@
     78%  { opacity: 1; transform: rotate(var(--rot)) scale(1); }
     100% { opacity: 0; transform: rotate(var(--rot)) scale(0.85); }
   }
+  /* Skill-point unlock alert — floats up over the combat area and fades out */
+  .skillpt-alert {
+    position: absolute;
+    left: 50%; top: 26%;
+    transform: translateX(-50%);
+    pointer-events: none;
+    z-index: 78;
+    font-family: Georgia, serif;
+    font-size: 20px;
+    font-weight: bold;
+    color: #e8d08a;
+    text-shadow: 0 0 10px #c8a84b, 0 0 22px #8a6a1a;
+    white-space: nowrap;
+    animation: skillPtFloat 2.6s ease-out forwards;
+  }
+  @keyframes skillPtFloat {
+    0%   { opacity: 0; transform: translateX(-50%) translateY(12px) scale(0.8); }
+    14%  { opacity: 1; transform: translateX(-50%) translateY(0) scale(1.08); }
+    28%  { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }
+    70%  { opacity: 1; transform: translateX(-50%) translateY(-10px) scale(1); }
+    100% { opacity: 0; transform: translateX(-50%) translateY(-46px) scale(0.95); }
+  }
   /* ── Bounty hunt countdown overlay ── */
   #bounty-hunt-overlay {
     display: none;
@@ -1450,7 +1472,7 @@
 </div>
 
 
-  <span class="game-title">EVERDEEP IDLE <span style="font-size:13px;letter-spacing:1px;opacity:0.6;">v1.0.0</span></span>
+  <span class="game-title">EVERDEEP IDLE <span style="font-size:13px;letter-spacing:1px;opacity:0.6;">v1.1.0</span></span>
 </div>
 
 <!-- Difficulty / act bar -->
@@ -2193,14 +2215,14 @@ var CLASSES = {
     startArmor:  { name: 'Tattered Vestment', slot: 'armor',  stats: { mainDmg: 0, mainSpd: 0, hp: 5, mf: 0 }, rarity: 'normal' },
     skills: [
       { id: 'fire',       name: 'Fireball',        desc: 'AoE kills bonus mob.',                          spellMin: 14, spellMax: 22, spdMod: 1.15,  spdLabel: 'slow',      spdClass: 'slow', tier: 1, parent: null },
-      { id: 'lightning',  name: 'Lightning',        desc: '20%+ chance for 3x crit.',                     spellMin: 6,  spellMax: 15, spdMod: 1.0,   spdLabel: 'normal',    spdClass: 'med',  tier: 1, parent: null },
+      { id: 'lightning',  name: 'Lightning',        desc: '20%+ chance for 3× crit (+Desolation crit dmg).', spellMin: 6,  spellMax: 15, spdMod: 1.0,   spdLabel: 'normal',    spdClass: 'med',  tier: 1, parent: null },
       { id: 'cold',       name: 'Frost Bolt',       desc: 'Freezes mobs/boss.',                           spellMin: 5,  spellMax: 9,  spdMod: 0.75,  spdLabel: 'fast',      spdClass: 'fast', tier: 1, parent: null },
       { id: 'meteor',     name: 'Meteor',           desc: 'Slow, high dmg, kills 2 AoE mobs.',            spellMin: 22, spellMax: 36, spdMod: 1.40,  spdLabel: 'very slow', spdClass: 'slow', tier: 2, parent: 'fire' },
       { id: 'frostfire',  name: 'Frostfire Bolt',   desc: 'Fast hybrid — freezes and burns.',             spellMin: 8,  spellMax: 14, spdMod: 0.75,  spdLabel: 'fast',      spdClass: 'fast', tier: 2, parent: 'fire' },
-      { id: 'chainlight', name: 'Chain Lightning',  desc: '6% AoE, 2x crit (not 3x).',                   spellMin: 6,  spellMax: 15, spdMod: 1.0,   spdLabel: 'normal',    spdClass: 'med',  tier: 2, parent: 'lightning' },
+      { id: 'chainlight', name: 'Chain Lightning',  desc: '6% AoE, 3× crit (+Desolation crit dmg).', spellMin: 6,  spellMax: 15, spdMod: 1.0,   spdLabel: 'normal',    spdClass: 'med',  tier: 2, parent: 'lightning' },
       { id: 'lightnova',  name: 'Lightning Nova',   desc: '10% AoE, lower dmg, fast cast.',              spellMin: 9,  spellMax: 14, spdMod: 0.675, spdLabel: 'fast',      spdClass: 'fast', tier: 2, parent: 'lightning' },
       { id: 'blizzard',   name: 'Blizzard',         desc: 'Very slow, 16% AoE, half-freeze chance.',     spellMin: 18, spellMax: 30, spdMod: 1.60,  spdLabel: 'very slow', spdClass: 'slow', tier: 2, parent: 'cold' },
-      { id: 'iceshard',   name: 'Ice Shard',        desc: 'Fast, freezes, frozen kills roll loot twice.', spellMin: 8,  spellMax: 14, spdMod: 0.75,  spdLabel: 'fast',      spdClass: 'fast', tier: 2, parent: 'cold' },
+      { id: 'iceshard',   name: 'Ice Shard',        desc: 'Fast, freezes, frozen/chilled kills roll loot twice.', spellMin: 8,  spellMax: 14, spdMod: 0.75,  spdLabel: 'fast',      spdClass: 'fast', tier: 2, parent: 'cold' },
       { id: 'warmth',       name: 'Warmth',        desc: 'Passive HP regen per second.',         spellMin:0, spellMax:0, spdMod:1, spdLabel:'passive', spdClass:'med', tier: 3, parent: null, passive: true },
       { id: 'energyshield', name: 'Energy Shield', desc: 'Passive base spell shield per level.', spellMin:0, spellMax:0, spdMod:1, spdLabel:'passive', spdClass:'med', tier: 3, parent: null, passive: true },
       { id: 'fortune',      name: 'Inner Fortune', desc: 'Passive +1% Magic Find per point.',    spellMin:0, spellMax:0, spdMod:1, spdLabel:'passive', spdClass:'med', tier: 3, parent: null, passive: true },
@@ -3407,19 +3429,48 @@ var LOOT_ODDS = {
   uniqueBase:0.0008, rareBase:0.035,  magicBase:0.22,   // mob drops — rares exciting, uniques very rare
   uniqueBoss:0.008,  rareBoss:0.14,   magicBoss:0.45,   // boss drops — noticeably better
   mfOnUnique:0.30,   mfOnRare:0.125,  mfOnMagic:0.167,
-  dropChance:0.11,   skillBonusChance:0.0005,           // overall drop rate down from 0.18
+  dropChance:0.11,   skillBonusChance:0.0015,           // overall drop rate down from 0.18; skill-amulet chance bumped
+  allSkillsChance:0.0008,                                // +1 to all skills on rings/amulets — fairly rare
 };
 
 // Stat pools per slot — which stats can appear on each slot
 var SLOT_STAT_POOLS = {
-  weapon:  ['mainDmg','mainSpd','hp','blockChance','castCooldown','fireDmg','lightDmg','coldDmg','magicDmg','critChance','aoeChance','statusEffect'],
+  weapon:  ['mainDmg','mainSpd','hp','blockChance','castCooldown','fireDmg','lightDmg','coldDmg','magicDmg','critChance','aoeChance','statusEffect','echo','encounterDmg','ailmentDmg'],
   armor:   ['mainDmg','hp','hpRegen','reducedDmg','blockChance','spellShield'],
-  ring:    ['mainDmg','mainSpd','hp','mf','hpRegen','castCooldown','xpGain','goldFind','statusEffect'],
-  amulet:  ['mainDmg','mainSpd','hp','mf','hpRegen','reducedDmg','xpGain','goldFind','statusEffect'],
-  trinket: ['fireDmg','lightDmg','coldDmg','magicDmg','critChance','aoeChance','blockChance','spellShield','xpGain','goldFind','mf'],
+  ring:    ['mainDmg','mainSpd','hp','hpRegen','castCooldown','statusEffect','echo','encounterDmg'],
+  amulet:  ['mainDmg','mainSpd','hp','hpRegen','reducedDmg','statusEffect','encounterDmg','ailmentDmg'],
+  trinket: ['fireDmg','lightDmg','coldDmg','magicDmg','critChance','aoeChance','blockChance','spellShield','echo','encounterDmg','ailmentDmg'],
   boots:   ['hp','hpRegen','reducedDmg','blockChance','spellShield'],
-  ring2:   ['mainDmg','mainSpd','hp','mf','hpRegen','castCooldown','xpGain','goldFind','statusEffect'],
+  ring2:   ['mainDmg','mainSpd','hp','hpRegen','castCooldown','statusEffect','echo','encounterDmg'],
 };
+// ── Base item stats (Magic Find / Gold Find / XP Gain) — a natural bonus, NOT a rolled affix. ──
+// Each non-unique item has a 25% chance to gain ONE of the three, scaled by rarity + difficulty/act.
+// They're never in SLOT_STAT_POOLS, never counted toward the 1-2 / 3-4 affix total, and always
+// preserved by reforge & enchant. Magic > Rare > Normal (Magic rolls fewer but higher stats).
+var BASE_STATS = ['mf','goldFind','xpGain'];
+var BASE_STAT_CHANCE = 0.25;
+var BASE_STAT_RANGES = {
+  normal: { mf:{min:1,max:3}, goldFind:{min:1,max:3}, xpGain:{min:1,max:3} },
+  magic:  { mf:{min:1,max:8}, goldFind:{min:1,max:8}, xpGain:{min:1,max:8} },
+  rare:   { mf:{min:1,max:5}, goldFind:{min:1,max:5}, xpGain:{min:1,max:5} },
+};
+function _rollItemBaseStat(rarity) {
+  if (Math.random() >= BASE_STAT_CHANCE) return null;
+  var tbl = BASE_STAT_RANGES[rarity]; if (!tbl) return null;
+  var key = BASE_STATS[ri(0, BASE_STATS.length - 1)];
+  var r = tbl[key]; if (!r) return null;
+  if (rarity === 'normal') return { key: key, value: ri(r.min, r.max) };
+  var diffScale = DIFF_ITEM_SCALE[difficulty] || 1.0;
+  var actBonus  = (ACT_STAT_BONUS[key] || 0) * actIdx;
+  var scaledMax = Math.round((r.max + actBonus) * diffScale);
+  var scaledMin = Math.max(r.min, Math.round(r.min * diffScale * 0.5));
+  return { key: key, value: ri(scaledMin, Math.max(scaledMin, scaledMax)) };
+}
+function _attachBaseStat(item) {
+  if (!item || !item.stats || item.rarity === 'unique') return;
+  var b = _rollItemBaseStat(item.rarity);
+  if (b) item.stats[b.key] = (item.stats[b.key] || 0) + b.value;
+}
 
 // Magic: exactly 2 stats, high variance
 var MAGIC_RANGES = {
@@ -3442,6 +3493,9 @@ var MAGIC_RANGES = {
   goldFind:       { min:1,   max:8   },
   castCooldown:   { min:50,  max:200 },
   statusEffect:   { min:3,   max:12  },
+  echo:           { min:1,   max:6   },
+  encounterDmg:   { min:4,   max:18  },
+  ailmentDmg:     { min:5,   max:20  },
   resist:         { min:3,   max:10  },
   thorns:         { min:5,   max:8   },
   critMulti:      { min:10,  max:40  },
@@ -3469,6 +3523,9 @@ var RARE_RANGES = {
   goldFind:       { min:1,   max:5   },
   castCooldown:   { min:50,  max:150 },
   statusEffect:   { min:5,   max:10  },
+  echo:           { min:1,   max:4   },
+  encounterDmg:   { min:3,   max:12  },
+  ailmentDmg:     { min:3,   max:12  },
   resist:         { min:3,   max:17  },
   thorns:         { min:5,   max:10  },
   critMulti:      { min:10,  max:75  },
@@ -3495,6 +3552,9 @@ var NORMAL_RANGES = {
   xpGain:         { min:1,  max:2  },
   goldFind:       { min:1,  max:2  },
   castCooldown:   { min:25, max:75 },
+  echo:           { min:1,  max:2  },
+  encounterDmg:   { min:1,  max:4  },
+  ailmentDmg:     { min:1,  max:4  },
 };
 
 var STAT_RANGES = {
@@ -3506,8 +3566,9 @@ var SCORE_WEIGHTS  = {
   fireDmg:1.5, lightDmg:1.5, coldDmg:1.5, magicDmg:2.5,
   critChance:3.5, aoeChance:2.5,
   blockChance:1.0, spellShield:1.5,
-  xpGain:1.0, goldFind:1.0, castCooldown:1.5,
+  xpGain:1.0, goldFind:1.0, castCooldown:0.2, // ms-magnitude stat: 0.2/ms keeps it from dwarfing damage rolls (see cap at 1000ms lockout)
   statusEffect:2.0,
+  echo:2.5, encounterDmg:2.0, ailmentDmg:2.0,
   // Desolation-only stats
   resist:2.8, thorns:1.8, critMulti:2.5, sunder:2.5,
 };
@@ -3525,6 +3586,7 @@ var ACT_STAT_BONUS  = {
   blockChance:0.4, spellShield:1.5,
   xpGain:0.6, goldFind:0.6, castCooldown:15,
   statusEffect:0.5,
+  echo:0.3, encounterDmg:1.5, ailmentDmg:1.5,
 };
 
 var SLOTS = ['weapon','armor','ring','amulet','trinket','boots'];
@@ -4103,6 +4165,11 @@ function _advanceClock() {
   _lastRealDelta  = Math.round(dt);
   _lastClockDelta = Math.round(dt * gameSpeed);
   _gameClock += _lastClockDelta;
+  // MF Blessing does not tick down while running a Farm Zone or Boss Target loop —
+  // keep its remaining time constant by advancing the expiry in lockstep with the clock.
+  if (hero && hero.mfBuff && (farmLoop || bossLoop) && _gameClock < hero.mfBuffEnd) {
+    hero.mfBuffEnd += _lastClockDelta;
+  }
 }
 
 var NG_HP_MULT     = 1.4;   // NG+: enemy/boss HP multiplier (stacks with difficulty mult)
@@ -4177,6 +4244,7 @@ function recalcStats() {
   var bonusLightCrit = 0, bonusAoe = 0, bonusStatusEffect = 0, bonusResist = 0;
   var bonusThorns = 0, bonusCritMulti = 0, bonusSunder = 0;
   var bonusDefense = 0;
+  var bonusEcho = 0, bonusEncounterDmg = 0, bonusAilmentDmg = 0;
   for (var i = 0; i < EQUIP_SLOTS.length; i++) {
     var e = hero.equipped[EQUIP_SLOTS[i]];
     if (e) {
@@ -4203,6 +4271,9 @@ function recalcStats() {
       bonusCritMulti    += e.stats.critMulti    || 0;
       bonusSunder       += e.stats.sunder       || 0;
       bonusDefense      += e.stats.defense      || 0;
+      bonusEcho         += e.stats.echo         || 0;
+      bonusEncounterDmg += e.stats.encounterDmg || 0;
+      bonusAilmentDmg   += e.stats.ailmentDmg   || 0;
     }
   }
   hero.dmgMin = Math.round(cls.dmgMin + (hero.level - 1) * 1.5 + bonusDmg);
@@ -4246,6 +4317,9 @@ function recalcStats() {
   hero._critChance      = bonusLightCrit;
   hero._aoeChance       = bonusAoe;
   hero._statusEffect    = bonusStatusEffect;
+  hero._echo            = bonusEcho;          // % chance to repeat the attack for 20% dmg (can re-proc status)
+  hero._encounterDmg    = bonusEncounterDmg;  // flat % more dmg vs bosses / bounties / rare packs (enemy._encounter)
+  hero._ailmentDmg      = bonusAilmentDmg;    // % increased burn / bleed / poison tick damage
   hero._resist          = ngPlusUnlocked ? Math.min(75, bonusResist) : 0;
   hero._thorns          = ngPlusUnlocked ? bonusThorns : 0;
   hero._critMulti       = ngPlusUnlocked ? Math.min(200, bonusCritMulti) : 0;  // cap +2.00×; total max 4×
@@ -4517,7 +4591,7 @@ function priorityScore(item) {
 
   // Stat count bonus — reward denser items
   var statCount = 0;
-  for (var k in item.stats) { if (item.stats[k] && k !== 'defense') statCount++; }
+  for (var k in item.stats) { if (item.stats[k] && k !== 'defense' && BASE_STATS.indexOf(k) === -1) statCount++; }
   if (item.skillBonus) statCount++;
   if (item.allSkills) statCount++;
   base += (STAT_COUNT_BONUS[statCount] || 0);
@@ -4696,8 +4770,6 @@ function generateItem(isBossLoot, forceSlot, extraMf, ignoreMf) {
     var slotNames = idata[slot];
     var rname = (slotNames && slotNames.length) ? slotNames[ri(0, slotNames.length-1)] : (MAGIC_BASES[classKey][slot] || slot);
     var numStats = ri(3, Math.min(4, pool.length));
-    var hasMf = Math.random() < LOOT_ODDS.mfOnRare;
-    if (!hasMf) { var mfIdx = pool.indexOf('mf'); if (mfIdx > -1) pool.splice(mfIdx, 1); }
     var rawStats = rollStats(RARE_RANGES, numStats);
     var boosted = ignoreMf ? { stats: rawStats } : applyMfBoost(rawStats, effectiveMf);
     item = { slot:slot, name:rname, stats:boosted.stats, rarity:'rare' };
@@ -4713,8 +4785,6 @@ function generateItem(isBossLoot, forceSlot, extraMf, ignoreMf) {
     else if (classKey === 'ranger'  && slot === 'weapon') base2 = RANGER_WEAPON_BASES[ri(0, RANGER_WEAPON_BASES.length-1)];
     else if (classKey === 'rogue'   && slot === 'armor')  base2 = ROGUE_ARMOR_BASES[ri(0, ROGUE_ARMOR_BASES.length-1)];
     else if (classKey === 'ranger'  && slot === 'armor')  base2 = RANGER_ARMOR_BASES[ri(0, RANGER_ARMOR_BASES.length-1)];
-    var hasMf = Math.random() < LOOT_ODDS.mfOnMagic;
-    if (!hasMf) { var mfIdx2 = pool.indexOf('mf'); if (mfIdx2 > -1) pool.splice(mfIdx2, 1); }
     var rawStats = rollStats(MAGIC_RANGES, 2);
     var boosted = ignoreMf ? { stats: rawStats } : applyMfBoost(rawStats, effectiveMf);
     item = { slot:slot, name:pre+' '+base2+' '+suf, stats:boosted.stats, rarity:'magic' };
@@ -4735,10 +4805,19 @@ function generateItem(isBossLoot, forceSlot, extraMf, ignoreMf) {
   if (slot === 'amulet' && Math.random() < LOOT_ODDS.skillBonusChance) {
     var skillIds = ['fire','lightning','cold'];
     var sid = skillIds[ri(0,2)];
-    item.skillBonus = ri(1,3);
+    // ~25% of skill amulets roll the stronger +3-5 tier, otherwise +1-3
+    item.skillBonus = (Math.random() < 0.25) ? ri(3,5) : ri(1,3);
     item.skillId    = sid;
     item.skillName  = SKILL_NAMES[sid];
   }
+
+  // +1 to all skills — fairly rare, rings & amulets only (independent of the single-skill roll)
+  if ((slot === 'ring' || slot === 'ring2' || slot === 'amulet') && !item.allSkills && Math.random() < LOOT_ODDS.allSkillsChance) {
+    item.allSkills = 1;
+  }
+
+  // Base item stat (mf/goldFind/xpGain) — 25% chance, one of three; not a rolled affix. Uniques excluded.
+  _attachBaseStat(item);
 
   item.score = Math.round(itemScore(item.stats, item.skillBonus, item.allSkills));
 
@@ -4955,12 +5034,14 @@ function dropLoot(isBossLoot, isRarePack) {
     return null; // 'any' — no override
   }
 
+  var _kept = false;
   for (var i = 0; i < numDrops; i++) {
     if (!isBossLoot && Math.random() > dropChance) continue;
     var forceSlot = (!isBossLoot && packType !== 'any') ? pickPackSlot() : null;
     var item = generateItem(isBossLoot, forceSlot, mfBonus);
     var result = processLoot(item);
     if (result !== 'discard') {
+      _kept = true;
       triggerItemDropAnim(item.rarity);
       var verb = result === 'equipped' ? '⚡ Equipped' : '📦 Vaulted';
       var bonusStr = '';
@@ -4969,6 +5050,8 @@ function dropLoot(isBossLoot, isRarePack) {
       addLog(verb+': '+item.name+bonusStr, 'loot '+item.rarity, 'item');
     }
   }
+  // Persist immediately when a keeper drops — losing a fresh item to a crash is too costly to wait for the interval
+  if (_kept) saveGame();
 }
 
 // Ice Shard lucky loot: generate two items, keep the better one by priorityScore
@@ -4983,7 +5066,7 @@ function dropLootLucky(isBossLoot) {
   var bonusStr = '';
   if (best.skillBonus) bonusStr += ' [+'+best.skillBonus+' to '+best.skillName+']';
   if (best.allSkills)  bonusStr += ' [+'+best.allSkills+' All Skills]';
-  if (result !== 'discard') addLog(verb+' (lucky): '+best.name+bonusStr, 'loot '+best.rarity);
+  if (result !== 'discard') { addLog(verb+' (lucky): '+best.name+bonusStr, 'loot '+best.rarity); saveGame(); }
 }
 
 // ═══════════════════════════════════════════════════
@@ -5037,7 +5120,7 @@ function spawnNextEnemy(simNow) {
     killCount = 0;
   }
 
-  if (!delveActive && killCount >= mobsRequired && !bossSpawned) {
+  if (!delveActive && killCount >= mobsRequired && !bossSpawned && !bountyActive) {
     if (farmLoop) {
       farmLoop.loopsRemaining--;
       addLog('🌾 Farm loop complete! ('+farmLoop.loopsRemaining+' remaining)', 'zone');
@@ -5066,7 +5149,7 @@ function spawnNextEnemy(simNow) {
       // spawn boss
       rarePack = false; rarePackRemaining = 0;
       var maxHp = Math.round(act.bossHp * diff.bossMult * (ngPlusUnlocked ? NG_HP_MULT : 1));
-      enemy = { name:act.bossName, hp:maxHp, maxHp:maxHp, isBoss:true, frozenUntil:0, stunCooldownUntil:0, _freezeDR:1.0, _freezeCount:0, spawnTime:gameNow() };
+      enemy = { name:act.bossName, hp:maxHp, maxHp:maxHp, isBoss:true, _encounter:true, frozenUntil:0, stunCooldownUntil:0, _freezeDR:1.0, _freezeCount:0, spawnTime:gameNow() };
       if (ngPlusUnlocked) {
         enemy._physResist = Math.min(75, ri(20 + actIdx*4, 25 + actIdx*5));
         enemy._elemResist = Math.min(75, ri(15 + actIdx*3, 25 + actIdx*4));
@@ -5164,7 +5247,7 @@ function spawnNextEnemy(simNow) {
 
     // If inside a rare pack, spawn a bonus mob (doesn't count toward killCount)
     if (rarePack && rarePackRemaining > 0) {
-      enemy = { name:'★ '+name, hp:maxHp, maxHp:maxHp, isBoss:false, frozenUntil:0, stunCooldownUntil:0, isRarePack:true };
+      enemy = { name:'★ '+name, hp:maxHp, maxHp:maxHp, isBoss:false, _encounter:true, frozenUntil:0, stunCooldownUntil:0, isRarePack:true };
       if (ngPlusUnlocked) {
         enemy._physResist = Math.min(75, ri(10 + actIdx*3, 15 + actIdx*3));
         enemy._elemResist = Math.min(75, ri(10 + actIdx*3, 20 + actIdx*4));
@@ -5345,7 +5428,7 @@ function tryApplyBurn(dmg) {
   if (!ashpyreGuaranteed && Math.random() > chance) return;
   if (ashpyreGuaranteed) hero._ashpyreProcsLeft--;
   var burnMult = (ashpyreGuaranteed && hero._ashpyreBurnMult) ? hero._ashpyreBurnMult : 1;
-  var tickDmg = Math.max(1, Math.round(dmg * 0.10 / 10 * seMult * burnMult));  // 10% of hit over 10 ticks
+  var tickDmg = Math.max(1, Math.round(dmg * 0.10 / 10 * seMult * burnMult * (1 + (hero._ailmentDmg || 0) / 100)));  // 10% of hit over 10 ticks, scaled by Ailment Dmg
   var ticks = Math.round(10 * seMult);
   // Pyromaniac's Lens: 75% more damage per tick, half duration
   if (_hasUnique("Pyromaniac's Lens")) {
@@ -5382,7 +5465,7 @@ function tryApplyChill() {
   if (Math.random() > chance) return;
   if (!enemy._chillStacks) enemy._chillStacks = 0;
   if (enemy._chillStacks < 10) enemy._chillStacks++;
-  var chillDur = Math.round(10000 * seMult);
+  var chillDur = Math.round(20000 * seMult);
   enemy._chillExpiry = gameNow() + chillDur;
   var pct = enemy._chillStacks * 5;
   addLog('❄ Chill! ('+pct+'% slow, '+enemy._chillStacks+'/10 stacks)', 'chill');
@@ -5397,7 +5480,7 @@ function tryApplyBleed(dmg) {
   if (!enemy._bleedStacks) enemy._bleedStacks = [];
   if (enemy._bleedStacks.length >= 5) return;  // max 5 stacks
   var bleedDur = Math.round(5 * seMult);
-  var tickDmg = Math.max(1, Math.round(dmg * 0.05 / 5 * seMult));
+  var tickDmg = Math.max(1, Math.round(dmg * 0.05 / 5 * seMult * (1 + (hero._ailmentDmg || 0) / 100)));
   enemy._bleedStacks.push({ tickDmg: tickDmg, ticksLeft: bleedDur, nextTick: gameNow() + 1000 });
   addLog('🩸 Bleed! ('+tickDmg+'/s for '+bleedDur+'s, stack '+enemy._bleedStacks.length+'/5)', 'bleed');
   triggerStatusFlash('#cc2233');
@@ -5605,6 +5688,11 @@ function heroAttack(now) {
     }
   }
 
+  // Encounter Damage — flat % more damage vs bosses, delve guardians, bounty targets & rare packs
+  if (enemy && enemy._encounter && (hero._encounterDmg || 0) > 0) {
+    base = Math.max(1, Math.round(base * (1 + hero._encounterDmg / 100)));
+  }
+
   var _isCrit = false; // set true below for crit skills before animation fires
   var _lastDealtDmg = base; // tracks actual damage dealt this swing for status procs
 
@@ -5643,6 +5731,22 @@ function heroAttack(now) {
   // 25% bonus damage while enemy is under stun or on cooldown from recent stun
   var stunBonusMult = (alreadyFrozen || onStunCooldown) ? 1.25 : 1.0;
 
+  // Sorc crit multiplier: 2× baseline for all spells, improved by Desolation critMulti items.
+  var _spellCritMult = 2 + (ngPlusUnlocked ? (hero._critMulti || 0) / 100 : 0);
+  // Lightning's signature perk: base 3× instead of 2× (also scales with Desolation critMulti).
+  var _lightCritMult = _spellCritMult + 1;
+
+  // Gear crit applies to sorc spells that have no native crit (fire/cold/meteor/frostfire/blizzard/iceshard).
+  // Lightning-family spells roll their own crit below (also using _spellCritMult).
+  if (classKey === 'sorceress' && (hero._critChance || 0) > 0
+      && skill.id !== 'lightning' && skill.id !== 'chainlight' && skill.id !== 'lightnova') {
+    if (Math.random() < (hero._critChance || 0) / 100) {
+      _isCrit = true;
+      base = Math.round(base * _spellCritMult);
+      addLog('✦ Critical spell! ('+_spellCritMult.toFixed(1)+'×)', 'crit');
+    }
+  }
+
   if (skill.id === 'fire') {
     var fireMult  = 1 + (hero._fireDmg || 0) / 100;
     var aoeChance = ((sk.aoe || AOE_BASE_CHANCE)) / 100;
@@ -5657,8 +5761,8 @@ function heroAttack(now) {
     var critChance = (sk.critChance || 0.20) + (hero._critChance || 0) / 100;
     if (Math.random() < critChance) {
       _isCrit = true;
-      var dmg = Math.round(base * lightMult * 3);
-      addLog('Lightning CRIT: '+dmg+'!', 'crit');
+      var dmg = Math.round(base * lightMult * _lightCritMult);
+      addLog('Lightning CRIT: '+dmg+'! ('+_lightCritMult.toFixed(1)+'×)', 'crit');
       enemy.hp = Math.max(0, enemy.hp - dmg);
     } else {
       var dmg = Math.round(base * lightMult);
@@ -5717,8 +5821,8 @@ function heroAttack(now) {
     var aoeChance  = ((sk.aoe || 6)) / 100;
     if (Math.random() < critChance) {
       _isCrit = true;
-      var dmg = Math.round(base * lightMult * 2);
-      addLog('Chain Lightning CRIT: '+dmg+'! (2x)', 'crit');
+      var dmg = Math.round(base * lightMult * _lightCritMult);
+      addLog('Chain Lightning CRIT: '+dmg+'! ('+_lightCritMult.toFixed(1)+'×)', 'crit');
       enemy.hp = Math.max(0, enemy.hp - dmg);
     } else {
       var dmg = Math.round(base * lightMult);
@@ -5733,8 +5837,8 @@ function heroAttack(now) {
     var critChance = (sk.critChance || 0.05) + (hero._critChance || 0) / 100;
     if (Math.random() < critChance) {
       _isCrit = true;
-      var dmg = Math.round(base * lightMult * 3);
-      addLog('Lightning Nova CRIT: '+dmg+'! (3x)', 'crit');
+      var dmg = Math.round(base * lightMult * _lightCritMult);
+      addLog('Lightning Nova CRIT: '+dmg+'! ('+_lightCritMult.toFixed(1)+'×)', 'crit');
       enemy.hp = Math.max(0, enemy.hp - dmg);
     } else {
       var dmg = Math.round(base * lightMult);
@@ -5774,7 +5878,8 @@ function heroAttack(now) {
       addLog('Ice Shard: '+dmg+' cold dmg', 'cold');
     }
     enemy.hp = Math.max(0, enemy.hp - dmg);
-    if (enemy.frozenUntil && now < enemy.frozenUntil) enemy._iceshardKill = true;
+    // Lucky loot triggers if the target is frozen OR chilled when Ice Shard lands the killing blow
+    if ((enemy.frozenUntil && now < enemy.frozenUntil) || (enemy._chillStacks || 0) > 0) enemy._iceshardKill = true;
   }
 
 
@@ -6298,7 +6403,7 @@ function heroAttack(now) {
       var seMult = 1 + ((hero._statusEffect || 0) + (hero._relicStatusBoost || 0)) / 100;
       var dotBonus = 1 + (hero._toxDotBonus || 0) / 100;
       var poisonDur = Math.round(6 * seMult);
-      var poisonTick = Math.max(1, Math.round(dmg * 0.06 / 6 * seMult * dotBonus));
+      var poisonTick = Math.max(1, Math.round(dmg * 0.06 / 6 * seMult * dotBonus * (1 + (hero._ailmentDmg || 0) / 100)));
       enemy._poisonStacks.push({ tickDmg: poisonTick, ticksLeft: poisonDur, nextTick: gameNow() + 1000 });
       addLog('  ↳ Poison applied! ('+poisonTick+'/s for '+poisonDur+'s, stack '+enemy._poisonStacks.length+'/5)', 'stun');
       triggerStatusFlash('#55aa55');
@@ -6455,6 +6560,29 @@ function heroAttack(now) {
       if (_isLightSkill) tryApplyShock(_lastDealtDmg, _isCrit);
       if (_isColdSkill)  tryApplyChill();
       if (_isPhysSkill)  tryApplyBleed(_lastDealtDmg);
+    }
+
+    // Echo — chance to repeat the strike for 20% damage; the echo can also re-roll status effects
+    if (enemy && enemy.hp > 0 && (hero._echo || 0) > 0 && Math.random() < hero._echo / 100) {
+      var _echoStat = Math.max(1, Math.round(_lastDealtDmg * 0.20));
+      enemy.hp = Math.max(0, enemy.hp - _echoStat);
+      trackDps(_echoStat, now);
+      addLog('🔁 Echo — strike repeats! +'+_echoStat+' (20%)', 'light');
+      if (enemy.hp > 0) {
+        if (_isMageHunterSkill) {
+          if (typeof mhElem !== 'undefined' && mhElem) {
+            if (mhElem.type === 'fire')  tryApplyBurn(_echoStat);
+            if (mhElem.type === 'light') tryApplyShock(_echoStat, _isCrit);
+            if (mhElem.type === 'cold')  tryApplyChill();
+          }
+        } else {
+          if (_isFireSkill)  tryApplyBurn(_echoStat);
+          if (_isLightSkill) tryApplyShock(_echoStat, _isCrit);
+          if (_isColdSkill)  tryApplyChill();
+          if (_isPhysSkill)  tryApplyBleed(_echoStat);
+        }
+      }
+      if (enemy.hp <= 0) { gainKill(enemy.isBoss, false, now); return; }
     }
   }
 
@@ -7573,6 +7701,7 @@ function gainKill(isBoss, isAoe, simNow) {
             hero._actSkillPtsGranted[_milestoneKey] = true;
             hero.skillPts++;
             addLog('✦ Act '+(actIdx+1)+' cleared — +1 skill point!', 'level', 'event');
+            showSkillPointAlert(1);
             renderSkillTree();
           }
         }
@@ -7606,6 +7735,7 @@ function gainKill(isBoss, isAoe, simNow) {
               hero._diffSkillPtsGranted[nextDiff] = true;
               hero.skillPts += 2;
               addLog('✦ New difficulty unlocked — +2 skill points!', 'level', 'event');
+              showSkillPointAlert(2);
               renderSkillTree();
             }
             pendingDiffPromotion = true;
@@ -7665,11 +7795,13 @@ function gainKill(isBoss, isAoe, simNow) {
   }
 
   // level up
+  var _lvlSkillPts = 0;
   while (hero.xp >= hero.xpNext && hero.level < LEVEL_CAP) {
     hero.xp -= hero.xpNext;
     hero.level++;
     hero.xpNext = xpForLevel(hero.level);
     hero.skillPts++;
+    _lvlSkillPts++;
     _tabSeenSkills = false;
     recalcStats();
     hero.hp = hero.maxHp;
@@ -7677,6 +7809,7 @@ function gainKill(isBoss, isAoe, simNow) {
     renderSkillTree();
     saveGame();
   }
+  if (_lvlSkillPts > 0) showSkillPointAlert(_lvlSkillPts);
   if (hero.level >= LEVEL_CAP) { hero.xp = 0; hero.xpNext = 1; }
 }
 
@@ -8215,9 +8348,10 @@ function showGambleResult(item, result) {
     { key:'critChance', label:'Crit Chance' }, { key:'aoeChance', label:'AoE Chance' },
     { key:'blockChance', label:'Block' }, { key:'spellShield', label:'Spell Shield' },
     { key:'xpGain', label:'XP Gain' }, { key:'goldFind', label:'Gold Find' },
+    { key:'echo', label:'Echo' }, { key:'encounterDmg', label:'Encounter Dmg' }, { key:'ailmentDmg', label:'Ailment Dmg' },
     { key:'castCooldown', label:'Cooldown Recovery' },
   ];
-  var pctStats = { mf:1, fireDmg:1, lightDmg:1, coldDmg:1, magicDmg:1, critChance:1, aoeChance:1, blockChance:1, xpGain:1, goldFind:1 };
+  var pctStats = { mf:1, fireDmg:1, lightDmg:1, coldDmg:1, magicDmg:1, critChance:1, aoeChance:1, blockChance:1, xpGain:1, goldFind:1, echo:1, encounterDmg:1, ailmentDmg:1 };
   var html = '<div style="font-size:14px;color:'+col+';margin-bottom:3px;">'+item.name+'</div>';
   html += '<div style="font-size:10px;color:#5a5a6a;margin-bottom:10px;">['+item.slot+' · '+item.rarity+']</div>';
   if (item.skillBonus) html += '<div style="font-size:11px;color:#c878f0;margin-bottom:6px;">+'+item.skillBonus+' to '+item.skillName+'</div>';
@@ -9139,7 +9273,7 @@ function _delveSpawnBoss(simNow, depth) {
   var now = simNow || gameNow();
   var baseHp = Math.round(ri(400, 500) * _delveHpMult() * 5);
   var bossName = '⚔ Depth ' + depth + ' Guardian';
-  enemy = { name: bossName, maxHp: baseHp, hp: baseHp, isBoss: true, spawnTime: now, _bleeds: [], frozenUntil: 0, stunCooldownUntil: 0 };
+  enemy = { name: bossName, maxHp: baseHp, hp: baseHp, isBoss: true, _encounter: true, spawnTime: now, _bleeds: [], frozenUntil: 0, stunCooldownUntil: 0 };
   enemy._delveSprite = _DELVE_SPRITE_POOL[ri(0, _DELVE_SPRITE_POOL.length - 1)];
   bossSpawned = true;
   _bossSpawnRealTime = Date.now();
@@ -9732,6 +9866,11 @@ function acceptBounty() {
       _pScene._loadTexture(key, url, function() {});
     });
   }
+  // Keep the game running during the search — fight the current zone instead of standing idle.
+  // No boss will spawn while bountyActive (see spawnNextEnemy gate); the target replaces the
+  // current enemy when the timer fires. completeBounty() resets killCount afterwards.
+  killCount = 0; bossSpawned = false; rarePack = false; rarePackRemaining = 0; enemy = null;
+  spawnNextEnemy();
   // Start 10-second hunt sequence
   bountySearchTimer = setTimeout(function() {
     _bountyHuntComplete();
@@ -9876,6 +10015,7 @@ function _startBountyFight() {
     speed: 2200,
     isBoss: false,  // bounty mobs never count as bosses — no shop reopen
     isBounty: true,
+    _encounter: true,
     spawnTime: gameNow(),
     _bleedStacks: [], _bleedInterval: null,
     _burnActive: false, _burnInterval: null,
@@ -10113,7 +10253,10 @@ function doRespec() {
 
   if (totalPts === 0) { addLog('Nothing to respec.', 'info'); return; }
 
-  if (respecFreeCharges > 0) {
+  if (!ngPlusUnlocked) {
+    // Respecs are free until Desolation (NG+) is unlocked — encourage build experimentation early.
+    addLog('✦ Respec (free until Desolation). '+totalPts+' points refunded.', 'level', 'event');
+  } else if (respecFreeCharges > 0) {
     respecFreeCharges--;
     addLog('✦ Respec used ('+respecFreeCharges+' free charge'+(respecFreeCharges!==1?'s':'')+' remaining). '+totalPts+' points refunded.', 'level', 'event');
   } else {
@@ -10658,6 +10801,9 @@ function statLine(stats) {
   if (stats.spellShield)     parts.push('+'+stats.spellShield+' Spell Shield');
   if (stats.xpGain)          parts.push('+'+stats.xpGain+'% XP Gain');
   if (stats.goldFind)        parts.push('+'+stats.goldFind+'% Gold Find');
+  if (stats.echo)            parts.push('+'+stats.echo+'% Echo');
+  if (stats.encounterDmg)    parts.push('+'+stats.encounterDmg+'% Encounter Dmg');
+  if (stats.ailmentDmg)      parts.push('+'+stats.ailmentDmg+'% Ailment Dmg');
   if (stats.castCooldown)    parts.push('-'+stats.castCooldown+'ms Cooldown Recovery');
   var _ngW = '<span style="color:#ffffff;">'; var _ngE = '</span>';
   if (stats.resist    && ngPlusUnlocked) parts.push(_ngW+'+'+stats.resist+'% Resist All'+_ngE);
@@ -11300,13 +11446,6 @@ function rerollVaultItem(slot, idx) {
   var newStats = {};
   var remaining = weightedPool.slice();
 
-  // MF: only include if passes the roll
-  var mfIdx = -1;
-  for (var mi = 0; mi < remaining.length; mi++) { if (remaining[mi].stat === 'mf') { mfIdx = mi; break; } }
-  if (mfIdx > -1 && Math.random() > (item.rarity === 'rare' ? LOOT_ODDS.mfOnRare : LOOT_ODDS.mfOnMagic) * 10) {
-    remaining.splice(mfIdx, 1);
-  }
-
   for (var si = 0; si < numStats && remaining.length > 0; si++) {
     var stat = pickWeighted(remaining);
     var r = ranges[stat];
@@ -11333,6 +11472,8 @@ function rerollVaultItem(slot, idx) {
   }
   // Preserve baked-in Desolation Defense (intrinsic, not a reforgeable affix)
   if (item.stats && item.stats.defense) newStats.defense = item.stats.defense;
+  // Preserve base item stats (mf/goldFind/xpGain) — they are never rerolled
+  for (var _rbs = 0; _rbs < BASE_STATS.length; _rbs++) { var _rbk = BASE_STATS[_rbs]; if (item.stats && item.stats[_rbk]) newStats[_rbk] = item.stats[_rbk]; }
   item.stats = newStats;
   item.score = Math.round(itemScore(item.stats, item.skillBonus, item.allSkills));
   // Re-sort vault
@@ -11367,6 +11508,9 @@ function statLineForStat(k, v) {
     case 'spellShield':  return '+'+v+' Spell Shield';
     case 'xpGain':       return '+'+v+'% XP Gain';
     case 'goldFind':     return '+'+v+'% Gold Find';
+    case 'echo':         return '+'+v+'% Echo';
+    case 'encounterDmg': return '+'+v+'% Encounter Dmg';
+    case 'ailmentDmg':   return '+'+v+'% Ailment Dmg';
     case 'castCooldown': return '-'+v+'ms Cooldown';
     case 'resist':       return '+'+v+'% Resist All';
     case 'thorns':       return '+'+v+'% Thorns';
@@ -11473,7 +11617,8 @@ function renderEnchantOverlay() {
     if (selItem) {
       var cost = ENCHANT_COSTS[selItem.rarity];
       var canAfford = hero.gold >= cost;
-      var statKeys = Object.keys(selItem.stats).filter(function(k) { return selItem.stats[k] > 0; });
+      // Base mf/gf/xp and baked-in defense are always kept, so they aren't lockable choices
+      var statKeys = Object.keys(selItem.stats).filter(function(k) { return selItem.stats[k] > 0 && k !== 'defense' && BASE_STATS.indexOf(k) === -1; });
       html += '<div style="margin-top:12px;border-top:1px solid #2a2a3a;padding-top:12px;">'
         + '<div style="font-size:10px;color:#4a4a6a;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">Lock one stat — others reroll</div>';
       for (var si2 = 0; si2 < statKeys.length; si2++) {
@@ -11507,8 +11652,9 @@ function doEnchant() {
   hero.gold -= cost;
 
   var lockedVal = item.stats[_enchantLockedStat];
-  var existingStatKeys = Object.keys(item.stats).filter(function(k) { return item.stats[k] > 0; });
-  var rerollCount = existingStatKeys.length - 1;
+  // Count only true affixes (exclude base mf/gf/xp and baked-in defense — those are always kept, never rerolled)
+  var existingStatKeys = Object.keys(item.stats).filter(function(k) { return item.stats[k] > 0 && k !== 'defense' && BASE_STATS.indexOf(k) === -1; });
+  var rerollCount = Math.max(0, existingStatKeys.length - 1);
 
   // Build pool: slot stats minus locked stat
   var pool = SLOT_STAT_POOLS[_enchantSelSlot].slice();
@@ -11518,13 +11664,6 @@ function doEnchant() {
   }
   var lockedI = pool.indexOf(_enchantLockedStat);
   if (lockedI > -1) pool.splice(lockedI, 1);
-
-  // Respect MF inclusion chance
-  var mfChance = item.rarity === 'rare' ? LOOT_ODDS.mfOnRare : LOOT_ODDS.mfOnMagic;
-  if (Math.random() > mfChance) {
-    var mfI = pool.indexOf('mf');
-    if (mfI > -1) pool.splice(mfI, 1);
-  }
 
   var ranges    = item.rarity === 'magic' ? MAGIC_RANGES : RARE_RANGES;
   var diffScale = DIFF_ITEM_SCALE[difficulty] || 1.0;
@@ -11545,6 +11684,8 @@ function doEnchant() {
   }
 
   if (item.stats && item.stats.defense) newStats.defense = item.stats.defense;
+  // Preserve base item stats (mf/goldFind/xpGain) through enchanting
+  for (var _ebs = 0; _ebs < BASE_STATS.length; _ebs++) { var _ebk = BASE_STATS[_ebs]; if (item.stats && item.stats[_ebk] && _ebk !== _enchantLockedStat) newStats[_ebk] = item.stats[_ebk]; }
   item.stats     = newStats;
   item.score     = Math.round(itemScore(item.stats, item.skillBonus, item.allSkills));
   item.enchanted = true;
@@ -11811,6 +11952,9 @@ var PRIORITY_STATS = [
   { key:'spellShield',     label:'Spell Shield'     },
   { key:'xpGain',          label:'XP Gain'          },
   { key:'goldFind',        label:'Gold Find'        },
+  { key:'echo',            label:'Echo'             },
+  { key:'encounterDmg',    label:'Encounter Dmg'    },
+  { key:'ailmentDmg',      label:'Ailment Dmg'      },
   { key:'castCooldown',    label:'Cooldown Recovery'},
   // Desolation-only stats — shown only when ngPlusUnlocked
   { key:'resist',          label:'Resist',           desoOnly:true },
@@ -13016,8 +13160,8 @@ function renderSkillTree() {
     : (t2bonus > 0 ? 'T2 backflow: +'+t2bonus+'% to all T1 skills' : 'All points spent'+specHint);
 
   var _nextCost = respecGoldCost * Math.pow(2, respecPaidCount);
-  var _costLabel = respecFreeCharges > 0 ? 'Free ('+respecFreeCharges+' remaining)' : _nextCost+'g';
-  var _canAffordRespec = respecFreeCharges > 0 || hero.gold >= _nextCost;
+  var _costLabel = !ngPlusUnlocked ? 'Free (until Desolation)' : (respecFreeCharges > 0 ? 'Free ('+respecFreeCharges+' remaining)' : _nextCost+'g');
+  var _canAffordRespec = !ngPlusUnlocked || respecFreeCharges > 0 || hero.gold >= _nextCost;
   var respecTopHtml = '<div style="margin-bottom:10px;text-align:right;">'
     + '<button onclick="doRespec()" style="padding:4px 16px;border:1px solid '+(_canAffordRespec?'#5a3a1a':'#2a2a2a')+';background:'+(_canAffordRespec?'#120a04':'#0a0a0a')+';color:'+(_canAffordRespec?'#c8843a':'#4a4a4a')+';font-family:Georgia,serif;font-size:11px;cursor:'+(_canAffordRespec?'pointer':'not-allowed')+';border-radius:2px;" '
     + (!_canAffordRespec ? 'disabled' : '')+'>'
@@ -13517,15 +13661,29 @@ function itemTooltipHtml(item, label) {
     { key:'spellShield',     label:'Spell Shield'    },
     { key:'xpGain',          label:'XP Gain'         },
     { key:'goldFind',        label:'Gold Find'       },
+    { key:'echo',            label:'Echo'            },
+    { key:'encounterDmg',    label:'Encounter Dmg'   },
+    { key:'ailmentDmg',      label:'Ailment Dmg'     },
     { key:'castCooldown',    label:'Cooldown Recovery (-ms)' },
   ];
-  var pctStats = { mf:1, fireDmg:1, lightDmg:1, coldDmg:1, magicDmg:1, critChance:1, aoeChance:1, blockChance:1, xpGain:1, goldFind:1, statusEffect:1 };
+  var pctStats = { mf:1, fireDmg:1, lightDmg:1, coldDmg:1, magicDmg:1, critChance:1, aoeChance:1, blockChance:1, xpGain:1, goldFind:1, statusEffect:1, echo:1, encounterDmg:1, ailmentDmg:1 };
+  // Base mf/gf/xp render as a "Quality" line on non-unique items (uniques keep their designed stats inline).
+  var _isUnique = item.rarity === 'unique';
+  var _qualityLabels = { mf:'MF', goldFind:'Gold Find', xpGain:'XP Gain' };
   for (var i = 0; i < statDefs.length; i++) {
     var sd = statDefs[i];
     var v = stats[sd.key];
     if (!v) continue;
+    if (!_isUnique && _qualityLabels[sd.key]) continue; // shown under Quality below
     var suffix = pctStats[sd.key] ? '%' : (sd.key === 'castCooldown' ? 'ms' : sd.key === 'hpRegen' ? '/s' : '');
     html += '<div class="tt-row"><span class="tt-label">'+sd.label+'</span><span class="tt-val">+'+(sd.key==='castCooldown'?'-':'')+v+suffix+'</span></div>';
+  }
+  if (!_isUnique) {
+    for (var _qk in _qualityLabels) {
+      if (stats[_qk]) {
+        html += '<div class="tt-row"><span class="tt-label" style="color:#c8b06a;">&#9670; Quality</span><span class="tt-val" style="color:#c8b06a;">+'+stats[_qk]+'% '+_qualityLabels[_qk]+'</span></div>';
+      }
+    }
   }
   // Unique proc description
   if (item.rarity === 'unique' && UNIQUE_PROC_DESCS[item.name]) {
@@ -15610,6 +15768,7 @@ var CombatScene = new Phaser.Class({
         // Determine flip — check MOB_SPRITE_NOFLIP by name, then by URL filename for farm pack sprites
         var noFlipByName = MOB_SPRITE_NOFLIP[enemyName];
         var noFlipByUrl = spriteUrl && (
+          spriteUrl.indexOf('ghost_2') !== -1 ||
           spriteUrl.indexOf('goblin') !== -1 ||
           spriteUrl.indexOf('ogre') !== -1 ||
           spriteUrl.indexOf('Hive') !== -1 ||
@@ -18089,11 +18248,7 @@ function _startBountyFootsteps() {
   var sceneW = scene.offsetWidth || 800;
   var sceneH = scene.offsetHeight || 480;
 
-  // Spawn footsteps in a trail pattern across the scene
-  // Each pair is left/right foot, staggered, walking from left edge toward center
-  var _step = 0;
-  var _trailX = sceneW * 0.15; // start left side, walk toward center
-
+  // Scatter bounty-hunt icons across the scene while the search counts down
   _bountyFootstepInterval = setInterval(function() {
     if (!scene.parentNode) { _stopBountyFootsteps(); return; }
 
@@ -18102,33 +18257,9 @@ function _startBountyFootsteps() {
     var remaining = Math.max(0, Math.ceil((_bountyHuntDuration - elapsed) / 1000));
     if (countdownEl) countdownEl.textContent = remaining;
 
-    // Spawn a large footstep
-    var fp = document.createElement('div');
-    fp.className = 'bounty-footstep';
-
-    // Alternate left/right foot, drift slightly across scene
-    var isLeft = _step % 2 === 0;
-    _trailX = Math.min(sceneW * 0.75, _trailX + (8 + Math.random() * 14));
-    var lateralOffset = isLeft ? -28 : 28;
-    var x = _trailX + lateralOffset + (Math.random() * 16 - 8);
-    var baseY = sceneH * 0.55 + Math.random() * (sceneH * 0.25);
-    // Slight toe-out rotation
-    var rot = isLeft ? (-15 - Math.random() * 10) : (15 + Math.random() * 10);
-
-    fp.style.left   = x + 'px';
-    fp.style.top    = baseY + 'px';
-    fp.style.setProperty('--rot', rot + 'deg');
-    fp.style.animationDuration = (2.0 + Math.random() * 0.8) + 's';
-    fp.textContent  = isLeft ? '🦶' : '🦶';
-
-    scene.appendChild(fp);
-    setTimeout(function() { if (fp.parentNode) fp.parentNode.removeChild(fp); }, 2800);
-
     // Scatter 1–2 random bounty-hunt icons (random frame, position & rotation)
     var _iconN = 1 + (Math.random() < 0.5 ? 1 : 0);
     for (var _ii = 0; _ii < _iconN; _ii++) _spawnBountyHuntIcon(scene, sceneW, sceneH);
-
-    _step++;
   }, 600);
 
   // Initial scatter so the screen isn't empty for the first tick
@@ -18137,6 +18268,21 @@ function _startBountyFootsteps() {
 
 var BOUNTY_HUNT_ICON_URL = 'https://severedgd.github.io/gamesprites/icons/bount_hunt_icons.png';
 var BOUNTY_HUNT_ICON_FRAMES = 8; // 3×3 sheet, 8 used frames (0-7)
+
+// Floating "+N Skill Point" alert over the combat area that fades out on its own.
+function showSkillPointAlert(n) {
+  n = n || 1;
+  var scene = document.getElementById('combat-scene');
+  if (!scene) return;
+  var el = document.createElement('div');
+  el.className = 'skillpt-alert';
+  // Stagger vertically if another alert is still fading, so they don't overlap
+  var existing = scene.querySelectorAll('.skillpt-alert').length;
+  if (existing > 0) el.style.marginTop = (existing * 30) + 'px';
+  el.textContent = '✦ +' + n + ' Skill Point' + (n === 1 ? '' : 's') + '!';
+  scene.appendChild(el);
+  setTimeout(function() { if (el.parentNode) el.parentNode.removeChild(el); }, 2700);
+}
 
 function _spawnBountyHuntIcon(scene, sceneW, sceneH) {
   if (!scene) return;
@@ -19524,7 +19670,7 @@ function init() {
   initCombatScene();
 
   // Autosave every 30 seconds
-  _autosaveInterval = setInterval(saveGame, 30000);
+  _autosaveInterval = setInterval(saveGame, 10000);
 
   // Debug bar — Ctrl+Shift+Tilde toggles, persisted for the session
   // getElementById deferred to handler since the div is after the script tag
